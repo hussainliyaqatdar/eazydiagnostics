@@ -1,15 +1,18 @@
 "use client";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { compactDescription, describeCoupon, type CouponRule } from "@/lib/coupon-rules";
+import { useCart } from "@/lib/cart-context";
+import { blockedByPackage, compactDescription, describeCoupon, type CouponRule } from "@/lib/coupon-rules";
 
 // Slim promo strip shown on the home page only. It lives inside the sticky
 // header, so it stays pinned to the top with the nav as the page scrolls.
 export default function CouponBanner({ coupon }: { coupon: CouponRule | null }) {
   const pathname = usePathname();
+  const { lines } = useCart();
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
 
-  if (!coupon || pathname !== "/") return null;
+  // Tests-only offers aren't advertised to a visitor who has a package in the cart.
+  if (!coupon || pathname !== "/" || blockedByPackage(coupon, lines.some((l) => l.kind === "package"))) return null;
 
   // The async Clipboard API is blocked in some in-app browsers (e.g. links opened
   // inside WhatsApp/Instagram) and on insecure origins, so fall back to the older

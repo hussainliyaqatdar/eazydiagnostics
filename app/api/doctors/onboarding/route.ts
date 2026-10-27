@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateDoctorSignup } from "@/lib/doctor-onboarding";
-import { istTimestamp, recordDoctorSignup } from "@/lib/google-sheet";
+import { istTimestamp, registerDoctor } from "@/lib/doctors";
 import { sendDoctorConfirmation, sendOwnerDoctorAlert } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 
 const MAX_BODY_BYTES = 20_000;
-const GO_LIVE_WITHIN_MS = 48 * 60 * 60 * 1000;
 
-// A doctor submits the sign-up form. The details are validated, recorded in the
-// Google Sheet, and only then confirmed by email - so a doctor is never told we
-// have their details when we do not.
+// A doctor (or the sales team) submits the registration form. The details are
+// validated, saved, and only then confirmed by email - so
+// nobody is told we have the details when we do not.
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
   const limit = rateLimit(`doctor-signup:${ip}`, 6, 60 * 60_000);
@@ -43,21 +42,21 @@ export async function POST(req: NextRequest) {
 
   const now = new Date();
   const submittedAt = istTimestamp(now);
-  const goLiveBy = istTimestamp(new Date(now.getTime() + GO_LIVE_WITHIN_MS));
+  // The id doubles as the doctor's affiliate-link code, so it is kept URL-safe.
   const id = `DR-${now.getTime().toString(36).toUpperCase()}`;
 
   try {
-    await recordDoctorSignup(signup, submittedAt);
+    registerDoctor(id, signup, submittedAt);
   } catch (err) {
     console.error("Doctor sign-up could not be saved:", err);
     return NextResponse.json(
-      { error: "We couldn't save your details just now. Please try again in a few minutes." },
+      { error: "We couldn't save the details just now. Please try again in a few minutes." },
       { status: 502 }
     );
   }
 
-  // The sign-up is safely recorded; a failed email must not turn it into an error.
-  await Promise.allSettled([sendDoctorConfirmation(signup, id), sendOwnerDoctorAlert(signup, id, submittedAt, goLiveBy)]);
+  // The registration is safely recorded; a failed email must not turn it into an error.
+  await Promise.allSettled([sendDoctorConfirmation(signup, id), sendOwnerDoctorAlert(signup, id, submittedAt)]);
 
   return NextResponse.json({ ok: true });
 }

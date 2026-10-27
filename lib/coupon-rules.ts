@@ -15,7 +15,15 @@ export type CouponRule = {
   minCartValue: number;
   // Upper limit on the discount in rupees, regardless of cart size. null = uncapped.
   maxDiscount: number | null;
+  // true = only for orders made up of individual tests: a cart holding any
+  // package gets no discount (and the offer is not shown to it).
+  testsOnly?: boolean;
 };
+
+// True when this coupon can't be used because the cart holds a package.
+export function blockedByPackage(rule: CouponRule, cartHasPackage: boolean): boolean {
+  return !!rule.testsOnly && cartHasPackage;
+}
 
 export type DiscountResult = {
   discount: number; // rupees taken off; 0 if not eligible
@@ -40,17 +48,20 @@ export function normalizeCouponCode(input: string): string {
 
 const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
 
-// Human-readable summary, e.g. "10% off up to Rs. 500 on orders of Rs. 1,000 or more".
+// Human-readable summary, e.g. "10% off up to Rs. 500 on orders of Rs. 1,000 or more"
+// (testsOnly coupons say "on orders with individual tests of Rs. 1,000 or more").
 export function describeCoupon(rule: CouponRule): string {
   const offer = rule.type === "percent" ? `${rule.value}% off` : `${rs(rule.value)} off`;
   const cap = rule.maxDiscount != null ? ` up to ${rs(rule.maxDiscount)}` : "";
-  const min = rule.minCartValue > 0 ? ` on orders of ${rs(rule.minCartValue)} or more` : "";
+  const what = rule.testsOnly ? "orders with individual tests of" : "orders of";
+  const min = rule.minCartValue > 0 ? ` on ${what} ${rs(rule.minCartValue)} or more` : "";
   return `${offer}${cap}${min}`;
 }
 
 // Compact form for phone-width banners, e.g. "10% off up to Rs. 500 on Rs. 1,000+".
 export function compactDescription(rule: CouponRule): string {
-  const min = rule.minCartValue > 0 ? ` on ${rs(rule.minCartValue)}+` : "";
+  const what = rule.testsOnly ? "individual tests of " : "";
+  const min = rule.minCartValue > 0 ? ` on ${what}${rs(rule.minCartValue)}+` : "";
   return `${shortOffer(rule)}${min}`;
 }
 

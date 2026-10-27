@@ -99,10 +99,21 @@ export type BookingLineItem = {
   offer?: CartLineOffer & { doctorName?: string };
 };
 
+export type BookingReferral = {
+  // Set when the referrer is a registered affiliate doctor; absent for a name
+  // the patient typed in themselves.
+  doctorId?: string;
+  name: string;
+  // Copied from the affiliate record so the booking stays readable if it changes.
+  clinic?: string;
+};
+
 export type Booking = {
   id: string;
   createdAt: string;
   patient: BookingPatient;
+  // Who referred the patient (optional field at checkout).
+  referral?: BookingReferral;
   items: BookingLineItem[];
   subtotalMrp: number;
   // Sum of item prices BEFORE any coupon. The amount the customer actually owes
@@ -116,4 +127,16 @@ export type Booking = {
   date: string;
   slot: string;
   paymentStatus: "due";
+};
+
+// A doctor registered through /for-doctors. `id` is also their affiliate-link code.
+export type Doctor = {
+  id: string;
+  registeredAt: string; // India time, for display
+  name: string;
+  clinic: string;
+  mobile: string;
+  email: string;
+  specialty: string;
+  degree: string;
 };

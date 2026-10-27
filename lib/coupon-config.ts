@@ -9,6 +9,8 @@
 //   value         percent: 1-100. flat: rupees off.
 //   minCartValue  cart must be at least this many rupees (inclusive); 0 = none
 //   maxDiscount   cap on the discount in rupees; null = uncapped
+//   testsOnly     true = individual tests only; a cart with any package gets
+//                 no discount and never sees the offer
 //   active        false switches the coupon off without deleting it
 //   featured      true advertises it in the home banner and cart nudge
 //                 (only ONE coupon may be featured)
@@ -28,6 +30,7 @@ const COUPONS: CouponConfig[] = [
     // the same as "1,500 or more".
     minCartValue: 1500,
     maxDiscount: 500,
+    testsOnly: true,
     active: true,
     featured: true,
   },
@@ -58,7 +61,7 @@ function validateConfig(coupons: CouponConfig[]) {
 validateConfig(COUPONS);
 
 function toRule(c: CouponConfig): CouponRule {
-  return { code: c.code, type: c.type, value: c.value, minCartValue: c.minCartValue, maxDiscount: c.maxDiscount };
+  return { code: c.code, type: c.type, value: c.value, minCartValue: c.minCartValue, maxDiscount: c.maxDiscount, testsOnly: c.testsOnly };
 }
 
 // Returns the coupon's public rule, or null if the code is unknown or switched

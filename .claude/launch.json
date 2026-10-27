@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "diagnostics-site-dev",
-      "runtimeExecutable": "C:\\Users\\admin\\Downloads\\Website\\run-dev.cmd",
-      "runtimeArgs": [],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
       "port": 3000
     }
   ]
