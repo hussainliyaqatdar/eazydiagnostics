@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   const id = `DR-${now.getTime().toString(36).toUpperCase()}`;
 
   try {
-    registerDoctor(id, signup, submittedAt);
+    await registerDoctor(id, signup);
   } catch (err) {
     console.error("Doctor sign-up could not be saved:", err);
     return NextResponse.json(

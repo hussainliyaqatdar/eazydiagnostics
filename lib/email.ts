@@ -169,7 +169,7 @@ export async function sendTestEmail(): Promise<DeliveryResult> {
 
 export async function sendOwnerNotification(booking: Booking) {
   const { subject, html } = renderOwnerNotification(booking);
-  saveEmail({ id: `${booking.id}-owner`, to: OWNER_EMAIL, toLabel: "owner", subject, html, sentAt: new Date().toISOString() });
+  keepInDevInbox({ id: `${booking.id}-owner`, to: OWNER_EMAIL, toLabel: "owner", subject, html, sentAt: new Date().toISOString() });
   await deliver(OWNER_EMAIL, subject, html);
 }
 

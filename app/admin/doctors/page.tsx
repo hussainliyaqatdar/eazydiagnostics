@@ -3,7 +3,7 @@ import CopyLinkButton from "@/components/CopyLinkButton";
 import DeleteDoctorButton from "@/components/DeleteDoctorButton";
 import { affiliateLink } from "@/lib/affiliate-link";
 import { formatMobile } from "@/lib/doctor-onboarding";
-import { doctorStorageIsTemporary, listDoctors, type Doctor } from "@/lib/doctors";
+import { listDoctors, type Doctor } from "@/lib/doctors";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Registered doctors", robots: { index: false, follow: false } };
@@ -13,7 +13,7 @@ export default async function AdminDoctorsPage() {
   let loadError = "";
   try {
     // Newest first.
-    doctors = listDoctors().slice().reverse();
+    doctors = (await listDoctors()).reverse();
   } catch (err) {
     console.error("Admin: doctor list could not be loaded:", err);
     loadError = `Couldn't load the registered doctors: ${err instanceof Error ? err.message : "unknown error"}`;
@@ -33,14 +33,12 @@ export default async function AdminDoctorsPage() {
         </a>
       </div>
 
-      {doctorStorageIsTemporary() && (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          <strong>Doctors are on temporary storage.</strong> DATA_DIR is not set, so this list is wiped on every deploy or restart. Attach a persistent disk to the server and set DATA_DIR to its path. Each registration is also emailed to the owner as a backup.
+      {loadError && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{loadError}</p>}
+      {!loadError && doctors.length === 0 && (
+        <p className="text-gray-500">
+          No doctors yet. Register one with the button above.
         </p>
       )}
-
-      {loadError && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{loadError}</p>}
-      {!loadError && doctors.length === 0 && <p className="text-gray-500">No doctors registered yet.</p>}
 
       {doctors.length > 0 && (
         <div className="overflow-x-auto rounded-lg border bg-white">
@@ -65,7 +63,7 @@ export default async function AdminDoctorsPage() {
                       <span className="block text-xs text-gray-500">
                         {d.specialty} &middot; {d.degree}
                       </span>
-                      <span className="block text-xs text-gray-400">{d.id}</span>
+                      <span className="block text-xs text-gray-400">{d.id} &middot; {d.slug}</span>
                     </td>
                     <td className="px-3 py-3 text-gray-800">{d.clinic}</td>
                     <td className="px-3 py-3 text-gray-800">

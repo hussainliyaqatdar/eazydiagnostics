@@ -132,6 +132,7 @@ export type Booking = {
 // A doctor registered through /for-doctors. `id` is also their affiliate-link code.
 export type Doctor = {
   id: string;
+  slug: string; // unique, URL-friendly, from the clinic name
   registeredAt: string; // India time, for display
   name: string;
   clinic: string;

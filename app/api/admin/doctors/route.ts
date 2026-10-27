@@ -17,7 +17,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    removeDoctor(id);
+    await removeDoctor(id);
   } catch (err) {
     console.error("Admin: doctor could not be deleted:", err);
     return NextResponse.json({ error: "Couldn't delete that doctor. They may already be removed - refresh and try again." }, { status: 502 });

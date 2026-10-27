@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { getBooking } from "@/lib/store";
+import { getBooking } from "@/lib/orders";
 import { amountDue } from "@/lib/booking-totals";
 import { describeConsult, hasConsult } from "@/lib/consult-offers";
 
-export default function ConfirmationPage({ params }: { params: { id: string } }) {
-  const booking = getBooking(params.id);
+export const dynamic = "force-dynamic";
+
+export default async function ConfirmationPage({ params }: { params: { id: string } }) {
+  const booking = await getBooking(params.id).catch(() => undefined);
 
   if (!booking) {
     return (
