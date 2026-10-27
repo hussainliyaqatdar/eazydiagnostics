@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// The /admin pages show patients' and doctors' personal details, so they sit
-// behind HTTP Basic auth. Set ADMIN_PASSWORD (and optionally ADMIN_USER, default
-// "admin") on the server. With no password set, /admin is open in local
-// development and locked completely in production.
+// The /admin pages show doctors' personal details, so they CAN sit behind HTTP
+// Basic auth: set ADMIN_PASSWORD (and optionally ADMIN_USER, default "admin") on
+// the server to turn the login on. With no password set the admin pages are
+// open to anyone who knows the URL - an accepted choice for now; set the
+// password before sharing the site widely.
 export const config = { matcher: ["/admin/:path*", "/api/admin/:path*"] };
 
 export function middleware(req: NextRequest) {
   const password = process.env.ADMIN_PASSWORD;
-  if (!password) {
-    if (process.env.NODE_ENV !== "production") return NextResponse.next();
-    return new NextResponse("Admin is disabled: set ADMIN_PASSWORD on the server.", { status: 503 });
-  }
+  if (!password) return NextResponse.next();
 
   const user = process.env.ADMIN_USER || "admin";
   const header = req.headers.get("authorization") ?? "";

@@ -1,8 +1,13 @@
+import { notFound } from "next/navigation";
 import { readEmails } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export default function InboxPage() {
+  // The inbox holds copies of order emails (patient names, phones, addresses), and
+  // the admin pages are not password-protected by default - so it is a
+  // local-development tool only and does not exist in production.
+  if (process.env.NODE_ENV === "production") notFound();
   const emails = readEmails().slice().reverse();
 
   return (
