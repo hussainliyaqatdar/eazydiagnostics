@@ -41,6 +41,9 @@ export default function CheckoutPage() {
   const [slot, setSlot] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Required patient fields left empty at the last attempt to confirm; each is
+  // outlined in red until it is filled in.
+  const [missing, setMissing] = useState<string[]>([]);
 
   // Arrived through a doctor's affiliate link: pre-fill "Prescribed by" (the
   // patient can still change it).
@@ -64,7 +67,12 @@ export default function CheckoutPage() {
 
   function update(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
+    if (missing.includes(field)) setMissing((m) => m.filter((k) => k !== field));
   }
+
+  // Red outline for a required field that was left empty.
+  const fieldClass = (field: string, extra = "") =>
+    `border rounded-md px-3 py-2 text-sm ${extra} ${missing.includes(field) ? "border-red-500 bg-red-50" : ""}`;
 
   function useCurrentLocation() {
     if (!navigator.geolocation) {
@@ -114,16 +122,31 @@ export default function CheckoutPage() {
 
   async function submit() {
     setError("");
-    if (!form.name || !form.whatsapp || !form.age || !form.gender || !form.addressLine || !form.pincode) {
-      setError("Please fill in all required fields: name, age, gender, WhatsApp number, and address.");
+    // In page order, so the first one can be scrolled to. Names the exact
+    // thing to do for each, not just "required fields".
+    const required: { key: keyof typeof form; label: string }[] = [
+      { key: "name", label: "Full name" },
+      { key: "whatsapp", label: "WhatsApp number" },
+      { key: "gender", label: "Gender (select one)" },
+      { key: "age", label: "Age" },
+      { key: "addressLine", label: "Address (house/flat and street)" },
+      { key: "pincode", label: "Pincode" },
+    ];
+    const empty = required.filter((r) => !form[r.key].trim());
+    setMissing(empty.map((r) => r.key));
+    if (empty.length > 0) {
+      setError(`Please complete: ${empty.map((r) => r.label).join(", ")}.`);
+      const el = document.getElementById(`checkout-${empty[0].key}`);
+      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+      el?.focus({ preventScroll: true });
       return;
     }
     if (!coords) {
-      setError("Please share your location: tap \"Use current location\", or paste a Google Maps link.");
+      setError("Please share your location: tap \"Use current location\", or choose \"Add Manually\" to paste a Google Maps link.");
       return;
     }
     if (!date || !slot) {
-      setError("Please choose a collection date and time slot.");
+      setError(!date ? "Please choose a collection date, then a time slot." : "Please choose a time slot for your collection date.");
       return;
     }
     if (needsDoctor && !doctorId) {
@@ -168,15 +191,15 @@ export default function CheckoutPage() {
         <div className="bg-white border rounded-lg p-4 flex flex-col gap-3">
           <h2 className="font-semibold text-gray-900">Patient details</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input placeholder="Full name*" value={form.name} onChange={(e) => update("name", e.target.value)} className="border rounded-md px-3 py-2 text-sm sm:col-span-2" />
-            <input placeholder="WhatsApp number* (for report delivery)" value={form.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} className="border rounded-md px-3 py-2 text-sm sm:col-span-2" />
-            <select value={form.gender} onChange={(e) => update("gender", e.target.value)} className="border rounded-md px-3 py-2 text-sm">
+            <input id="checkout-name" placeholder="Full name*" value={form.name} onChange={(e) => update("name", e.target.value)} className={fieldClass("name", "sm:col-span-2")} />
+            <input id="checkout-whatsapp" placeholder="WhatsApp number* (for report delivery)" value={form.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} className={fieldClass("whatsapp", "sm:col-span-2")} />
+            <select id="checkout-gender" value={form.gender} onChange={(e) => update("gender", e.target.value)} className={fieldClass("gender")}>
               <option value="">Gender*</option>
               <option>Female</option>
               <option>Male</option>
               <option>Other</option>
             </select>
-            <input placeholder="Age*" value={form.age} onChange={(e) => update("age", e.target.value)} className="border rounded-md px-3 py-2 text-sm" />
+            <input id="checkout-age" placeholder="Age*" value={form.age} onChange={(e) => update("age", e.target.value)} className={fieldClass("age")} />
           </div>
         </div>
 
@@ -192,9 +215,9 @@ export default function CheckoutPage() {
           <h2 className="font-semibold text-gray-900">Collection address</h2>
 
           <div className="bg-brand-light rounded-md px-3 py-2 flex flex-col gap-2">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex flex-col gap-2">
               <div className="text-sm text-gray-700">
-                <span className="font-medium">Location (Google Maps)*</span>
+                <span className="font-medium">Google Maps Location*</span>
                 {!coords && <span className="block text-xs text-gray-600">Required - so our phlebotomist can find you.</span>}
                 {coords && (
                   <span className="block text-xs text-brand-dark">
@@ -203,25 +226,29 @@ export default function CheckoutPage() {
                 )}
                 {locationError && <span className="block text-xs text-red-600">{locationError}</span>}
               </div>
-              <button
-                type="button"
-                onClick={useCurrentLocation}
-                disabled={locating}
-                className="text-xs font-medium bg-white border border-brand text-brand-dark px-3 py-1.5 rounded-md hover:bg-brand hover:text-white transition disabled:opacity-60 whitespace-nowrap shrink-0 self-start sm:self-auto"
-              >
-                {locating ? "Locating…" : coords ? "Update location" : "Use current location"}
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                {/* Primary: one tap, uses the phone's location. */}
+                <button
+                  type="button"
+                  onClick={useCurrentLocation}
+                  disabled={locating}
+                  className="text-sm font-semibold bg-brand text-white px-4 py-2.5 rounded-md hover:bg-brand-dark transition disabled:opacity-60 sm:flex-1"
+                >
+                  {locating ? "Locating…" : coords ? "Update current location" : "Use current location"}
+                </button>
+                {/* Secondary: paste a Google Maps link or coordinates instead. */}
+                <button
+                  type="button"
+                  onClick={() => setShowManualLocation((v) => !v)}
+                  aria-expanded={showManualLocation}
+                  className="text-sm font-medium bg-white border border-brand text-brand-dark px-4 py-2.5 rounded-md hover:bg-brand-light transition sm:flex-1"
+                >
+                  Add Manually
+                </button>
+              </div>
             </div>
 
-            {!showManualLocation ? (
-              <button
-                type="button"
-                onClick={() => setShowManualLocation(true)}
-                className="text-xs text-brand-dark underline text-left w-fit"
-              >
-                Current location not working? Paste a Google Maps link instead
-              </button>
-            ) : (
+            {showManualLocation && (
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   placeholder="Paste a Google Maps link, or lat,lng (e.g. 12.9081, 77.5831)"
@@ -275,11 +302,11 @@ export default function CheckoutPage() {
             {manualLocationError && <span className="text-xs text-red-600">{manualLocationError}</span>}
           </div>
 
-          <input placeholder="House/flat, street, landmark*" value={form.addressLine} onChange={(e) => update("addressLine", e.target.value)} className="border rounded-md px-3 py-2 text-sm" />
+          <input id="checkout-addressLine" placeholder="House/flat, street, landmark*" value={form.addressLine} onChange={(e) => update("addressLine", e.target.value)} className={fieldClass("addressLine")} />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <input placeholder="Locality (e.g. JP Nagar)" value={form.locality} onChange={(e) => update("locality", e.target.value)} className="border rounded-md px-3 py-2 text-sm" />
             <input placeholder="City" value={form.city} onChange={(e) => update("city", e.target.value)} className="border rounded-md px-3 py-2 text-sm" />
-            <input placeholder="Pincode*" value={form.pincode} onChange={(e) => update("pincode", e.target.value)} className="border rounded-md px-3 py-2 text-sm" />
+            <input id="checkout-pincode" placeholder="Pincode*" value={form.pincode} onChange={(e) => update("pincode", e.target.value)} className={fieldClass("pincode")} />
           </div>
           <textarea placeholder="Anything our phlebotomist should know? (e.g. gate code, fasting confirmation)" value={form.notes} onChange={(e) => update("notes", e.target.value)} className="border rounded-md px-3 py-2 text-sm" rows={2} />
         </div>
@@ -364,11 +391,20 @@ export default function CheckoutPage() {
             <span>Amount due on collection</span>
             <span>Rs. {total.toLocaleString("en-IN")}</span>
           </div>
+          {/* The site's main promise, so it is a callout rather than small print. */}
+          <div className="flex items-start gap-2 rounded-md border border-green-300 bg-green-50 px-3 py-2.5 text-green-900">
+            <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-green-600" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12.5l4.5 4.5L19 7.5" />
+            </svg>
+            <p className="text-sm leading-snug">
+              <strong className="block text-base">No payment now</strong>
+              Pay only after your sample is collected.
+            </p>
+          </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button onClick={submit} disabled={submitting} className="bg-brand text-white px-4 py-3 rounded-md font-medium hover:bg-brand-dark transition disabled:opacity-60">
             {submitting ? "Processing…" : "Confirm Order"}
           </button>
-          <p className="text-xs text-gray-500 text-center">No payment now - pay only after your sample is collected.</p>
         </div>
       </div>
     </div>
