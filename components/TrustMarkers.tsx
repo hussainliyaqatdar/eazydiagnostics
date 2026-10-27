@@ -1,9 +1,11 @@
 import Image from "next/image";
 import { TRUST_MARKERS } from "@/lib/site-config";
 
-export default function TrustMarkers() {
+// `twoByTwo` keeps the cards in a 2x2 block at every width - for narrower
+// columns (e.g. beside the doctor sign-up form) where four across is too tight.
+export default function TrustMarkers({ twoByTwo = false }: { twoByTwo?: boolean }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6">
+    <div className={`grid grid-cols-2 gap-4 py-6 ${twoByTwo ? "" : "md:grid-cols-4"}`}>
       {TRUST_MARKERS.map((m) => (
         <div key={m.label} className="w-full bg-white border rounded-xl overflow-hidden shadow-sm flex flex-col">
           {/* w-full is required, not just a max-width, because Image `fill` has no

@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { CartLine, CartLineOffer } from "./types";
 import { allTests, allPackages } from "./catalog";
-import { computeDiscount, type CouponRule } from "./coupon-rules";
+import { blockedByPackage, computeDiscount, type CouponRule } from "./coupon-rules";
 import { hasConsult, priceWithOffer } from "./consult-offers";
 
 // `transient` marks failures that say nothing about the code itself (offline,
@@ -90,6 +90,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   async function applyCoupon(code: string): Promise<ApplyCouponResult> {
     const result = await checkCoupon(code);
+    if (result.ok && blockedByPackage(result.coupon, lines.some((l) => l.kind === "package"))) {
+      return { ok: false, message: "This code is for individual tests only. Remove any packages from your cart to use it." };
+    }
     if (result.ok) setCoupon(result.coupon);
     return result;
   }
@@ -201,7 +204,9 @@ export function useCartSummary() {
   // consultation, so there is no room for a coupon on top: a cart holding one
   // gets no coupon discount (a coupon already entered stays saved, and applies
   // again if that package is taken out).
-  const couponsAllowed = !items.some((i) => i.offer);
+  // A coupon marked tests-only is off while the cart holds any package, too.
+  const hasPackage = items.some((i) => i.kind === "package");
+  const couponsAllowed = !items.some((i) => i.offer) && !(coupon && blockedByPackage(coupon, hasPackage));
 
   // Live preview of the coupon. The server recomputes this when the order is
   // placed; this is the same pure function, so the two always agree.
@@ -212,7 +217,8 @@ export function useCartSummary() {
   return {
     items, subtotalMrp, subtotalPrice, count, remove, clear, setConsult, setConsultDoctor,
     coupon, applyCoupon, removeCoupon,
-    couponsAllowed, // false when the cart holds a consultation-offer package
+    hasPackage, // true when the cart holds any package
+    couponsAllowed, // false when the cart holds a consultation-offer package, or a package with a tests-only coupon
     discount, // rupees off from the coupon right now (0 if none, or not yet eligible)
     couponShortfall: result && !result.eligible ? result.shortfall : 0, // rupees to add to unlock it
     total, // what the customer pays after the coupon

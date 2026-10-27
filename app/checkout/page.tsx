@@ -5,6 +5,8 @@ import { useCart, useCartSummary } from "@/lib/cart-context";
 import { describeConsult, hasConsult } from "@/lib/consult-offers";
 import { getUpcomingDates, formatDateLabel } from "@/lib/booking-dates";
 import DoctorPicker from "@/components/DoctorPicker";
+import ReferralCombobox, { type ReferralValue } from "@/components/ReferralCombobox";
+import { REFERRAL_STORAGE_KEY } from "@/lib/referral-storage";
 
 const UPCOMING_DATES = getUpcomingDates();
 
@@ -25,6 +27,7 @@ export default function CheckoutPage() {
     addressLine: "", locality: "", pincode: "", city: "Bengaluru",
     gender: "", age: "", notes: "",
   });
+  const [referral, setReferral] = useState<ReferralValue>({ name: "" });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
@@ -38,6 +41,21 @@ export default function CheckoutPage() {
   const [slot, setSlot] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Arrived through a doctor's affiliate link: pre-fill "Prescribed by" (the
+  // patient can still change it).
+  useEffect(() => {
+    let stored: string | null = null;
+    try { stored = localStorage.getItem(REFERRAL_STORAGE_KEY); } catch {}
+    if (!stored) return;
+    fetch("/api/affiliate-doctors")
+      .then((r) => r.json())
+      .then((list: { id: string; name: string }[]) => {
+        const d = list.find((x) => x.id === stored);
+        if (d) setReferral((cur) => (cur.name ? cur : { doctorId: d.id, name: d.name }));
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch(`/api/slots?date=${date}`).then((r) => r.json()).then(setSlots);
@@ -100,6 +118,10 @@ export default function CheckoutPage() {
       setError("Please fill in all required fields: name, age, gender, WhatsApp number, and address.");
       return;
     }
+    if (!coords) {
+      setError("Please share your location: tap \"Use current location\", or paste a Google Maps link.");
+      return;
+    }
     if (!date || !slot) {
       setError("Please choose a collection date and time slot.");
       return;
@@ -110,12 +132,12 @@ export default function CheckoutPage() {
     }
     setSubmitting(true);
     try {
-      const patient = { ...form, ...(coords ? { lat: coords.lat, lng: coords.lng } : {}) };
+      const patient = { ...form, lat: coords.lat, lng: coords.lng };
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Only the code is sent - the server works out the discount itself.
-        body: JSON.stringify({ patient, cart: lines, date, slot, couponCode: discount > 0 && coupon ? coupon.code : undefined }),
+        body: JSON.stringify({ patient, cart: lines, date, slot, couponCode: discount > 0 && coupon ? coupon.code : undefined, referredBy: referral.name.trim() ? referral : undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -125,6 +147,8 @@ export default function CheckoutPage() {
       }
       clear();
       removeCoupon();
+      // The affiliate link has done its job for this order.
+      try { localStorage.removeItem(REFERRAL_STORAGE_KEY); } catch {}
       router.push(`/confirmation/${data.id}`);
     } catch {
       setError("Could not submit booking. Please try again.");
@@ -157,12 +181,21 @@ export default function CheckoutPage() {
         </div>
 
         <div className="bg-white border rounded-lg p-4 flex flex-col gap-3">
+          <div>
+            <h2 className="font-semibold text-gray-900">Prescribed by <span className="text-sm font-normal text-gray-500">(optional)</span></h2>
+            <p className="text-sm text-gray-600">Which doctor prescribed this test? Pick them from the list, or type their name.</p>
+          </div>
+          <ReferralCombobox value={referral} onChange={setReferral} />
+        </div>
+
+        <div className="bg-white border rounded-lg p-4 flex flex-col gap-3">
           <h2 className="font-semibold text-gray-900">Collection address</h2>
 
           <div className="bg-brand-light rounded-md px-3 py-2 flex flex-col gap-2">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="text-sm text-gray-700">
-                <span className="font-medium">Current Location (Google Maps)</span>
+                <span className="font-medium">Location (Google Maps)*</span>
+                {!coords && <span className="block text-xs text-gray-600">Required - so our phlebotomist can find you.</span>}
                 {coords && (
                   <span className="block text-xs text-brand-dark">
                     Location captured &mdash; <a className="underline" href={`https://www.google.com/maps?q=${coords.lat},${coords.lng}`} target="_blank" rel="noopener noreferrer">view on map</a>
@@ -186,7 +219,7 @@ export default function CheckoutPage() {
                 onClick={() => setShowManualLocation(true)}
                 className="text-xs text-brand-dark underline text-left w-fit"
               >
-                Current location not working? Enter it manually
+                Current location not working? Paste a Google Maps link instead
               </button>
             ) : (
               <div className="flex flex-col sm:flex-row gap-2">

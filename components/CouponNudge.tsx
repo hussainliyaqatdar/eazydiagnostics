@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useCartSummary } from "@/lib/cart-context";
-import { computeDiscount, shortOffer, type CouponRule } from "@/lib/coupon-rules";
+import { blockedByPackage, computeDiscount, shortOffer, type CouponRule } from "@/lib/coupon-rules";
 
 const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
 
@@ -9,11 +9,13 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
 // stand with the featured coupon: how far from unlocking it, that it's ready to
 // apply, or how much it is saving them.
 export default function CouponNudge({ featured }: { featured: CouponRule | null }) {
-  const { subtotalPrice, coupon, discount, couponShortfall, applyCoupon } = useCartSummary();
+  const { subtotalPrice, coupon, discount, couponShortfall, applyCoupon, hasPackage } = useCartSummary();
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState("");
 
   if (!featured) return null;
+  // The offer is for individual tests only - don't show it to a cart with a package.
+  if (blockedByPackage(featured, hasPackage)) return null;
   // The customer is using some other coupon - don't advertise a different one.
   if (coupon && coupon.code !== featured.code) return null;
 
@@ -76,7 +78,7 @@ export default function CouponNudge({ featured }: { featured: CouponRule | null 
           </>
         ) : (
           <>
-            Get <strong>{shortOffer(featured)}</strong> on orders of {rs(featured.minCartValue)}+
+            Get <strong>{shortOffer(featured)}</strong> on {featured.testsOnly ? "individual tests of " : "orders of "}{rs(featured.minCartValue)}+
           </>
         )}
       </p>

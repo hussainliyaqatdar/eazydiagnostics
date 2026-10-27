@@ -50,6 +50,20 @@ export function saveEmail(email: SentEmail) {
 // this file is only the local-development stand-in for when no sheet is configured.
 const DOCTOR_SIGNUPS_FILE = path.join(DATA_DIR, "doctor-signups.json");
 
+export function readDoctorSignups(): Record<string, string>[] {
+  ensureFile(DOCTOR_SIGNUPS_FILE);
+  return JSON.parse(fs.readFileSync(DOCTOR_SIGNUPS_FILE, "utf-8"));
+}
+
+// Returns false when no doctor has that id.
+export function deleteDoctorSignup(id: string): boolean {
+  const all = readDoctorSignups();
+  const kept = all.filter((r) => r["Doctor ID"] !== id);
+  if (kept.length === all.length) return false;
+  fs.writeFileSync(DOCTOR_SIGNUPS_FILE, JSON.stringify(kept, null, 2), "utf-8");
+  return true;
+}
+
 export function saveDoctorSignup(record: Record<string, string>) {
   ensureFile(DOCTOR_SIGNUPS_FILE);
   const all: Record<string, string>[] = JSON.parse(fs.readFileSync(DOCTOR_SIGNUPS_FILE, "utf-8"));

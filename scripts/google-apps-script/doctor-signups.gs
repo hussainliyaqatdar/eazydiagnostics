@@ -1,6 +1,7 @@
 /**
- * Receives doctor sign-ups from the website and adds each one as a row in this
- * Google Sheet. (Google Apps Script - this file is not part of the Next.js app;
+ * Receives doctor registrations from the website and adds each one as a row in
+ * this Google Sheet, and hands the rows back when the website asks for the list
+ * (admin page, checkout "Prescribed by"). (Google Apps Script - this file is not part of the Next.js app;
  * it is kept here so the code you paste into Google is in version control.)
  *
  * SETUP (about 5 minutes)
@@ -24,7 +25,9 @@
  * SECRET or it is ignored, so keep the URL and the secret private.
  */
 
-const SHEET_NAME = "Doctor signups";
+// A new tab name, so a sheet that already holds older sign-ups (with different
+// columns) is left alone and the new columns get a fresh header row.
+const SHEET_NAME = "Registered doctors";
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -32,12 +35,40 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const secret = PropertiesService.getScriptProperties().getProperty("SECRET");
     if (!secret || data.secret !== secret) return reply({ ok: false, error: "unauthorized" });
+
+    const book = SpreadsheetApp.getActiveSpreadsheet();
+
+    // The website reads the registered doctors back (admin page, checkout list).
+    if (data.action === "list") {
+      const found = book.getSheetByName(SHEET_NAME);
+      if (!found || found.getLastRow() === 0) return reply({ ok: true, columns: [], rows: [] });
+      const values = found.getDataRange().getDisplayValues();
+      return reply({ ok: true, columns: values[0], rows: values.slice(1) });
+    }
+
+    // Removes the row whose "Doctor ID" matches (admin page, delete a doctor).
+    if (data.action === "delete") {
+      if (typeof data.id !== "string" || !data.id) return reply({ ok: false, error: "bad request" });
+      lock.waitLock(15000);
+      const found = book.getSheetByName(SHEET_NAME);
+      if (!found || found.getLastRow() < 2) return reply({ ok: false, error: "not found" });
+      const values = found.getDataRange().getDisplayValues();
+      const idCol = values[0].indexOf("Doctor ID");
+      if (idCol < 0) return reply({ ok: false, error: "no Doctor ID column" });
+      for (let i = values.length - 1; i >= 1; i--) {
+        if (values[i][idCol] === data.id) {
+          found.deleteRow(i + 1);
+          return reply({ ok: true });
+        }
+      }
+      return reply({ ok: false, error: "not found" });
+    }
+
     if (!Array.isArray(data.columns) || !Array.isArray(data.values)) return reply({ ok: false, error: "bad request" });
 
     // Two doctors submitting at the same moment must not write to the same row.
     lock.waitLock(15000);
 
-    const book = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = book.getSheetByName(SHEET_NAME) || book.insertSheet(SHEET_NAME);
     if (sheet.getLastRow() === 0) {
       // Header row comes from the website, so the columns are defined in one place.

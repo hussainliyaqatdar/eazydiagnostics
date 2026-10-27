@@ -4,23 +4,30 @@ import { getSlotsForDate } from "@/lib/slots";
 import { saveBooking } from "@/lib/store";
 import { sendOwnerNotification } from "@/lib/email";
 import { findCoupon } from "@/lib/coupon-config";
-import { computeDiscount } from "@/lib/coupon-rules";
+import { blockedByPackage, computeDiscount } from "@/lib/coupon-rules";
 import { hasConsult, isOfferEligible, priceWithOffer } from "@/lib/consult-offers";
 import { getConsultDoctor } from "@/lib/consult-doctors";
-import type { Booking, BookingLineItem, CartLine } from "@/lib/types";
+import { cleanReferralName, findAffiliateDoctor } from "@/lib/affiliate-doctors";
+import type { Booking, BookingLineItem, BookingReferral, CartLine } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { patient, cart, date, slot, couponCode } = body as {
+  const { patient, cart, date, slot, couponCode, referredBy } = body as {
     patient: Booking["patient"];
     cart: CartLine[];
     date: string;
     slot: string;
     couponCode?: string;
+    referredBy?: { doctorId?: string; name?: string };
   };
 
   if (!patient?.name || !patient?.whatsapp || !patient?.addressLine || !patient?.pincode) {
     return NextResponse.json({ error: "Missing required patient details" }, { status: 400 });
+  }
+  // The pinned map location is required so the phlebotomist can find the address.
+  const validCoord = (n: unknown, limit: number) => typeof n === "number" && Number.isFinite(n) && Math.abs(n) <= limit;
+  if (!validCoord(patient.lat, 90) || !validCoord(patient.lng, 180)) {
+    return NextResponse.json({ error: "Please share your location (current location or a Google Maps link)." }, { status: 400 });
   }
   if (!cart?.length) return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
   if (!date || !slot) return NextResponse.json({ error: "Please choose a collection date and time" }, { status: 400 });
@@ -86,15 +93,29 @@ export async function POST(req: NextRequest) {
     if (!coupon) {
       return NextResponse.json({ error: "That coupon code is no longer valid. Please remove it and try again." }, { status: 400 });
     }
+    if (blockedByPackage(coupon, cart.some((line) => line.kind === "package"))) {
+      return NextResponse.json({ error: `${coupon.code} is for individual tests only. Please remove the coupon, or the packages from your cart.` }, { status: 400 });
+    }
     const result = computeDiscount(coupon, subtotalPrice);
     if (!result.eligible) {
       return NextResponse.json(
-        { error: `${coupon.code} needs a cart of at least Rs. ${coupon.minCartValue.toLocaleString("en-IN")}. Add more tests or remove the coupon.` },
+        { error: `${coupon.code} needs a cart of at least Rs. ${coupon.minCartValue.toLocaleString("en-IN")}. Add more individual tests or remove the coupon.` },
         { status: 400 }
       );
     }
     appliedCode = coupon.code;
     couponDiscount = result.discount;
+  }
+
+  // "Prescribed by" is optional. A registered doctor is looked up by id so the
+  // stored name/clinic are ours, not the browser's; anything else is free text.
+  let referral: BookingReferral | undefined;
+  const refDoctor = await findAffiliateDoctor(referredBy?.doctorId).catch(() => undefined);
+  if (refDoctor) {
+    referral = { doctorId: refDoctor.id, name: refDoctor.name, clinic: refDoctor.clinic };
+  } else {
+    const name = cleanReferralName(referredBy?.name);
+    if (name) referral = { name };
   }
 
   // No payment is collected at booking time - the site's promise is "pay
@@ -104,6 +125,7 @@ export async function POST(req: NextRequest) {
     id: `BK-${Date.now().toString(36).toUpperCase()}`,
     createdAt: new Date().toISOString(),
     patient,
+    ...(referral ? { referral } : {}),
     items,
     subtotalMrp,
     subtotalPrice,
