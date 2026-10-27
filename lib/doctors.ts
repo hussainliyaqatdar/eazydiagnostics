@@ -1,42 +1,44 @@
 // SERVER-ONLY. The registry of doctors registered through /for-doctors: the
-// source for the admin page and for the checkout "Prescribed by" list. Backed by
-// the Google Sheet in production (lib/google-sheet.ts).
-import { readDoctorRows } from "./google-sheet";
+// source for the admin page, the checkout "Prescribed by" list and affiliate
+// links. Saved as JSON in DATA_DIR (lib/store.ts).
+import { deleteDoctor, readDoctors, saveDoctor } from "./store";
+import type { Doctor } from "./types";
+import type { DoctorSignup } from "./doctor-onboarding";
 
-export type Doctor = {
-  id: string;
-  registeredAt: string;
-  name: string;
-  clinic: string;
-  mobile: string;
-  email: string;
-  specialty: string;
-  degree: string;
-};
+export type { Doctor };
 
-// Checkout reads the list on every page load, and a sheet round trip takes a
-// second or two - so keep it briefly. A new registration clears it.
-const CACHE_MS = 60_000;
-let cache: { at: number; doctors: Doctor[] } | null = null;
-
-export function clearDoctorCache() {
-  cache = null;
+export function istTimestamp(date = new Date()): string {
+  return date.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" });
 }
 
-// `fresh` skips the cache - the admin page always shows the latest.
-export async function listDoctors({ fresh = false } = {}): Promise<Doctor[]> {
-  if (!fresh && cache && Date.now() - cache.at < CACHE_MS) return cache.doctors;
-  const rows = await readDoctorRows();
-  const doctors = rows.map((r) => ({
-    id: r["Doctor ID"],
-    registeredAt: r["Submitted at (IST)"],
-    name: r["Full name"],
-    clinic: r["Clinic name"],
-    mobile: r["Mobile"],
-    email: r["Email"],
-    specialty: r["Specialty"],
-    degree: r["Degree"],
-  }));
-  cache = { at: Date.now(), doctors };
-  return doctors;
+// True when doctors are being saved somewhere the server wipes on every deploy
+// or restart: production without DATA_DIR pointing at a persistent disk.
+export function doctorStorageIsTemporary(): boolean {
+  return process.env.NODE_ENV === "production" && !process.env.DATA_DIR;
+}
+
+export function registerDoctor(id: string, signup: DoctorSignup, registeredAt: string): void {
+  if (doctorStorageIsTemporary()) {
+    console.error("[doctors] DATA_DIR is not set - this doctor will be lost on the next deploy. Attach a persistent disk and set DATA_DIR.");
+  }
+  saveDoctor({
+    id,
+    registeredAt,
+    name: signup.fullName,
+    clinic: signup.clinicName,
+    mobile: signup.mobile,
+    email: signup.email,
+    specialty: signup.specialty,
+    degree: signup.degree,
+  });
+}
+
+// In the order they were registered.
+export function listDoctors(): Doctor[] {
+  return readDoctors();
+}
+
+// Throws when the doctor is not there, so an admin is never told a delete worked when it did not.
+export function removeDoctor(id: string): void {
+  if (!deleteDoctor(id)) throw new Error("Doctor not found.");
 }

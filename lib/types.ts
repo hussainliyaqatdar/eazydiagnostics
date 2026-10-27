@@ -128,3 +128,15 @@ export type Booking = {
   slot: string;
   paymentStatus: "due";
 };
+
+// A doctor registered through /for-doctors. `id` is also their affiliate-link code.
+export type Doctor = {
+  id: string;
+  registeredAt: string; // India time, for display
+  name: string;
+  clinic: string;
+  mobile: string;
+  email: string;
+  specialty: string;
+  degree: string;
+};

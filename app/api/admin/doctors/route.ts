@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { deleteDoctorRow } from "@/lib/google-sheet";
-import { clearDoctorCache } from "@/lib/doctors";
+import { removeDoctor } from "@/lib/doctors";
 import { DOCTOR_ID_RE } from "@/lib/referral-storage";
 
 // Admin-only (see middleware.ts): remove a registered doctor. Their affiliate
@@ -18,11 +17,10 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    await deleteDoctorRow(id);
+    removeDoctor(id);
   } catch (err) {
     console.error("Admin: doctor could not be deleted:", err);
     return NextResponse.json({ error: "Couldn't delete that doctor. They may already be removed - refresh and try again." }, { status: 502 });
   }
-  clearDoctorCache();
   return NextResponse.json({ ok: true });
 }

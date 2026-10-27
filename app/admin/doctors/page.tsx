@@ -3,7 +3,7 @@ import CopyLinkButton from "@/components/CopyLinkButton";
 import DeleteDoctorButton from "@/components/DeleteDoctorButton";
 import { affiliateLink } from "@/lib/affiliate-link";
 import { formatMobile } from "@/lib/doctor-onboarding";
-import { listDoctors, type Doctor } from "@/lib/doctors";
+import { doctorStorageIsTemporary, listDoctors, type Doctor } from "@/lib/doctors";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Registered doctors", robots: { index: false, follow: false } };
@@ -13,10 +13,10 @@ export default async function AdminDoctorsPage() {
   let loadError = "";
   try {
     // Newest first.
-    doctors = (await listDoctors({ fresh: true })).slice().reverse();
+    doctors = listDoctors().slice().reverse();
   } catch (err) {
     console.error("Admin: doctor list could not be loaded:", err);
-    loadError = "Couldn't load the registered doctors. Check the Google Sheet settings and try again.";
+    loadError = `Couldn't load the registered doctors: ${err instanceof Error ? err.message : "unknown error"}`;
   }
 
   return (
@@ -32,6 +32,12 @@ export default async function AdminDoctorsPage() {
           Register a doctor
         </a>
       </div>
+
+      {doctorStorageIsTemporary() && (
+        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <strong>Doctors are on temporary storage.</strong> DATA_DIR is not set, so this list is wiped on every deploy or restart. Attach a persistent disk to the server and set DATA_DIR to its path. Each registration is also emailed to the owner as a backup.
+        </p>
+      )}
 
       {loadError && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{loadError}</p>}
       {!loadError && doctors.length === 0 && <p className="text-gray-500">No doctors registered yet.</p>}

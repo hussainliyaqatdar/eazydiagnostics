@@ -137,7 +137,9 @@ export async function POST(req: NextRequest) {
   };
 
   saveBooking(booking);
-  await sendOwnerNotification(booking);
+  // The owner email is what starts fulfillment. A failed email must not fail an
+  // order that is already saved (deliver() logs the reason).
+  await sendOwnerNotification(booking).catch((err) => console.error(`[email] Owner notification for ${booking.id} failed:`, err));
 
   return NextResponse.json({ id: booking.id });
 }

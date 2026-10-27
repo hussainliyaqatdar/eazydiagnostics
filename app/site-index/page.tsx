@@ -47,6 +47,7 @@ const SECTIONS: Section[] = [
     blurb: "Behind a browser login (ADMIN_PASSWORD). Locked in production until that is set.",
     entries: [
       { href: "/admin/doctors", label: "Registered doctors", note: "See every registered doctor with their clinic and contact details, copy their affiliate booking link, or delete a doctor (with a confirmation)." },
+      { href: "/admin/email", label: "Email delivery", note: "Check that order and doctor-registration emails are set up (Resend key, owner and sender addresses) and send a test email." },
       { href: "/admin/inbox", label: "Dev inbox", note: "Local development only: emails the site would have sent (order notifications, doctor sign-ups) when no email service is configured." },
     ],
   },

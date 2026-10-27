@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateDoctorSignup } from "@/lib/doctor-onboarding";
-import { istTimestamp, recordDoctorSignup } from "@/lib/google-sheet";
+import { istTimestamp, registerDoctor } from "@/lib/doctors";
 import { sendDoctorConfirmation, sendOwnerDoctorAlert } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
-import { clearDoctorCache } from "@/lib/doctors";
 
 const MAX_BODY_BYTES = 20_000;
 
 // A doctor (or the sales team) submits the registration form. The details are
-// validated, recorded in the Google Sheet, and only then confirmed by email - so
+// validated, saved, and only then confirmed by email - so
 // nobody is told we have the details when we do not.
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
@@ -47,7 +46,7 @@ export async function POST(req: NextRequest) {
   const id = `DR-${now.getTime().toString(36).toUpperCase()}`;
 
   try {
-    await recordDoctorSignup(id, signup, submittedAt);
+    registerDoctor(id, signup, submittedAt);
   } catch (err) {
     console.error("Doctor sign-up could not be saved:", err);
     return NextResponse.json(
@@ -55,7 +54,6 @@ export async function POST(req: NextRequest) {
       { status: 502 }
     );
   }
-  clearDoctorCache();
 
   // The registration is safely recorded; a failed email must not turn it into an error.
   await Promise.allSettled([sendDoctorConfirmation(signup, id), sendOwnerDoctorAlert(signup, id, submittedAt)]);

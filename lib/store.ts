@@ -1,8 +1,10 @@
 import fs from "fs";
 import path from "path";
-import type { Booking } from "./types";
+import type { Booking, Doctor } from "./types";
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+// DATA_DIR points the files at a persistent disk in production (Render wipes
+// the default folder on every deploy or restart); locally it is just .data/.
+const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), ".data");
 const BOOKINGS_FILE = path.join(DATA_DIR, "bookings.json");
 const EMAILS_FILE = path.join(DATA_DIR, "emails.json");
 
@@ -46,27 +48,26 @@ export function saveEmail(email: SentEmail) {
   fs.writeFileSync(EMAILS_FILE, JSON.stringify(emails, null, 2), "utf-8");
 }
 
-// Doctor sign-ups. In production these go to the Google Sheet (lib/google-sheet.ts);
-// this file is only the local-development stand-in for when no sheet is configured.
-const DOCTOR_SIGNUPS_FILE = path.join(DATA_DIR, "doctor-signups.json");
+// Registered doctors (/for-doctors). The admin page, affiliate links and the
+// checkout "Prescribed by" list all read from here.
+const DOCTORS_FILE = path.join(DATA_DIR, "doctors.json");
 
-export function readDoctorSignups(): Record<string, string>[] {
-  ensureFile(DOCTOR_SIGNUPS_FILE);
-  return JSON.parse(fs.readFileSync(DOCTOR_SIGNUPS_FILE, "utf-8"));
+export function readDoctors(): Doctor[] {
+  ensureFile(DOCTORS_FILE);
+  return JSON.parse(fs.readFileSync(DOCTORS_FILE, "utf-8"));
+}
+
+export function saveDoctor(doctor: Doctor) {
+  const all = readDoctors();
+  all.push(doctor);
+  fs.writeFileSync(DOCTORS_FILE, JSON.stringify(all, null, 2), "utf-8");
 }
 
 // Returns false when no doctor has that id.
-export function deleteDoctorSignup(id: string): boolean {
-  const all = readDoctorSignups();
-  const kept = all.filter((r) => r["Doctor ID"] !== id);
+export function deleteDoctor(id: string): boolean {
+  const all = readDoctors();
+  const kept = all.filter((d) => d.id !== id);
   if (kept.length === all.length) return false;
-  fs.writeFileSync(DOCTOR_SIGNUPS_FILE, JSON.stringify(kept, null, 2), "utf-8");
+  fs.writeFileSync(DOCTORS_FILE, JSON.stringify(kept, null, 2), "utf-8");
   return true;
-}
-
-export function saveDoctorSignup(record: Record<string, string>) {
-  ensureFile(DOCTOR_SIGNUPS_FILE);
-  const all: Record<string, string>[] = JSON.parse(fs.readFileSync(DOCTOR_SIGNUPS_FILE, "utf-8"));
-  all.push(record);
-  fs.writeFileSync(DOCTOR_SIGNUPS_FILE, JSON.stringify(all, null, 2), "utf-8");
 }

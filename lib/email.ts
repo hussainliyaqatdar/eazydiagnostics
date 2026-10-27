@@ -96,21 +96,75 @@ export function renderOwnerNotification(booking: Booking) {
   return { subject, html };
 }
 
-async function deliver(to: string, subject: string, html: string) {
+// Emails silently going nowhere is the worst failure here (a new order nobody
+// is told about), so say loudly in the server log when production is still on
+// the placeholder settings from .env.local.example.
+function warnIfMisconfigured(to: string) {
+  if (process.env.NODE_ENV !== "production") return;
+  if (!process.env.OWNER_EMAIL) console.error("[email] OWNER_EMAIL is not set - owner emails go to the placeholder owner@example.com.");
+  if (!process.env.FROM_EMAIL) console.error("[email] FROM_EMAIL is not set - Resend will reject the placeholder sender bookings@example.com.");
+  if (to.endsWith("@example.com")) console.error(`[email] Sending to a placeholder address (${to}).`);
+}
+
+export type DeliveryResult = { ok: boolean; detail: string };
+
+// Sends through Resend and reports what happened (callers that only need "best
+// effort" can ignore the result). Retries once on a network error or a Resend
+// 5xx, so a brief blip does not lose an order notification.
+async function deliver(to: string, subject: string, html: string): Promise<DeliveryResult> {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM_ADDRESS, to, subject, html }),
-    });
-    // Resend answers a rejected email (bad key, unverified sender) with an error
-    // status rather than throwing - make that visible in the server log.
-    if (!res.ok) console.error(`Email to ${to} was rejected (HTTP ${res.status}): ${await res.text().catch(() => "")}`);
-  } catch (err) {
-    console.error("Email delivery failed, kept in dev inbox only:", err);
+  if (!apiKey) {
+    const detail = "RESEND_API_KEY is not set, so no email was sent.";
+    if (process.env.NODE_ENV === "production") console.error(`[email] ${detail} ("${subject}" to ${to})`);
+    return { ok: false, detail };
   }
+  warnIfMisconfigured(to);
+
+  let detail = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDRESS, to, subject, html }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (res.ok) {
+        console.log(`[email] Sent "${subject}" to ${to}.`);
+        return { ok: true, detail: `Sent to ${to}.` };
+      }
+      // Resend answers a rejected email (bad key, unverified sender) with an error
+      // status rather than throwing - keep the reason so it can be shown and logged.
+      detail = `Resend rejected it (HTTP ${res.status}): ${await res.text().catch(() => "")}`;
+      console.error(`[email] "${subject}" to ${to}: ${detail}`);
+      if (res.status < 500) break; // a 4xx will not fix itself on retry
+    } catch (err) {
+      detail = `Could not reach Resend: ${err instanceof Error ? err.message : String(err)}`;
+      console.error(`[email] "${subject}" to ${to}: ${detail}`);
+    }
+  }
+  return { ok: false, detail };
+}
+
+// What the admin email page shows - addresses and yes/no only, never the key.
+export function emailConfigStatus() {
+  return {
+    apiKeySet: !!process.env.RESEND_API_KEY,
+    ownerEmail: OWNER_EMAIL,
+    ownerIsPlaceholder: !process.env.OWNER_EMAIL || OWNER_EMAIL.endsWith("@example.com"),
+    fromAddress: FROM_ADDRESS,
+    fromIsPlaceholder: !process.env.FROM_EMAIL || FROM_EMAIL.endsWith("@example.com"),
+  };
+}
+
+// Sends a test email to the owner address, exactly the way order emails go out.
+export async function sendTestEmail(): Promise<DeliveryResult> {
+  const subject = `Test email - ${BUSINESS_NAME} order notifications`;
+  const html = `<div style="font-family:sans-serif;max-width:560px;margin:auto;color:#222;">
+    <h2 style="color:#0F6E6E;">It works</h2>
+    <p>New-order and doctor-registration emails from ${esc(BUSINESS_NAME)} will reach this address.</p>
+  </div>`;
+  return deliver(OWNER_EMAIL, subject, html);
 }
 
 export async function sendOwnerNotification(booking: Booking) {
@@ -173,7 +227,7 @@ export function renderOwnerDoctorAlert(signup: DoctorSignup, id: string, submitt
   const html = `
   <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#222;line-height:1.5;">
     <h2 style="color:#FF7A45;">New doctor registered</h2>
-    <p>Submitted ${esc(submittedAt)} (IST). Doctor ID: <strong>${esc(id)}</strong>. They are in the Google Sheet and in the checkout "Prescribed by" list.</p>
+    <p>Submitted ${esc(submittedAt)} (IST). Doctor ID: <strong>${esc(id)}</strong>. They are on the admin doctors page and in the checkout "Prescribed by" list.</p>
     <table style="border-collapse:collapse;font-size:14px;">${signupRows(signup)}</table>
     <p><strong>Affiliate booking link to share:</strong><br><a href="${esc(link)}">${esc(link)}</a></p>
   </div>`;
