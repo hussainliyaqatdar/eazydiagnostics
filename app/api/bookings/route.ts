@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { allTests, allPackages } from "@/lib/catalog";
 import { getSlotsForDate } from "@/lib/slots";
-import { saveBooking } from "@/lib/store";
+import { saveBooking } from "@/lib/orders";
 import { sendOwnerNotification } from "@/lib/email";
+import { BOOKING_PHONE } from "@/lib/site-config";
 import { findCoupon } from "@/lib/coupon-config";
 import { blockedByPackage, computeDiscount } from "@/lib/coupon-rules";
 import { hasConsult, isOfferEligible, priceWithOffer } from "@/lib/consult-offers";
@@ -32,7 +33,8 @@ export async function POST(req: NextRequest) {
   if (!cart?.length) return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
   if (!date || !slot) return NextResponse.json({ error: "Please choose a collection date and time" }, { status: 400 });
 
-  const availableSlots = getSlotsForDate(date);
+  const availableSlots = await getSlotsForDate(date).catch(() => null);
+  if (!availableSlots) return NextResponse.json({ error: `We couldn't check the time slots just now. Please try again, or call us on ${BOOKING_PHONE}.` }, { status: 503 });
   const chosen = availableSlots.find((s) => s.slot === slot);
   if (!chosen || !chosen.available) {
     return NextResponse.json({ error: "That slot was just booked, please pick another" }, { status: 409 });
@@ -136,7 +138,13 @@ export async function POST(req: NextRequest) {
     paymentStatus: "due",
   };
 
-  saveBooking(booking);
+  // Never tell the customer an order went through when it was not saved.
+  try {
+    await saveBooking(booking);
+  } catch (err) {
+    console.error(`[orders] Order ${booking.id} could not be saved:`, err);
+    return NextResponse.json({ error: `We couldn't save your order just now. Please try again in a minute, or call us on ${BOOKING_PHONE}.` }, { status: 503 });
+  }
   // The owner email is what starts fulfillment. A failed email must not fail an
   // order that is already saved (deliver() logs the reason).
   await sendOwnerNotification(booking).catch((err) => console.error(`[email] Owner notification for ${booking.id} failed:`, err));

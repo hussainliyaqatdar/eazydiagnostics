@@ -61,7 +61,11 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    fetch(`/api/slots?date=${date}`).then((r) => r.json()).then(setSlots);
+    fetch(`/api/slots?date=${date}`)
+      .then((r) => r.json())
+      // An error answer is an object, not a list of slots.
+      .then((data) => setSlots(Array.isArray(data) ? data : []))
+      .catch(() => setSlots([]));
     setSlot("");
   }, [date]);
 

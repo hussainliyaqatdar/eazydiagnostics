@@ -3,7 +3,7 @@ import CopyLinkButton from "@/components/CopyLinkButton";
 import DeleteDoctorButton from "@/components/DeleteDoctorButton";
 import { affiliateLink } from "@/lib/affiliate-link";
 import { formatMobile } from "@/lib/doctor-onboarding";
-import { doctorStorageIsTemporary, listDoctors, type Doctor } from "@/lib/doctors";
+import { listDoctors, type Doctor } from "@/lib/doctors";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Registered doctors", robots: { index: false, follow: false } };
@@ -13,7 +13,7 @@ export default async function AdminDoctorsPage() {
   let loadError = "";
   try {
     // Newest first.
-    doctors = listDoctors().slice().reverse();
+    doctors = (await listDoctors()).reverse();
   } catch (err) {
     console.error("Admin: doctor list could not be loaded:", err);
     loadError = `Couldn't load the registered doctors: ${err instanceof Error ? err.message : "unknown error"}`;
@@ -33,16 +33,10 @@ export default async function AdminDoctorsPage() {
         </a>
       </div>
 
-      {doctorStorageIsTemporary() && (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          <strong>New registrations are on temporary storage.</strong> Doctors marked &ldquo;In code&rdquo; are permanent. Anyone registered through the form is lost on the next deploy, so copy them into <code>data/doctors.json</code> - the owner email for each registration has the entry ready to paste.
-        </p>
-      )}
-
       {loadError && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{loadError}</p>}
       {!loadError && doctors.length === 0 && (
         <p className="text-gray-500">
-          No doctors yet. Add them to <code>data/doctors.json</code>, or register one with the button above.
+          No doctors yet. Register one with the button above.
         </p>
       )}
 
@@ -69,7 +63,7 @@ export default async function AdminDoctorsPage() {
                       <span className="block text-xs text-gray-500">
                         {d.specialty} &middot; {d.degree}
                       </span>
-                      <span className="block text-xs text-gray-400">{d.id}</span>
+                      <span className="block text-xs text-gray-400">{d.id} &middot; {d.slug}</span>
                     </td>
                     <td className="px-3 py-3 text-gray-800">{d.clinic}</td>
                     <td className="px-3 py-3 text-gray-800">
@@ -87,13 +81,7 @@ export default async function AdminDoctorsPage() {
                       </div>
                     </td>
                     <td className="px-3 py-3">
-                      {d.builtIn ? (
-                        <span className="text-xs text-gray-400" title="Listed in data/doctors.json - remove them there and redeploy">
-                          In code
-                        </span>
-                      ) : (
-                        <DeleteDoctorButton id={d.id} name={d.name} />
-                      )}
+                      <DeleteDoctorButton id={d.id} name={d.name} />
                     </td>
                   </tr>
                 );

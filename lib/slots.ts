@@ -1,13 +1,12 @@
-import { readBookings } from "./store";
+import { getBookedSlots } from "./orders";
 import { DAILY_WINDOWS } from "./booking-dates";
 
 export { DAILY_WINDOWS, BOOKING_WINDOW_DAYS, getUpcomingDates } from "./booking-dates";
 
 // Placeholder capacity model: 1 collection team/day, one booking per window.
 // Adjust once real team count is confirmed.
-export function getSlotsForDate(date: string) {
-  const bookings = readBookings();
-  const takenToday = new Set(bookings.filter((b) => b.date === date).map((b) => b.slot));
+export async function getSlotsForDate(date: string) {
+  const takenToday = await getBookedSlots(date);
   return DAILY_WINDOWS.map((slot) => ({
     slot,
     available: !takenToday.has(slot),
