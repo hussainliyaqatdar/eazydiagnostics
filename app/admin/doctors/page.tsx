@@ -35,12 +35,16 @@ export default async function AdminDoctorsPage() {
 
       {doctorStorageIsTemporary() && (
         <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          <strong>Doctors are on temporary storage.</strong> DATA_DIR is not set, so this list is wiped on every deploy or restart. Attach a persistent disk to the server and set DATA_DIR to its path. Each registration is also emailed to the owner as a backup.
+          <strong>New registrations are on temporary storage.</strong> Doctors marked &ldquo;In code&rdquo; are permanent. Anyone registered through the form is lost on the next deploy, so copy them into <code>data/doctors.json</code> - the owner email for each registration has the entry ready to paste.
         </p>
       )}
 
       {loadError && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{loadError}</p>}
-      {!loadError && doctors.length === 0 && <p className="text-gray-500">No doctors registered yet.</p>}
+      {!loadError && doctors.length === 0 && (
+        <p className="text-gray-500">
+          No doctors yet. Add them to <code>data/doctors.json</code>, or register one with the button above.
+        </p>
+      )}
 
       {doctors.length > 0 && (
         <div className="overflow-x-auto rounded-lg border bg-white">
@@ -83,7 +87,13 @@ export default async function AdminDoctorsPage() {
                       </div>
                     </td>
                     <td className="px-3 py-3">
-                      <DeleteDoctorButton id={d.id} name={d.name} />
+                      {d.builtIn ? (
+                        <span className="text-xs text-gray-400" title="Listed in data/doctors.json - remove them there and redeploy">
+                          In code
+                        </span>
+                      ) : (
+                        <DeleteDoctorButton id={d.id} name={d.name} />
+                      )}
                     </td>
                   </tr>
                 );

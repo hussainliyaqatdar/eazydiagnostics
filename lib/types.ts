@@ -139,4 +139,6 @@ export type Doctor = {
   email: string;
   specialty: string;
   degree: string;
+  // True for a doctor listed in data/doctors.json (part of the code, so it cannot be deleted from the admin page).
+  builtIn?: boolean;
 };

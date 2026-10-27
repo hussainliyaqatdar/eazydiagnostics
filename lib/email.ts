@@ -4,6 +4,7 @@ import { describeConsult, hasConsult } from "./consult-offers";
 import { BUSINESS_NAME, CONSULT_BOOKING_URL, SUPPORT_EMAIL } from "./site-config";
 import { formatMobile, type DoctorSignup } from "./doctor-onboarding";
 import { affiliateLink } from "./affiliate-link";
+import { toDoctor } from "./doctors";
 import type { Booking } from "./types";
 
 const OWNER_EMAIL = process.env.OWNER_EMAIL || "owner@example.com";
@@ -230,6 +231,8 @@ export function renderOwnerDoctorAlert(signup: DoctorSignup, id: string, submitt
     <p>Submitted ${esc(submittedAt)} (IST). Doctor ID: <strong>${esc(id)}</strong>. They are on the admin doctors page and in the checkout "Prescribed by" list.</p>
     <table style="border-collapse:collapse;font-size:14px;">${signupRows(signup)}</table>
     <p><strong>Affiliate booking link to share:</strong><br><a href="${esc(link)}">${esc(link)}</a></p>
+    <p style="margin-bottom:4px;"><strong>To keep this doctor permanently</strong>, add this entry to <code>data/doctors.json</code> and redeploy:</p>
+    <pre style="background:#f5f5f5;padding:10px;font-size:12px;white-space:pre-wrap;word-break:break-all;">${esc(JSON.stringify(toDoctor(id, signup, submittedAt), null, 2))}</pre>
   </div>`;
   return { subject, html };
 }

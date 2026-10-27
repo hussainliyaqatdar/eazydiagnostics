@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { removeDoctor } from "@/lib/doctors";
+import { isBuiltInDoctor, removeDoctor } from "@/lib/doctors";
 import { DOCTOR_ID_RE } from "@/lib/referral-storage";
 
 // Admin-only (see middleware.ts): remove a registered doctor. Their affiliate
@@ -14,6 +14,10 @@ export async function DELETE(req: NextRequest) {
   }
   if (typeof id !== "string" || !DOCTOR_ID_RE.test(id)) {
     return NextResponse.json({ error: "Bad request." }, { status: 400 });
+  }
+
+  if (isBuiltInDoctor(id)) {
+    return NextResponse.json({ error: "This doctor is listed in data/doctors.json. Remove them there and redeploy." }, { status: 400 });
   }
 
   try {
