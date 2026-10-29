@@ -898,10 +898,51 @@
     "category": "Heart Health",
     "price": 2499,
     "mrp": null,
-    "tagline": "Heart Health",
-    "description": "A curated heart health test package. Full details coming soon - please call us for the complete list of included tests.",
-    "constituents": [],
-    "needsContent": true,
+    "tagline": "Advanced Cardiac Risk Screen",
+    "description": "A normal cholesterol report can still miss hidden heart risk. This advanced screen goes deeper: the particles that carry cholesterol (ApoA1, ApoB, Lp(a)), artery inflammation (hs-CRP), homocysteine, your stress hormone cortisol, and your 3-month sugar average (HbA1c) - a fuller picture of your heart health, from home.",
+    "constituents": [
+      {
+        "name": "Lipid Profile, Serum",
+        "slug": "lipid-profile-serum",
+        "price": 650
+      },
+      {
+        "name": "Apolipoprotein A1 (ApoA1)",
+        "slug": null,
+        "price": null
+      },
+      {
+        "name": "Apolipoprotein B (ApoB)",
+        "slug": null,
+        "price": null
+      },
+      {
+        "name": "Lipoprotein (a), Serum",
+        "slug": "lipoprotein-a-serum",
+        "price": 1400
+      },
+      {
+        "name": "High Sensitivity C-Reactive Protein, Serum",
+        "slug": "high-sensitivity-c-reactive-protein-serum",
+        "price": 1000
+      },
+      {
+        "name": "Homocysteine, Serum/Plasma",
+        "slug": "homocysteine-serum-plasma",
+        "price": 1400
+      },
+      {
+        "name": "Cortisol, Serum",
+        "slug": "cortisol-serum",
+        "price": 800
+      },
+      {
+        "name": "HbA1c (Glycosylated Haemoglobin)",
+        "slug": "glycosylated-hemoglobin-hba1c",
+        "price": 600
+      }
+    ],
+    "needsContent": false,
     "eta": "12-24 hours",
     "faqs": [
       {
@@ -910,15 +951,15 @@
       },
       {
         "q": "What is the price of the Advanced Heart Checkup package in Bangalore?",
-        "a": "The Advanced Heart Checkup package costs Rs. 2,499 for everything included, with home collection at no extra charge and no advance payment."
+        "a": "The Advanced Heart Checkup package costs Rs. 2,499 for all 8 tests included, with home collection at no extra charge and no advance payment."
       },
       {
         "q": "Is home collection available for the Advanced Heart Checkup package?",
-        "a": "Yes. Everything included in the Advanced Heart Checkup package is collected in a single home visit by a trained phlebotomist. Reports are typically ready in 12-24 hours."
+        "a": "Yes. All 8 tests included in the Advanced Heart Checkup package are collected in a single home visit by a trained phlebotomist. Reports are typically ready in 12-24 hours."
       },
       {
         "q": "What does the Advanced Heart Checkup package include?",
-        "a": "A curated heart health test package. Full details coming soon - please call us for the complete list of included tests."
+        "a": "A normal cholesterol report can still miss hidden heart risk. This advanced screen goes deeper: the particles that carry cholesterol (ApoA1, ApoB, Lp(a)), artery inflammation (hs-CRP), homocysteine, your stress hormone cortisol, and your 3-month sugar average (HbA1c) - a fuller picture of your heart health, from home."
       },
       {
         "q": "Is the Advanced Heart Checkup package tested at NABL-accredited labs?",

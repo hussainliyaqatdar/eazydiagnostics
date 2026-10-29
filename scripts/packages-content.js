@@ -2,9 +2,24 @@
 // from "Agilus_Specialty_Packages 20th June 2026.pdf", cross-matched by name to
 // the canonical package list (name/category/code/price) in CMS Catalog.xlsx.
 // Descriptions are written for a layman, benefit-first, under 70 words.
-// "Advanced Heart Checkup" exists in the xlsx but has no matching entry in the
-// PDF, so it is intentionally left out of this content map — see build.js.
+// "Advanced Heart Checkup" is not in the PDF; its tests and copy were supplied
+// by the business directly (and it has no MRP, as no separate list price exists).
 module.exports = {
+  "Advanced Heart Checkup": {
+    tagline: "Advanced Cardiac Risk Screen",
+    description:
+      "A normal cholesterol report can still miss hidden heart risk. This advanced screen goes deeper: the particles that carry cholesterol (ApoA1, ApoB, Lp(a)), artery inflammation (hs-CRP), homocysteine, your stress hormone cortisol, and your 3-month sugar average (HbA1c) - a fuller picture of your heart health, from home.",
+    constituents: [
+      "Lipid Profile, Serum",
+      "Apolipoprotein A1 (ApoA1)",
+      "Apolipoprotein B (ApoB)",
+      "Lipoprotein (a), Serum",
+      "High Sensitivity C-Reactive Protein, Serum",
+      "Homocysteine, Serum/Plasma",
+      "Cortisol, Serum",
+      "HbA1c (Glycosylated Haemoglobin)",
+    ],
+  },
   "Diabetes Basic": {
     tagline: "Glucose Control Screen",
     mrp: 760,

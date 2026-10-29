@@ -35,7 +35,7 @@ export default function ReviewsCarousel() {
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">What our customers say</h2>
+        <h2 className="text-xl font-bold text-gray-900">Our patients rate us highly.</h2>
         <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
           <Stars count={5} />
           <span className="font-semibold text-gray-900">{GMB_RATING.value}</span>
