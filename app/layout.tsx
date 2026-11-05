@@ -45,6 +45,9 @@ export const metadata: Metadata = {
     "SRL Diagnostics Bangalore",
     "full body checkup at home Bangalore",
   ],
+  // Google Search Console ownership check (the HTML-tag method): set
+  // GOOGLE_SITE_VERIFICATION to the token Search Console shows you.
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
   openGraph: {
     type: "website",
     siteName: BUSINESS_NAME,

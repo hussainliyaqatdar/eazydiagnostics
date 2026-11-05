@@ -9,6 +9,8 @@ import MoreWaysToBook from "@/components/MoreWaysToBook";
 import FAQSection from "@/components/FAQSection";
 import { allTests, allPackages, getFrequentlyPrescribedTests } from "@/lib/catalog";
 import { SERVICE_AREAS } from "@/lib/site-config";
+import { AREAS } from "@/lib/areas";
+import { GUIDES } from "@/lib/guides";
 
 const FEATURED_PREGNANCY_TEST_SLUGS = ["double-marker-test-serum", "nipt", "oral-glucose-tolerance-test-gestational"];
 
@@ -97,8 +99,25 @@ export default function Home() {
           elsewhere in Bangalore too, just ask at checkout or by phone.
         </p>
         <div className="flex flex-wrap gap-2">
-          {SERVICE_AREAS.map((a) => (
-            <span key={a} className="bg-brand-light text-brand-dark text-sm px-3 py-1 rounded-full">{a}</span>
+          {AREAS.map((a) => (
+            <Link key={a.slug} href={`/blood-test-at-home/${a.slug}`} className="bg-brand-light text-brand-dark text-sm px-3 py-1 rounded-full hover:bg-brand hover:text-white transition">
+              {a.name}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Health test guides</h2>
+          <Link href="/guides" className="text-sm text-brand hover:underline">See all</Link>
+        </div>
+        <div className="grid md:grid-cols-3 gap-4">
+          {GUIDES.map((g) => (
+            <Link key={g.slug} href={`/guides/${g.slug}`} className="block bg-white border rounded-xl p-5 hover:border-brand transition">
+              <h3 className="font-semibold text-gray-900">{g.title}</h3>
+              <p className="text-sm text-gray-600 mt-1">{g.description}</p>
+            </Link>
           ))}
         </div>
       </section>
