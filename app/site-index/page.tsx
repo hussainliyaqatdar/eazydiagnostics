@@ -28,16 +28,6 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "Guides and local pages (for search)",
-    blurb: "Written to answer common searches. Prices come from the catalog; area pages are one per neighbourhood we serve.",
-    entries: [
-      { href: "/guides", label: "Guides", note: "Plain-language guides: how to prepare for a fasting test, which tests to consider after 40, and what a full body checkup costs." },
-      { href: "/guides/full-body-checkup-cost-in-bangalore", label: "Full body checkup cost guide", note: "Live Full Body Checkup prices from the catalog, plus what to ask before booking any checkup." },
-      { href: "/blood-test-at-home", label: "Blood test at home (areas)", note: "Pick an area: JP Nagar, Jayanagar, BTM Layout, Banashankari or Kanakpura Road." },
-      { href: "/blood-test-at-home/jp-nagar", label: "Area page (example)", note: "How home collection works in one neighbourhood, with popular packages, tests and FAQs. One page per area." },
-    ],
-  },
-  {
     title: "Doctors and sales team",
     entries: [
       { href: "/for-doctors#signup", label: "Register a doctor", note: "Doctors or the sales team register a doctor (name, clinic, WhatsApp number, specialty, degree). Registered doctors get an affiliate booking link and appear in the checkout \"Prescribed by\" list." },
