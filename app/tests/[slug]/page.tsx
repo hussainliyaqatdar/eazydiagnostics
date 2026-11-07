@@ -8,6 +8,7 @@ import TestCard from "@/components/TestCard";
 import PackageCard from "@/components/PackageCard";
 import ProductFaqSection from "@/components/ProductFaqSection";
 import { getTestSpecialties, getSpecialtyTests } from "@/lib/specialties";
+import { SERVICE_AREAS } from "@/lib/site-config";
 import { BUSINESS_NAME, PARTNER_NAME, SITE_URL } from "@/lib/site-config";
 
 export function generateStaticParams() {
@@ -20,11 +21,14 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   // Specialised tests carry curated copy (scripts/specialised-seo.js): a title
   // and description that name the test the way people search for it.
   if (test.seo) {
-    const label = /test|panel|profile|screen|checkup/i.test(test.seo.short) ? test.seo.short : `${test.seo.short} test`;
-    const title = `${label} in Bangalore - Home Collection, Rs. ${test.price.toLocaleString("en-IN")}`;
-    const description = `Book the ${label} at home in Bangalore. Home sample collection, processed at ${PARTNER_NAME} labs, report in ${test.eta}. Pay only after collection.`;
+    const label = testLabel(test.seo.short);
+    // "<test> in Bangalore | Home Collection | Agilus (SRL)": the phrases people type
+    // (home collection, Bangalore, Agilus, SRL) in the order they matter. Absolute so
+    // the site name isn't appended and pushed past what Google shows.
+    const title = `${label} in Bangalore | Home Collection | Agilus (SRL)`;
+    const description = `${label} at home in Bangalore from Rs. ${test.price.toLocaleString("en-IN")}. Sample collected at home, tested at ${PARTNER_NAME} NABL labs, report in ${test.eta} on WhatsApp. Pay after collection.`;
     return {
-      title,
+      title: { absolute: title },
       description,
       alternates: { canonical: `${SITE_URL}/tests/${test.slug}` },
       openGraph: { title, description },
@@ -36,6 +40,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     alternates: { canonical: `${SITE_URL}/tests/${test.slug}` },
     openGraph: { title: test.name, description: test.description },
   };
+}
+
+// "NIPT" -> "NIPT test"; names that already say test/panel/profile stay as they are.
+function testLabel(short: string): string {
+  return /test|panel|profile|screen|checkup/i.test(short) ? short : `${short} test`;
 }
 
 export default function TestPage({ params }: { params: { slug: string } }) {
@@ -55,6 +64,31 @@ export default function TestPage({ params }: { params: { slug: string } }) {
         .filter((t) => t.slug !== test.slug)
         .slice(0, 3)
     : [];
+
+  // Answers to the questions people actually type or ask an AI assistant, on top of the
+  // standard six: who offers it (Agilus / SRL), who orders it, what else it is called,
+  // and how to book. Each is specific to this test.
+  const label = test.seo ? testLabel(test.seo.short) : test.name;
+  const doctors = specialties.map((s) => s.doctors);
+  const extraFaqs = test.seo
+    ? [
+        {
+          q: `Is the ${test.seo.short} available at Agilus Diagnostics (SRL)?`,
+          a: `Yes. ${BUSINESS_NAME} is an authorised partner of ${PARTNER_NAME}, and the ${test.seo.short} sample is processed at its NABL-accredited labs. Agilus Diagnostics was earlier known as SRL Diagnostics, so reports carry the Agilus (SRL) name. You can book it here with home collection in Bangalore.`,
+        },
+        ...(doctors.length > 0
+          ? [{ q: `Which doctor orders the ${test.seo.short}?`, a: `It is usually ordered by ${doctors[0]}${doctors.length > 1 ? `, and also by ${doctors.slice(1).join("; ")}` : ""}. If you are unsure whether you need it, ask your doctor before booking.` }]
+          : []),
+        ...(aliases.length > 0
+          ? [{ q: `What is the ${test.seo.short} also called?`, a: `It is also known as ${aliases.slice(0, 8).join(", ")}. All of these names refer to the same test (${test.labName} at the lab).` }]
+          : []),
+        {
+          q: `How do I book the ${test.seo.short} at home in Bangalore?`,
+          a: `Add it to your cart, enter the patient's details and your address with a Google Maps location, and choose a collection time. A trained phlebotomist collects the sample at your home, the sample goes to ${PARTNER_NAME}, and the report is sent on WhatsApp. You pay only after the sample is collected.`,
+        },
+      ]
+    : [];
+  const allFaqs = [...(test.faqs ?? []), ...extraFaqs];
 
   const medicalTest = {
     "@type": "MedicalTest",
@@ -113,6 +147,11 @@ export default function TestPage({ params }: { params: { slug: string } }) {
         <span className="text-xs uppercase tracking-wide text-brand font-semibold">{specialties[0] ? specialties[0].name : test.category} &middot; Individual Test</span>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{test.name}</h1>
+          {test.seo && (
+            <p className="mt-1 text-sm font-medium text-brand-dark">
+              Home collection in Bangalore &middot; Tested at {PARTNER_NAME} labs
+            </p>
+          )}
           {aliases.length > 0 && (
             <p className="text-sm text-gray-500 mt-1">
               <span className="font-medium">Also known as:</span> {aliases.join(", ")}
@@ -163,6 +202,29 @@ export default function TestPage({ params }: { params: { slug: string } }) {
         </section>
       )}
 
+      {test.seo && (
+        <section className="bg-white border rounded-xl p-6 md:p-8 flex flex-col gap-4" aria-labelledby="book-heading">
+          <h2 id="book-heading" className="text-lg font-bold text-gray-900">
+            {label} at home in Bangalore: price, lab and report time
+          </h2>
+          <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+            <div><dt className="text-gray-500">Test</dt><dd className="font-medium text-gray-900">{test.name}</dd></div>
+            <div><dt className="text-gray-500">Price</dt><dd className="font-medium text-gray-900">Rs. {test.price.toLocaleString("en-IN")} (pay after collection)</dd></div>
+            <div><dt className="text-gray-500">Report time</dt><dd className="font-medium text-gray-900">{test.eta}, on WhatsApp</dd></div>
+            <div><dt className="text-gray-500">Processed at</dt><dd className="font-medium text-gray-900">{PARTNER_NAME} NABL-accredited labs</dd></div>
+            {specialties[0] && (
+              <div><dt className="text-gray-500">Usually ordered by</dt><dd className="font-medium text-gray-900">{specialties.map((s) => s.name).join(", ")}</dd></div>
+            )}
+            <div><dt className="text-gray-500">Home collection areas</dt><dd className="font-medium text-gray-900">{SERVICE_AREAS.join(", ")}, and other parts of Bangalore on request</dd></div>
+          </dl>
+          <p className="text-sm text-gray-700 leading-relaxed">
+            {BUSINESS_NAME} is an authorised partner of {PARTNER_NAME}. Agilus Diagnostics was earlier known as SRL Diagnostics, so if you
+            searched for the {test.seo.short} at SRL or Agilus, this is the same lab network - with a phlebotomist coming to your home in
+            Bangalore instead of you travelling to a collection centre.
+          </p>
+        </section>
+      )}
+
       {inPackages.length > 0 && (
         <section>
           <h2 className="text-lg font-bold text-gray-900 mb-3">This test is also included in these packages</h2>
@@ -199,7 +261,7 @@ export default function TestPage({ params }: { params: { slug: string } }) {
         </section>
       )}
 
-      {test.faqs && test.faqs.length > 0 && <ProductFaqSection faqs={test.faqs} />}
+      {allFaqs.length > 0 && <ProductFaqSection faqs={allFaqs} />}
     </div>
   );
 }

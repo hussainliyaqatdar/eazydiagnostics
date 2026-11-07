@@ -9,6 +9,15 @@ import MoreWaysToBook from "@/components/MoreWaysToBook";
 import FAQSection from "@/components/FAQSection";
 import { allTests, allPackages, getFrequentlyPrescribedTests } from "@/lib/catalog";
 import { SERVICE_AREAS } from "@/lib/site-config";
+import { SPECIALTIES, getSpecialtyTests } from "@/lib/specialties";
+
+// Specialised tests linked from the home page: the ones people search for by name, so
+// the home page passes its authority straight to these product pages.
+const FEATURED_SPECIALISED_SLUGS = [
+  "nipt", "double-marker-test-serum", "quadruple-marker-test-serum", "lipoprotein-a-serum",
+  "apolipoprotein-b-apob", "apolipoprotein-a1-apoa1", "n-terminal-pro-b-type-natriuretic-peptide-serum", "procalcitonin-serum",
+  "thrombocheck-total", "amh-mis-serum", "homocysteine-serum-plasma", "anti-thyroid-peroxidase-antibodies-serum",
+];
 
 const FEATURED_PREGNANCY_TEST_SLUGS = ["double-marker-test-serum", "nipt", "oral-glucose-tolerance-test-gestational"];
 
@@ -20,6 +29,8 @@ export default function Home() {
   // ranking already leads with the routine GP/gynaecologist panel (CBC,
   // urine routine, lipid, liver, kidney, HbA1c, thyroid, Vitamin D/B12).
   const popularTests = getFrequentlyPrescribedTests().slice(0, 9);
+  const specialisedTests = FEATURED_SPECIALISED_SLUGS.map((slug) => allTests.find((t) => t.slug === slug)).filter(Boolean) as typeof allTests;
+  const specialtyLinks = SPECIALTIES.filter((s) => getSpecialtyTests(s.slug).length > 0);
 
   return (
     <div className="flex flex-col gap-16">
@@ -88,6 +99,33 @@ export default function Home() {
             <TestCard key={t.slug} test={t} />
           ))}
         </div>
+      </section>
+
+      <section className="bg-white border rounded-xl p-6 md:p-8">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-bold text-gray-900">Specialised tests, collected at home in Bangalore</h2>
+          <Link href="/specialised-tests" className="shrink-0 text-sm text-brand hover:underline">See all</Link>
+        </div>
+        <p className="text-sm text-gray-600 mb-4">
+          NIPT, Double Marker, Lipoprotein(a), ApoB, NT-proBNP, Procalcitonin, Thrombocheck and more - tests that are hard to find at a
+          neighbourhood lab, processed at Agilus (SRL) Diagnostics labs.
+        </p>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {specialisedTests.map((t) => (
+            <Link key={t.slug} href={`/tests/${t.slug}`} className="rounded-full border border-brand/30 bg-brand-light px-3 py-1 text-sm text-brand-dark hover:border-brand">
+              {t.seo?.short ?? t.name}
+            </Link>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500">
+          By doctor specialty:{" "}
+          {specialtyLinks.map((s, i) => (
+            <span key={s.slug}>
+              {i > 0 && " · "}
+              <Link href={`/specialised-tests/${s.slug}`} className="text-brand hover:underline">{s.name}</Link>
+            </span>
+          ))}
+        </p>
       </section>
 
       <section className="bg-white border rounded-xl p-6 md:p-8">

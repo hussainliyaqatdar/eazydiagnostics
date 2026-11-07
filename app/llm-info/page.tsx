@@ -9,6 +9,7 @@ import {
 } from "@/lib/catalog";
 import { BOOKING_PHONE, BOOKING_PHONE_TEL, BUSINESS_NAME, GMB_PROFILE_URL, PARTNER_NAME, GMB_RATING, SERVICE_AREAS, SITE_URL, SUPPORT_EMAIL, WHATSAPP_NUMBER } from "@/lib/site-config";
 import { COLLECTION_CHARGE, FREE_COLLECTION_MIN } from "@/lib/booking-totals";
+import { SPECIALTIES, getSpecialtyTests } from "@/lib/specialties";
 import { DAILY_WINDOWS, BOOKING_WINDOW_DAYS } from "@/lib/booking-dates";
 
 // A plain-language fact sheet for AI assistants (and people), so answers about
@@ -247,6 +248,24 @@ export default function LlmInfoPage() {
 
       <h3 className="font-semibold text-gray-900">Pregnancy tests</h3>
       <PriceTable rows={pregnancyTests.map((t) => ({ name: t.name, href: `/tests/${t.slug}`, price: t.price, eta: t.eta }))} />
+
+      <h3 className="font-semibold text-gray-900">Specialised tests by doctor specialty</h3>
+      <p className="text-sm text-gray-600">
+        Collected at home in Bangalore and processed at {PARTNER_NAME} labs (Agilus was earlier known as SRL Diagnostics). Each test links to its page
+        with what it is, when it is ordered, preparation and FAQs.
+      </p>
+      {SPECIALTIES.map((s) => {
+        const list = getSpecialtyTests(s.slug);
+        if (list.length === 0) return null;
+        return (
+          <section key={s.slug} className="flex flex-col gap-2">
+            <h4 className="text-sm font-semibold text-gray-800">
+              <Link href={`/specialised-tests/${s.slug}`} className="text-brand hover:underline">{s.name}</Link>
+            </h4>
+            <PriceTable rows={list.map((t) => ({ name: t.name, href: `/tests/${t.slug}`, price: t.price, eta: t.eta }))} />
+          </section>
+        );
+      })}
 
       {packagesByCategory.map((g) => (
         <section key={g.category} className="flex flex-col gap-2">

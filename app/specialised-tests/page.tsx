@@ -58,7 +58,7 @@ export default function SpecialisedTestsPage() {
             </Link>
           </div>
           <ul className="grid gap-2 sm:grid-cols-2">
-            {tests.slice(0, 6).map((t) => (
+            {tests.map((t) => (
               <li key={t.slug} className="rounded-lg border bg-white px-3 py-2">
                 <Link href={`/tests/${t.slug}`} className="font-medium text-gray-900 hover:text-brand">{t.seo!.short}</Link>
                 <span className="block text-xs text-gray-500">{rs(t.price)} &middot; Report in {t.eta}</span>
