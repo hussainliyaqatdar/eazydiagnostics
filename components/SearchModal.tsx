@@ -7,7 +7,7 @@ import { useUI } from "@/lib/ui-context";
 import AddToCartButton from "./AddToCartButton";
 import type { TestItem } from "@/lib/types";
 
-const RESULT_LIMIT = 30;
+const RESULT_LIMIT = 30; // cap on the default (not searching) package list
 // Sorted with "Full Body Checkups" first (see lib/catalog.ts's PRIORITY_CATEGORIES) -
 // that ordering is also what makes it the sub-tab's default selection below.
 const PACKAGE_CATEGORIES = getPackageCategories();
@@ -50,16 +50,26 @@ export default function SearchModal() {
     if (searchModalOpen) setQuery("");
   }, [searchModalOpen]);
 
+  const searching = query.trim().length >= 1;
+
+  // While searching, look across every test and package (no category filter)
+  // so the counts on the two tabs are the full number of matches.
+  const matches = useMemo(() => (searching ? search(query, Infinity) : []), [searching, query]);
+  const counts = useMemo(
+    () => ({ tests: matches.filter((m) => m.kind === "test").length, packages: matches.filter((m) => m.kind === "package").length }),
+    [matches]
+  );
+
   const rows: Row[] = useMemo(() => {
     const kind = tab === "tests" ? "test" : "package";
-    if (query.trim().length >= 1) {
-      const matches = search(query, RESULT_LIMIT).filter((r) => r.kind === kind);
-      const scoped = kind === "package" ? matches.filter((r) => r.item.category === packageCategory) : matches;
-      return scoped.map((r) =>
-        r.kind === "test"
-          ? testRow(r.item)
-          : { kind: "package" as const, slug: r.item.slug, name: r.item.name, price: r.item.price, mrp: r.item.mrp, eta: r.item.eta, sub: r.item.tagline }
-      );
+    if (searching) {
+      return matches
+        .filter((r) => r.kind === kind)
+        .map((r) =>
+          r.kind === "test"
+            ? testRow(r.item)
+            : { kind: "package" as const, slug: r.item.slug, name: r.item.name, price: r.item.price, mrp: r.item.mrp, eta: r.item.eta, sub: r.item.tagline }
+        );
     }
     if (kind === "test") {
       // Tests doctors prescribe most often (Agilus' "CC SPRF" list) lead the
@@ -70,7 +80,7 @@ export default function SearchModal() {
       .filter((p) => !p.needsContent && p.category === packageCategory)
       .slice(0, RESULT_LIMIT)
       .map((p) => ({ kind: "package" as const, slug: p.slug, name: p.name, price: p.price, mrp: p.mrp, eta: p.eta, sub: p.tagline }));
-  }, [tab, query, packageCategory]);
+  }, [tab, searching, matches, packageCategory]);
 
   if (!searchModalOpen) return null;
 
@@ -112,11 +122,21 @@ export default function SearchModal() {
                 }`}
               >
                 {t}
+                {searching && (
+                  <span
+                    aria-label={`${counts[t]} ${t} found`}
+                    className={`ml-1.5 inline-flex min-w-[1.25rem] h-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold ${
+                      counts[t] > 0 ? "bg-brand text-white" : "bg-gray-300 text-gray-600"
+                    }`}
+                  >
+                    {counts[t]}
+                  </span>
+                )}
               </button>
             ))}
           </div>
 
-          {tab === "packages" && (
+          {tab === "packages" && !searching && (
             <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Package category">
               {PACKAGE_CATEGORIES.map((c) => (
                 <button
@@ -138,8 +158,8 @@ export default function SearchModal() {
         <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 min-h-0">
           {rows.length === 0 && (
             <p className="text-sm text-gray-500 py-8 text-center">
-              {query.trim()
-                ? `No ${tab} match "${query}"${tab === "packages" ? ` in ${packageCategory}` : ""}. Try a shorter or more general term.`
+              {searching
+                ? `No ${tab} match "${query}". Try a shorter or more general term.`
                 : `No packages in ${packageCategory} yet.`}
             </p>
           )}
