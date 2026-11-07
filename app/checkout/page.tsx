@@ -7,6 +7,7 @@ import { getUpcomingDates, formatDateLabel } from "@/lib/booking-dates";
 import DoctorPicker from "@/components/DoctorPicker";
 import ReferralCombobox, { type ReferralValue } from "@/components/ReferralCombobox";
 import { REFERRAL_STORAGE_KEY } from "@/lib/referral-storage";
+import { FREE_COLLECTION_MIN } from "@/lib/booking-totals";
 
 const UPCOMING_DATES = getUpcomingDates();
 
@@ -14,7 +15,7 @@ export default function CheckoutPage() {
   const { lines, clear, setConsultDoctor } = useCart();
   // Priced items come from the cart summary so offer pricing (e.g. an included
   // consultation) is shown the same way here as in the cart drawer.
-  const { items, coupon, discount, total, removeCoupon } = useCartSummary();
+  const { items, coupon, discount, total, collectionCharge, removeCoupon } = useCartSummary();
   const router = useRouter();
 
   // A follow-up consultation (added in the cart, or bundled into the package)
@@ -389,6 +390,12 @@ export default function CheckoutPage() {
                 </button>
               </span>
               <span>- Rs. {discount.toLocaleString("en-IN")}</span>
+            </div>
+          )}
+          {collectionCharge > 0 && (
+            <div className="flex justify-between text-sm text-gray-700">
+              <span>Collection charges <span className="text-xs text-gray-500">(free on orders of Rs. {FREE_COLLECTION_MIN.toLocaleString("en-IN")}+)</span></span>
+              <span>Rs. {collectionCharge.toLocaleString("en-IN")}</span>
             </div>
           )}
           <div className="border-t pt-2 flex justify-between font-bold text-brand-dark">

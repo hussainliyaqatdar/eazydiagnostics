@@ -8,10 +8,11 @@ import PriceTag from "./PriceTag";
 import CouponNudge from "./CouponNudge";
 import CouponField from "./CouponField";
 import type { CouponRule } from "@/lib/coupon-rules";
+import { FREE_COLLECTION_MIN } from "@/lib/booking-totals";
 
 export default function CartDrawer({ featuredCoupon = null }: { featuredCoupon?: CouponRule | null }) {
   const { cartDrawerOpen, closeCartDrawer, openSearchModal } = useUI();
-  const { items, subtotalMrp, remove, clear, setConsult, couponsAllowed, coupon, discount, total } = useCartSummary();
+  const { items, subtotalMrp, remove, clear, setConsult, couponsAllowed, coupon, discount, total, collectionCharge, subtotalPrice } = useCartSummary();
 
   useEffect(() => {
     if (!cartDrawerOpen) return;
@@ -140,14 +141,23 @@ export default function CartDrawer({ featuredCoupon = null }: { featuredCoupon?:
                     <span>- Rs. {discount.toLocaleString("en-IN")}</span>
                   </div>
                 )}
+                {collectionCharge > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm text-gray-700">
+                      <span>Collection charges</span>
+                      <span>Rs. {collectionCharge.toLocaleString("en-IN")}</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Add Rs. {(FREE_COLLECTION_MIN - subtotalPrice).toLocaleString("en-IN")} more to get free home collection.</p>
+                  </>
+                )}
                 <div className="flex justify-between font-bold text-brand-dark text-lg">
                   <span>You pay</span>
                   <span>Rs. {total.toLocaleString("en-IN")}</span>
                 </div>
-                {subtotalMrp > total && (
+                {subtotalMrp > total - collectionCharge && (
                   <div className="flex justify-between text-sm text-brand-accent font-medium">
                     <span>Total savings</span>
-                    <span>Rs. {(subtotalMrp - total).toLocaleString("en-IN")}</span>
+                    <span>Rs. {(subtotalMrp - (total - collectionCharge)).toLocaleString("en-IN")}</span>
                   </div>
                 )}
               </div>
