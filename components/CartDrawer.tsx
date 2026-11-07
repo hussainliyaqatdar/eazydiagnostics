@@ -6,7 +6,6 @@ import { useUI } from "@/lib/ui-context";
 import { CONSULT_FEE, describeConsult, hasConsult } from "@/lib/consult-offers";
 import PriceTag from "./PriceTag";
 import CouponNudge from "./CouponNudge";
-import CouponField from "./CouponField";
 import type { CouponRule } from "@/lib/coupon-rules";
 import { FREE_COLLECTION_MIN } from "@/lib/booking-totals";
 
@@ -64,9 +63,9 @@ export default function CartDrawer({ featuredCoupon = null }: { featuredCoupon?:
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
+            <div className="flex-1 min-h-[12rem] overflow-y-auto px-4 py-3 flex flex-col gap-3">
               {items.map((i) => (
-                <div key={`${i.kind}-${i.slug}`} className="border rounded-lg overflow-hidden">
+                <div key={`${i.kind}-${i.slug}`} className="border rounded-lg overflow-hidden shrink-0">
                   <div className="p-3 flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <span className="text-xs uppercase tracking-wide text-gray-400">{i.kind}</span>
@@ -128,12 +127,14 @@ export default function CartDrawer({ featuredCoupon = null }: { featuredCoupon?:
               ))}
             </div>
 
-            <div className="shrink-0 border-t px-4 py-3 flex flex-col gap-3 bg-white">
-              {couponsAllowed && <CouponField />}
-              <div className="bg-brand-light rounded-lg p-3 flex flex-col gap-1">
+            <div className="shrink-0 border-t px-4 py-2.5 flex flex-col gap-2 bg-white">
+              <div className="bg-brand-light rounded-lg px-3 py-2 flex flex-col gap-0.5">
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>MRP total</span>
-                  <span className="line-through">Rs. {subtotalMrp.toLocaleString("en-IN")}</span>
+                  <span>
+                    {subtotalMrp > subtotalPrice && <span className="line-through text-gray-400 mr-1.5">Rs. {subtotalMrp.toLocaleString("en-IN")}</span>}
+                    <span className="font-medium text-gray-900">Rs. {subtotalPrice.toLocaleString("en-IN")}</span>
+                  </span>
                 </div>
                 {discount > 0 && coupon && (
                   <div className="flex justify-between text-sm text-green-700 font-medium">
