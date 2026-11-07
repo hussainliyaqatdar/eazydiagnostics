@@ -70,6 +70,16 @@ export type CartLine = {
   offer?: CartLineOffer;
 };
 
+// One member in a home-collection "visit": their own set of tests/packages.
+// A visit has one address and one time slot but can have several members
+// (family at the same address). `label` is a nickname used only in the cart
+// ("You", "Priya"); the real name is collected at checkout.
+export type CartMember = {
+  id: string;
+  label: string;
+  lines: CartLine[];
+};
+
 export type BookingPatient = {
   name: string;
   whatsapp: string;
@@ -82,6 +92,9 @@ export type BookingPatient = {
   notes?: string;
   lat?: number;
   lng?: number;
+  // A Google Maps link the customer pasted, kept when no coordinates could be
+  // read from it. The phlebotomist can open it directly, so it stands in for lat/lng.
+  mapsUrl?: string;
 };
 
 export type BookingLineItem = {
@@ -99,6 +112,18 @@ export type BookingLineItem = {
   offer?: CartLineOffer & { doctorName?: string };
 };
 
+// A member of a multi-member visit, with the tests booked for them. Present on
+// a Booking only when the visit has more than one member (a single-member
+// booking is just `patient` + `items`, as before).
+export type BookingMember = {
+  name: string;
+  age: string;
+  gender: string;
+  // Only when their report should go to a different number than the visit's.
+  whatsapp?: string;
+  items: BookingLineItem[];
+};
+
 export type BookingReferral = {
   // Set when the referrer is a registered affiliate doctor; absent for a name
   // the patient typed in themselves.
@@ -114,7 +139,11 @@ export type Booking = {
   patient: BookingPatient;
   // Who referred the patient (optional field at checkout).
   referral?: BookingReferral;
+  // Every item in the visit. For a multi-member visit this is all members' items
+  // combined, so totals and fulfillment code keep working; `members` has the split.
   items: BookingLineItem[];
+  // Who each item is for, when more than one member is being tested.
+  members?: BookingMember[];
   subtotalMrp: number;
   // Sum of item prices BEFORE any coupon. The amount the customer actually owes
   // is subtotalPrice - couponDiscount; use amountDue() from lib/booking-totals.

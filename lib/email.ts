@@ -4,7 +4,7 @@ import { describeConsult, hasConsult } from "./consult-offers";
 import { BUSINESS_NAME, CONSULT_BOOKING_URL, SUPPORT_EMAIL } from "./site-config";
 import { formatMobile, type DoctorSignup } from "./doctor-onboarding";
 import { affiliateLink } from "./affiliate-link";
-import type { Booking } from "./types";
+import type { Booking, BookingLineItem } from "./types";
 
 const OWNER_EMAIL = process.env.OWNER_EMAIL || "owner@example.com";
 const FROM_EMAIL = process.env.FROM_EMAIL || "bookings@example.com";
@@ -15,8 +15,8 @@ function money(n: number) {
   return `Rs. ${n.toLocaleString("en-IN")}`;
 }
 
-function itemsRows(booking: Booking) {
-  return booking.items
+function itemsRows(items: BookingLineItem[]) {
+  return items
     .map(
       (i) => `
     <tr>
@@ -66,25 +66,48 @@ function consultSection(booking: Booking) {
 // WhatsApp (handled manually by the team, per current process). This owner
 // notification is what actually kicks off fulfillment.
 export function renderOwnerNotification(booking: Booking) {
-  const subject = `New order - ${booking.patient.name} - ${booking.date} ${booking.slot}`;
+  // A visit for several members: one address and slot, each member with their own tests.
+  const members = booking.members;
+  const subject = members
+    ? `New visit (${members.length} members) - ${booking.patient.name} + ${members.length - 1} - ${booking.date} ${booking.slot}`
+    : `New order - ${booking.patient.name} - ${booking.date} ${booking.slot}`;
+  const membersHtml = members
+    ? `<h3>Visit for ${members.length} members - collect from everyone in one trip</h3>
+    ${members
+      .map((m) => {
+        const subtotal = m.items.reduce((s, i) => s + i.price * i.qty, 0);
+        return `<div style="margin:12px 0;padding:10px 12px;border:1px solid #eee;border-radius:6px;">
+      <p style="margin:0;"><strong>${esc(m.name)}</strong> (${esc(m.age)}, ${esc(m.gender)})${m.whatsapp ? ` - report to WhatsApp ${esc(m.whatsapp)}` : ""}</p>
+      <table style="width:100%;border-collapse:collapse;margin:8px 0;">${itemsRows(m.items)}</table>
+      <p style="text-align:right;margin:0;">${esc(m.name)}'s subtotal: <strong>${money(subtotal)}</strong></p>
+    </div>`;
+      })
+      .join("")}`
+    : "";
   const mapsLink =
-    booking.patient.lat != null && booking.patient.lng != null
+    booking.patient.lat == null && booking.patient.mapsUrl
+      ? `<p><strong>Pinned location:</strong> <a href="${esc(booking.patient.mapsUrl)}">Open the Google Maps link the customer shared</a></p>`
+      : booking.patient.lat != null && booking.patient.lng != null
       ? `<p><strong>Pinned location:</strong> <a href="https://www.google.com/maps?q=${booking.patient.lat},${booking.patient.lng}">Open in Google Maps</a></p>`
       : "";
   const html = `
   <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#222;">
     <h2 style="color:#FF7A45;">New booking - start fulfillment</h2>
-    <p><strong>Patient:</strong> ${booking.patient.name} (${booking.patient.age}, ${booking.patient.gender})</p>
+    ${
+      members
+        ? `<p><strong>Visit for ${members.length} members</strong> (contact: ${booking.patient.name})</p>`
+        : `<p><strong>Patient:</strong> ${booking.patient.name} (${booking.patient.age}, ${booking.patient.gender})</p>`
+    }
     <p><strong>WhatsApp:</strong> ${booking.patient.whatsapp}</p>
     <p><strong>Address:</strong> ${booking.patient.addressLine}, ${booking.patient.locality}, ${booking.patient.city} - ${booking.patient.pincode}</p>
     ${mapsLink}
     <p><strong>Collection window:</strong> ${booking.date}, ${booking.slot}</p>
     ${booking.patient.notes ? `<p><strong>Notes:</strong> ${booking.patient.notes}</p>` : ""}
     ${booking.referral ? `<p><strong>Prescribed by:</strong> ${esc(booking.referral.name)}${booking.referral.clinic ? ` (${esc(booking.referral.clinic)})` : ""}${booking.referral.doctorId ? "" : " <em>(typed by patient, not a registered doctor)</em>"}</p>` : ""}
-    <h3>Tests / packages ordered</h3>
-    <table style="width:100%;border-collapse:collapse;margin:16px 0;">${itemsRows(booking)}</table>
+    ${membersHtml || `<h3>Tests / packages ordered</h3>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;">${itemsRows(booking.items)}</table>`}
     ${consultSection(booking)}
-    ${(booking.couponCode && booking.couponDiscount) || booking.collectionCharge ? `<p style="text-align:right;margin:0;">Subtotal: ${money(booking.subtotalPrice)}</p>` : ""}
+    ${(booking.couponCode && booking.couponDiscount) || booking.collectionCharge ? `<p style="text-align:right;margin:0;">Visit subtotal: ${money(booking.subtotalPrice)}</p>` : ""}
     ${booking.couponCode && booking.couponDiscount ? `<p style="text-align:right;margin:0;color:#0F6E6E;">Coupon ${booking.couponCode}: -${money(booking.couponDiscount)}</p>` : ""}
     ${booking.collectionCharge ? `<p style="text-align:right;margin:0;">Collection charges: ${money(booking.collectionCharge)}</p>` : ""}
     <p style="text-align:right;font-weight:bold;">Amount due on collection: ${money(amountDue(booking))}</p>
@@ -197,7 +220,7 @@ function signupRows(signup: DoctorSignup) {
     .join("");
 }
 
-// Dev-inbox copies of these emails (/admin/inbox) hold doctors' personal details
+// Dev-inbox copies of these emails (/admin/inbox) hold doctors' memberal details
 // and that page has no login, so they are only kept when running locally.
 function keepInDevInbox(email: Parameters<typeof saveEmail>[0]) {
   if (process.env.NODE_ENV !== "production") saveEmail(email);
@@ -209,7 +232,7 @@ export function renderDoctorConfirmation(signup: DoctorSignup) {
   <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#222;line-height:1.5;">
     <h2 style="color:#0F6E6E;">Thank you, ${esc(signup.fullName)}!</h2>
     <p>You're registered as a partner doctor with ${esc(BUSINESS_NAME)}, so your patients can book trusted diagnostics at home.</p>
-    <p><strong>Our team will share your personal booking link shortly.</strong> Patients who book through it are linked to you.</p>
+    <p><strong>Our team will share your memberal booking link shortly.</strong> Patients who book through it are linked to you.</p>
     <h3 style="margin-bottom:4px;">What we have</h3>
     <table style="border-collapse:collapse;font-size:14px;">${signupRows(signup)}</table>
     <p>Spotted a mistake? Just email us at <a href="mailto:${esc(SUPPORT_EMAIL)}">${esc(SUPPORT_EMAIL)}</a>.</p>

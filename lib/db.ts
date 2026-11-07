@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS collection_charge integer;
+-- Who each item is for, when a visit has more than one member (null for a single member).
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS members jsonb;
 
 CREATE INDEX IF NOT EXISTS orders_collection_idx ON orders (collection_date, collection_slot);
 CREATE INDEX IF NOT EXISTS orders_doctor_idx ON orders (doctor_id);

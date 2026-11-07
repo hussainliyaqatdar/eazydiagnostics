@@ -6,17 +6,21 @@ import { sendOwnerNotification } from "@/lib/email";
 import { BOOKING_PHONE } from "@/lib/site-config";
 import { findCoupon } from "@/lib/coupon-config";
 import { blockedByPackage, computeDiscount } from "@/lib/coupon-rules";
-import { collectionChargeFor } from "@/lib/booking-totals";
+import { collectionChargeFor, MAX_MEMBERS } from "@/lib/booking-totals";
 import { hasConsult, isOfferEligible, priceWithOffer } from "@/lib/consult-offers";
 import { getConsultDoctor } from "@/lib/consult-doctors";
 import { cleanReferralName, findAffiliateDoctor } from "@/lib/affiliate-doctors";
-import type { Booking, BookingLineItem, BookingReferral, CartLine } from "@/lib/types";
+import { isGoogleMapsUrl } from "@/lib/maps-link";
+import type { Booking, BookingLineItem, BookingMember, BookingReferral, CartLine } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { patient, cart, date, slot, couponCode, referredBy } = body as {
+  const { patient, cart: singleCart, members: rawMembers, date, slot, couponCode, referredBy } = body as {
     patient: Booking["patient"];
-    cart: CartLine[];
+    // A single member's cart; or, for a visit with several members, `members`
+    // (each with their own cart). One visit has one address and one slot.
+    cart?: CartLine[];
+    members?: { name?: string; age?: string; gender?: string; whatsapp?: string; cart?: CartLine[] }[];
     date: string;
     slot: string;
     couponCode?: string;
@@ -26,12 +30,40 @@ export async function POST(req: NextRequest) {
   if (!patient?.name || !patient?.whatsapp || !patient?.addressLine || !patient?.pincode) {
     return NextResponse.json({ error: "Missing required patient details" }, { status: 400 });
   }
-  // The pinned map location is required so the phlebotomist can find the address.
+  // A map location is required so the phlebotomist can find the address: either
+  // coordinates, or a Google Maps link (when a link has no readable coordinates).
   const validCoord = (n: unknown, limit: number) => typeof n === "number" && Number.isFinite(n) && Math.abs(n) <= limit;
-  if (!validCoord(patient.lat, 90) || !validCoord(patient.lng, 180)) {
+  const hasCoords = validCoord(patient.lat, 90) && validCoord(patient.lng, 180);
+  if (hasCoords) {
+    delete patient.mapsUrl;
+  } else if (isGoogleMapsUrl(patient.mapsUrl)) {
+    patient.mapsUrl = patient.mapsUrl.trim();
+    delete patient.lat;
+    delete patient.lng;
+  } else {
     return NextResponse.json({ error: "Please share your location (current location or a Google Maps link)." }, { status: 400 });
   }
-  if (!cart?.length) return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+  // Each member's cart. Everything below (offers, prices, coupon) works on the
+  // combined `cart`; `memberCarts` keeps who each line is for.
+  let memberCarts: CartLine[][];
+  if (rawMembers !== undefined) {
+    if (!Array.isArray(rawMembers) || rawMembers.length < 1 || rawMembers.length > MAX_MEMBERS) {
+      return NextResponse.json({ error: `A visit can have between 1 and ${MAX_MEMBERS} members.` }, { status: 400 });
+    }
+    for (const m of rawMembers) {
+      if (!m?.name?.trim() || !m?.age?.trim() || !m?.gender?.trim()) {
+        return NextResponse.json({ error: "Please enter the name, age and gender of everyone in the visit." }, { status: 400 });
+      }
+      if (!Array.isArray(m.cart) || m.cart.length === 0) {
+        return NextResponse.json({ error: `${m.name.trim()} has no tests in this visit. Add tests or remove them.` }, { status: 400 });
+      }
+    }
+    memberCarts = rawMembers.map((m) => m.cart!);
+  } else {
+    memberCarts = [singleCart ?? []];
+  }
+  const cart = memberCarts.flat();
+  if (!cart.length) return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
   if (!date || !slot) return NextResponse.json({ error: "Please choose a collection date and time" }, { status: 400 });
 
   const availableSlots = await getSlotsForDate(date).catch(() => null);
@@ -58,7 +90,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const items: BookingLineItem[] = cart.map((line) => {
+  const buildItem = (line: CartLine): BookingLineItem => {
     const source = line.kind === "test" ? allTests : allPackages;
     const found = source.find((x) => x.slug === line.slug);
     if (!found) throw new Error(`Unknown ${line.kind} ${line.slug}`);
@@ -76,7 +108,20 @@ export async function POST(req: NextRequest) {
     // them by their catalog name - keep that on the booking for fulfillment.
     const labName = "labName" in found ? found.labName : undefined;
     return { kind: line.kind, slug: found.slug, name: found.name, labName, qty: line.qty, mrp, price, ...(offer ? { offer } : {}) };
-  });
+  };
+  const memberItems = memberCarts.map((c) => c.map(buildItem));
+  const items: BookingLineItem[] = memberItems.flat();
+  // Who each item is for - kept only when there is more than one member.
+  const members: BookingMember[] | undefined =
+    rawMembers && rawMembers.length > 1
+      ? rawMembers.map((m, i) => ({
+          name: m.name!.trim().slice(0, 80),
+          age: m.age!.trim().slice(0, 10),
+          gender: m.gender!.trim().slice(0, 20),
+          ...(m.whatsapp?.trim() ? { whatsapp: m.whatsapp.trim().slice(0, 20) } : {}),
+          items: memberItems[i],
+        }))
+      : undefined;
 
   const subtotalMrp = items.reduce((s, i) => s + i.mrp * i.qty, 0);
   const subtotalPrice = items.reduce((s, i) => s + i.price * i.qty, 0);
@@ -125,7 +170,7 @@ export async function POST(req: NextRequest) {
   }
 
   // No payment is collected at booking time - the site's promise is "pay
-  // only after sample collection." Payment is taken in person (cash/UPI) or
+  // only after sample collection." Payment is taken in member (cash/UPI) or
   // via a link sent after the phlebotomist visit, outside this flow.
   const booking: Booking = {
     id: `BK-${Date.now().toString(36).toUpperCase()}`,
@@ -133,6 +178,7 @@ export async function POST(req: NextRequest) {
     patient,
     ...(referral ? { referral } : {}),
     items,
+    ...(members ? { members } : {}),
     subtotalMrp,
     subtotalPrice,
     savings: subtotalMrp - subtotalPrice + couponDiscount,

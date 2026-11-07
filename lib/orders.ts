@@ -13,6 +13,7 @@ type OrderRow = {
   coupon_code: string | null;
   coupon_discount: number | null;
   collection_charge: number | null;
+  members: Booking["members"] | null;
   collection_date: string;
   collection_slot: string;
   doctor_id: string | null;
@@ -25,8 +26,8 @@ export async function saveBooking(b: Booking): Promise<void> {
   await db.query(
     `INSERT INTO orders (id, created_at, patient, items, subtotal_mrp, subtotal_price, savings,
                          coupon_code, coupon_discount, collection_date, collection_slot, payment_status,
-                         doctor_id, referral_name, referral_clinic, collection_charge)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+                         doctor_id, referral_name, referral_clinic, collection_charge, members)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
     [
       b.id,
       b.createdAt,
@@ -44,6 +45,7 @@ export async function saveBooking(b: Booking): Promise<void> {
       b.referral?.name ?? null,
       b.referral?.clinic ?? null,
       b.collectionCharge ?? null,
+      b.members ? JSON.stringify(b.members) : null,
     ]
   );
 }
@@ -57,6 +59,7 @@ export async function getBooking(id: string): Promise<Booking | undefined> {
     createdAt: new Date(r.created_at).toISOString(),
     patient: r.patient,
     items: r.items,
+    ...(r.members?.length ? { members: r.members } : {}),
     ...(r.referral_name ? { referral: { name: r.referral_name, ...(r.doctor_id ? { doctorId: r.doctor_id } : {}), ...(r.referral_clinic ? { clinic: r.referral_clinic } : {}) } } : {}),
     subtotalMrp: r.subtotal_mrp,
     subtotalPrice: r.subtotal_price,
