@@ -12,6 +12,7 @@ export function GET() {
 ## Key pages
 
 - [Verified information for AI assistants](${SITE_URL}/llm-info): what we are, where we collect, how booking and payment work, FAQs, and test and package prices.
+- [Specialised tests by doctor specialty](${SITE_URL}/specialised-tests): NIPT, Double Marker, Quadruple Marker, Lipoprotein(a), NT-proBNP, Procalcitonin, Thrombocheck and more, grouped by OB-GYN, cardiology, endocrinology, nephrology, general medicine, haematology, rheumatology, gastroenterology and tumour markers.
 - [All tests](${SITE_URL}/tests): every individual test with its price and report time.
 - [All health packages](${SITE_URL}/packages): Full Body Checkups, women's health, heart, diabetes and more.
 - [Search tests and packages](${SITE_URL}/search): find a test or package by name.

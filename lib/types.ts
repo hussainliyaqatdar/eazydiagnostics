@@ -26,6 +26,18 @@ export type TestItem = {
   // SEO FAQs, present only for the tests the business named for this (see
   // scripts/product-faqs.js) - most tests won't have this.
   faqs?: ProductFaq[];
+  // Curated SEO/AEO content for specialised tests (scripts/specialised-seo.js).
+  seo?: TestSeo;
+};
+
+export type TestSeo = {
+  // Slugs from lib/specialties.ts.
+  specialties: string[];
+  // How patients and doctors name it ("NIPT", "Lp(a)").
+  short: string;
+  what: string;
+  when: string[];
+  prep?: string;
 };
 
 export type PackageConstituent = {
