@@ -124,6 +124,9 @@ export type Booking = {
   // Present only when a coupon was applied (older bookings won't have these).
   couponCode?: string;
   couponDiscount?: number;
+  // Flat charge for home collection on small orders (see lib/booking-totals.ts);
+  // absent when it was waived and on older bookings.
+  collectionCharge?: number;
   date: string;
   slot: string;
   paymentStatus: "due";

@@ -48,6 +48,12 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
             <span>- Rs. {booking.couponDiscount.toLocaleString("en-IN")}</span>
           </div>
         ) : null}
+        {booking.collectionCharge ? (
+          <div className="flex justify-between text-sm text-gray-700">
+            <span>Collection charges</span>
+            <span>Rs. {booking.collectionCharge.toLocaleString("en-IN")}</span>
+          </div>
+        ) : null}
         <div className="border-t pt-2 flex justify-between font-bold text-brand-dark">
           <span>Amount due on collection</span>
           <span>Rs. {amountDue(booking).toLocaleString("en-IN")}</span>

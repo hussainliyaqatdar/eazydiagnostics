@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import type { CartLine, CartLineOffer } from "./types";
 import { allTests, allPackages } from "./catalog";
 import { blockedByPackage, computeDiscount, type CouponRule } from "./coupon-rules";
+import { collectionChargeFor } from "./booking-totals";
 import { hasConsult, priceWithOffer } from "./consult-offers";
 
 // `transient` marks failures that say nothing about the code itself (offline,
@@ -212,7 +213,8 @@ export function useCartSummary() {
   // placed; this is the same pure function, so the two always agree.
   const result = coupon && couponsAllowed ? computeDiscount(coupon, subtotalPrice) : null;
   const discount = result?.discount ?? 0;
-  const total = subtotalPrice - discount;
+  const collectionCharge = collectionChargeFor(subtotalPrice);
+  const total = subtotalPrice - discount + collectionCharge;
 
   return {
     items, subtotalMrp, subtotalPrice, count, remove, clear, setConsult, setConsultDoctor,
@@ -221,6 +223,7 @@ export function useCartSummary() {
     couponsAllowed, // false when the cart holds a consultation-offer package, or a package with a tests-only coupon
     discount, // rupees off from the coupon right now (0 if none, or not yet eligible)
     couponShortfall: result && !result.eligible ? result.shortfall : 0, // rupees to add to unlock it
-    total, // what the customer pays after the coupon
+    collectionCharge, // flat home-collection charge on orders under FREE_COLLECTION_MIN (0 otherwise)
+    total, // what the customer pays: items, less the coupon, plus any collection charge
   };
 }

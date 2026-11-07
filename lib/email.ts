@@ -84,12 +84,9 @@ export function renderOwnerNotification(booking: Booking) {
     <h3>Tests / packages ordered</h3>
     <table style="width:100%;border-collapse:collapse;margin:16px 0;">${itemsRows(booking)}</table>
     ${consultSection(booking)}
-    ${
-      booking.couponCode && booking.couponDiscount
-        ? `<p style="text-align:right;margin:0;">Subtotal: ${money(booking.subtotalPrice)}</p>
-    <p style="text-align:right;margin:0;color:#0F6E6E;">Coupon ${booking.couponCode}: -${money(booking.couponDiscount)}</p>`
-        : ""
-    }
+    ${(booking.couponCode && booking.couponDiscount) || booking.collectionCharge ? `<p style="text-align:right;margin:0;">Subtotal: ${money(booking.subtotalPrice)}</p>` : ""}
+    ${booking.couponCode && booking.couponDiscount ? `<p style="text-align:right;margin:0;color:#0F6E6E;">Coupon ${booking.couponCode}: -${money(booking.couponDiscount)}</p>` : ""}
+    ${booking.collectionCharge ? `<p style="text-align:right;margin:0;">Collection charges: ${money(booking.collectionCharge)}</p>` : ""}
     <p style="text-align:right;font-weight:bold;">Amount due on collection: ${money(amountDue(booking))}</p>
     <p style="color:#999;font-size:12px;">Booking ID: ${booking.id}</p>
   </div>`;

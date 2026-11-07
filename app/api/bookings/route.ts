@@ -6,6 +6,7 @@ import { sendOwnerNotification } from "@/lib/email";
 import { BOOKING_PHONE } from "@/lib/site-config";
 import { findCoupon } from "@/lib/coupon-config";
 import { blockedByPackage, computeDiscount } from "@/lib/coupon-rules";
+import { collectionChargeFor } from "@/lib/booking-totals";
 import { hasConsult, isOfferEligible, priceWithOffer } from "@/lib/consult-offers";
 import { getConsultDoctor } from "@/lib/consult-doctors";
 import { cleanReferralName, findAffiliateDoctor } from "@/lib/affiliate-doctors";
@@ -109,6 +110,9 @@ export async function POST(req: NextRequest) {
     couponDiscount = result.discount;
   }
 
+  // Small orders pay a flat collection charge, worked out here from our own prices.
+  const collectionCharge = collectionChargeFor(subtotalPrice);
+
   // "Prescribed by" is optional. A registered doctor is looked up by id so the
   // stored name/clinic are ours, not the browser's; anything else is free text.
   let referral: BookingReferral | undefined;
@@ -133,6 +137,7 @@ export async function POST(req: NextRequest) {
     subtotalPrice,
     savings: subtotalMrp - subtotalPrice + couponDiscount,
     ...(appliedCode ? { couponCode: appliedCode, couponDiscount } : {}),
+    ...(collectionCharge ? { collectionCharge } : {}),
     date,
     slot,
     paymentStatus: "due",

@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS orders (
   referral_clinic text
 );
 
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS collection_charge integer;
+
 CREATE INDEX IF NOT EXISTS orders_collection_idx ON orders (collection_date, collection_slot);
 CREATE INDEX IF NOT EXISTS orders_doctor_idx ON orders (doctor_id);
 `;

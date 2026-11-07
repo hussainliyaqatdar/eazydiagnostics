@@ -12,6 +12,7 @@ type OrderRow = {
   savings: number;
   coupon_code: string | null;
   coupon_discount: number | null;
+  collection_charge: number | null;
   collection_date: string;
   collection_slot: string;
   doctor_id: string | null;
@@ -24,8 +25,8 @@ export async function saveBooking(b: Booking): Promise<void> {
   await db.query(
     `INSERT INTO orders (id, created_at, patient, items, subtotal_mrp, subtotal_price, savings,
                          coupon_code, coupon_discount, collection_date, collection_slot, payment_status,
-                         doctor_id, referral_name, referral_clinic)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+                         doctor_id, referral_name, referral_clinic, collection_charge)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
     [
       b.id,
       b.createdAt,
@@ -42,6 +43,7 @@ export async function saveBooking(b: Booking): Promise<void> {
       b.referral?.doctorId ?? null,
       b.referral?.name ?? null,
       b.referral?.clinic ?? null,
+      b.collectionCharge ?? null,
     ]
   );
 }
@@ -60,6 +62,7 @@ export async function getBooking(id: string): Promise<Booking | undefined> {
     subtotalPrice: r.subtotal_price,
     savings: r.savings,
     ...(r.coupon_code ? { couponCode: r.coupon_code, couponDiscount: r.coupon_discount ?? 0 } : {}),
+    ...(r.collection_charge ? { collectionCharge: r.collection_charge } : {}),
     date: r.collection_date,
     slot: r.collection_slot,
     paymentStatus: "due",
