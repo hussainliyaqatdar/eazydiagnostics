@@ -418,7 +418,7 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
     : { label: "Back to cart", onClick: openCartDrawer };
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6 pb-44">
+    <div className="flex max-w-2xl flex-col gap-6 pb-56 md:pb-40">
       <h1 className="text-2xl font-bold text-gray-900">{multi ? `Book one home visit for ${members.length} members` : "Book your home collection"}</h1>
 
       {multi && (
@@ -670,31 +670,39 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
         </>
       )}
       {/* Sticky bottom bar: the amount payable (tap to see the breakup) and the
-          step's actions, laid out the same as the cart's. */}
+          step's actions, laid out the same as the cart's. It runs the full width of the
+          screen; on a wider screen the amount sits on the left (under the page's left
+          edge) and the buttons on the right (under its right edge), in one row. */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="flex max-w-2xl flex-col gap-2 py-2.5">
-            {summaryOpen && breakup}
-            <button
-              type="button"
-              onClick={() => setSummaryOpen((o) => !o)}
-              aria-expanded={summaryOpen}
-              aria-controls="payment-breakup"
-              className="flex items-center justify-between gap-3 text-left"
-            >
-              <span>
-                <span className="block text-xs text-gray-500">{multi ? `Amount due on collection - ${members.length} members` : "Amount due on collection"}</span>
-                <span className="text-xl font-bold leading-tight text-brand-dark">{rs(total)}</span>
-              </span>
-              <span className="flex items-center gap-1 text-xs font-medium text-brand">
-                {summaryOpen ? "Hide breakup" : "View breakup"}
-                <svg viewBox="0 0 24 24" className={`h-4 w-4 transition-transform ${summaryOpen ? "" : "rotate-180"}`} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </span>
-            </button>
-            {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-            <StepActions primary={primary} secondary={secondary} busy={submitting} />
+        <div className="mx-auto max-w-6xl px-4 py-2.5 md:py-3">
+          <div>
+            <div className="flex flex-col gap-2">
+              {summaryOpen && <div className="md:max-w-2xl">{breakup}</div>}
+              {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSummaryOpen((o) => !o)}
+                  aria-expanded={summaryOpen}
+                  aria-controls="payment-breakup"
+                  className="flex items-center justify-between gap-3 text-left md:flex-1"
+                >
+                  <span>
+                    <span className="block text-xs text-gray-500">{multi ? `Amount due on collection - ${members.length} members` : "Amount due on collection"}</span>
+                    <span className="text-xl font-bold leading-tight text-brand-dark">{rs(total)}</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-xs font-medium text-brand">
+                    {summaryOpen ? "Hide breakup" : "View breakup"}
+                    <svg viewBox="0 0 24 24" className={`h-4 w-4 transition-transform ${summaryOpen ? "" : "rotate-180"}`} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </span>
+                </button>
+                <div className="md:w-96 md:shrink-0">
+                  <StepActions primary={primary} secondary={secondary} busy={submitting} />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
