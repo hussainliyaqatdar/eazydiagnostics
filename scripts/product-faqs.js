@@ -27,6 +27,9 @@ const PRICED_TEST_CODES = [
 ];
 const PRICED_TEST_CODE_SET = new Set(PRICED_TEST_CODES.map((c) => c.toUpperCase()));
 
+// Keep in step with COLLECTION_CHARGE / FREE_COLLECTION_MIN in lib/booking-totals.ts.
+const COLLECTION_NOTE = "Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders.";
+
 function money(n) {
   return `Rs. ${n.toLocaleString("en-IN")}`;
 }
@@ -44,7 +47,7 @@ function testFaqs(test) {
     },
     {
       q: `What is the ${name} test price in Bangalore?`,
-      a: `${name} costs ${priceLine(price, mrp)} with us, with no advance payment - you only pay after your sample has been collected. Home collection is included at no extra charge.`,
+      a: `${name} costs ${priceLine(price, mrp)} with us, with no advance payment - you only pay after your sample has been collected. ${COLLECTION_NOTE}`,
     },
     {
       q: `Is home collection available for ${name}?`,
@@ -74,7 +77,7 @@ function packageFaqs(pkg) {
     },
     {
       q: `What is the price of the ${name} package in Bangalore?`,
-      a: `The ${name} package costs ${priceLine(price, mrp)} for ${testsPhrase}, with home collection at no extra charge and no advance payment.`,
+      a: `The ${name} package costs ${priceLine(price, mrp)} for ${testsPhrase}, with no advance payment. ${COLLECTION_NOTE}`,
     },
     {
       q: `Is home collection available for the ${name} package?`,
@@ -91,4 +94,35 @@ function packageFaqs(pkg) {
   ];
 }
 
-module.exports = { PRICED_TEST_CODE_SET, testFaqs, packageFaqs };
+// Answer-ready FAQs for the specialised tests in scripts/specialised-seo.js.
+// Short, direct answers (what AI assistants quote) built from the curated facts
+// plus the catalog's real price, report time and the site's actual service.
+function specialisedFaqs(test, seo) {
+  const { name, price, mrp, eta } = test;
+  const { short, what, when, prep, extraFaq } = seo;
+  const whenText = when.length === 1 ? when[0] : when.slice(0, -1).join("; ") + "; and " + when[when.length - 1];
+  const faqs = [
+    { q: `What is the ${short}?`, a: what },
+    { q: `Who needs the ${short} and when is it done?`, a: `Doctors commonly order it for: ${whenText}.` },
+    {
+      q: `Can I get the ${short} done at home in Bangalore?`,
+      a: `Yes. Book online and a trained phlebotomist collects the sample at your home in ${SERVICE_AREAS_TEXT}. The sample is processed at the ${LAB_PARTNER_TEXT}, and the report is sent to you on WhatsApp, typically within ${eta}. You pay only after the sample is collected.`,
+    },
+    {
+      q: `What is the price of the ${short} in Bangalore?`,
+      a: `${name} costs ${priceLine(price, mrp)} with us, with no advance payment. ${COLLECTION_NOTE}`,
+    },
+    {
+      q: `How should I prepare for the ${short}?`,
+      a: prep ? prep : `No special preparation is generally needed unless your doctor says otherwise. Share any medicines you take, and our team confirms anything specific when you book.`,
+    },
+    {
+      q: `How long does the ${short} report take?`,
+      a: `Reports are typically ready in ${eta} after the sample reaches the lab, and are shared on WhatsApp.`,
+    },
+  ];
+  if (extraFaq) faqs.push(extraFaq);
+  return faqs;
+}
+
+module.exports = { PRICED_TEST_CODE_SET, testFaqs, packageFaqs, specialisedFaqs };

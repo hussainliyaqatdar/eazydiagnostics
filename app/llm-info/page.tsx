@@ -8,6 +8,8 @@ import {
   getTestBySlug,
 } from "@/lib/catalog";
 import { BOOKING_PHONE, BOOKING_PHONE_TEL, BUSINESS_NAME, GMB_PROFILE_URL, PARTNER_NAME, GMB_RATING, SERVICE_AREAS, SITE_URL, SUPPORT_EMAIL, WHATSAPP_NUMBER } from "@/lib/site-config";
+import { COLLECTION_CHARGE, FREE_COLLECTION_MIN } from "@/lib/booking-totals";
+import { SPECIALTIES, getSpecialtyTests } from "@/lib/specialties";
 import { DAILY_WINDOWS, BOOKING_WINDOW_DAYS } from "@/lib/booking-dates";
 
 // A plain-language fact sheet for AI assistants (and people), so answers about
@@ -64,7 +66,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Is there a home collection charge?",
-    a: "No separate home-collection fee is added at checkout. The amount due is the listed price of the selected tests or packages, less any coupon that applies.",
+    a: `Home collection is free on orders of ${rs(FREE_COLLECTION_MIN)} or more. A flat ${rs(COLLECTION_CHARGE)} collection charge applies to orders below ${rs(FREE_COLLECTION_MIN)}, shown in the cart and at checkout. The amount due is the listed price of the selected tests or packages, less any coupon that applies, plus that charge where it applies.`,
   },
   {
     q: "Which lab processes the samples?",
@@ -180,7 +182,7 @@ export default function LlmInfoPage() {
         <li>Service: home collection of blood and urine samples for lab tests and health checkups.</li>
         <li>Location: {REGION}. Areas covered: {AREAS}, and other parts of Bangalore on request.</li>
         <li>Booking: online, by phone or on WhatsApp. No payment at booking; payment is taken after the sample is collected.</li>
-        <li>Fees: no separate home-collection fee is added at checkout.</li>
+        <li>Fees: home collection is free on orders of {rs(FREE_COLLECTION_MIN)} or more; a flat {rs(COLLECTION_CHARGE)} collection charge applies to smaller orders.</li>
         <li>Lab: {PARTNER_NAME}, NABL-accredited. Partner: Fortis Hospitals.</li>
         <li>Reports: sent on WhatsApp, typically within 6 hours for routine tests; longer for specialised tests.</li>
         <li>
@@ -197,6 +199,11 @@ export default function LlmInfoPage() {
           {packagesByCategory.map((g) => g.category).join(", ")}.
         </li>
         <li>Provide pregnancy and antenatal tests at home, including NIPT, Double Marker, Quadruple Marker, TORCH and the glucose tolerance test.</li>
+        <li>
+          Provide specialised tests by doctor specialty (OB-GYN, cardiology, endocrinology, nephrology, general medicine, haematology,
+          rheumatology, gastroenterology and tumour markers) - for example Lipoprotein(a), NT-proBNP, Procalcitonin and Thrombocheck. See{" "}
+          <Link href="/specialised-tests" className="text-brand hover:underline">specialised tests by specialty</Link>.
+        </li>
         <li>
           Sell {checkupPackages.length} Full Body Checkup packages, from {rs(Math.min(...checkupPrices))} to {rs(Math.max(...checkupPrices))}.
         </li>
@@ -241,6 +248,24 @@ export default function LlmInfoPage() {
 
       <h3 className="font-semibold text-gray-900">Pregnancy tests</h3>
       <PriceTable rows={pregnancyTests.map((t) => ({ name: t.name, href: `/tests/${t.slug}`, price: t.price, eta: t.eta }))} />
+
+      <h3 className="font-semibold text-gray-900">Specialised tests by doctor specialty</h3>
+      <p className="text-sm text-gray-600">
+        Collected at home in Bangalore and processed at {PARTNER_NAME} labs (Agilus was earlier known as SRL Diagnostics). Each test links to its page
+        with what it is, when it is ordered, preparation and FAQs.
+      </p>
+      {SPECIALTIES.map((s) => {
+        const list = getSpecialtyTests(s.slug);
+        if (list.length === 0) return null;
+        return (
+          <section key={s.slug} className="flex flex-col gap-2">
+            <h4 className="text-sm font-semibold text-gray-800">
+              <Link href={`/specialised-tests/${s.slug}`} className="text-brand hover:underline">{s.name}</Link>
+            </h4>
+            <PriceTable rows={list.map((t) => ({ name: t.name, href: `/tests/${t.slug}`, price: t.price, eta: t.eta }))} />
+          </section>
+        );
+      })}
 
       {packagesByCategory.map((g) => (
         <section key={g.category} className="flex flex-col gap-2">

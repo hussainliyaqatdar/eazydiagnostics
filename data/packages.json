@@ -50,7 +50,7 @@
       },
       {
         "q": "What is the price of the Full Body Checkup Mini package in Bangalore?",
-        "a": "The Full Body Checkup Mini package costs Rs. 1,099 (down from Rs. 3,410 MRP) for all 6 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Full Body Checkup Mini package costs Rs. 1,099 (down from Rs. 3,410 MRP) for all 6 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Full Body Checkup Mini package?",
@@ -127,7 +127,7 @@
       },
       {
         "q": "What is the price of the Full Body Checkup Essential package in Bangalore?",
-        "a": "The Full Body Checkup Essential package costs Rs. 1,350 (down from Rs. 4,410 MRP) for all 8 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Full Body Checkup Essential package costs Rs. 1,350 (down from Rs. 4,410 MRP) for all 8 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Full Body Checkup Essential package?",
@@ -214,7 +214,7 @@
       },
       {
         "q": "What is the price of the Full Body Checkup Advanced package in Bangalore?",
-        "a": "The Full Body Checkup Advanced package costs Rs. 2,099 (down from Rs. 7,610 MRP) for all 10 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Full Body Checkup Advanced package costs Rs. 2,099 (down from Rs. 7,610 MRP) for all 10 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Full Body Checkup Advanced package?",
@@ -316,7 +316,7 @@
       },
       {
         "q": "What is the price of the Full Body Checkup - Pro package in Bangalore?",
-        "a": "The Full Body Checkup - Pro package costs Rs. 2,599 (down from Rs. 8,150 MRP) for all 13 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Full Body Checkup - Pro package costs Rs. 2,599 (down from Rs. 8,150 MRP) for all 13 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Full Body Checkup - Pro package?",
@@ -448,7 +448,7 @@
       },
       {
         "q": "What is the price of the Full Body Checkup - Pro Max (Men) package in Bangalore?",
-        "a": "The Full Body Checkup - Pro Max (Men) package costs Rs. 3,099 (down from Rs. 11,040 MRP) for all 19 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Full Body Checkup - Pro Max (Men) package costs Rs. 3,099 (down from Rs. 11,040 MRP) for all 19 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Full Body Checkup - Pro Max (Men) package?",
@@ -580,7 +580,7 @@
       },
       {
         "q": "What is the price of the Full Body Checkup - Pro Max (Women) package in Bangalore?",
-        "a": "The Full Body Checkup - Pro Max (Women) package costs Rs. 3,099 (down from Rs. 11,040 MRP) for all 19 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Full Body Checkup - Pro Max (Women) package costs Rs. 3,099 (down from Rs. 11,040 MRP) for all 19 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Full Body Checkup - Pro Max (Women) package?",
@@ -727,7 +727,7 @@
       },
       {
         "q": "What is the price of the Full Body Checkup - Ultra (Men) package in Bangalore?",
-        "a": "The Full Body Checkup - Ultra (Men) package costs Rs. 4,199 (down from Rs. 13,600 MRP) for all 22 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Full Body Checkup - Ultra (Men) package costs Rs. 4,199 (down from Rs. 13,600 MRP) for all 22 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Full Body Checkup - Ultra (Men) package?",
@@ -874,7 +874,7 @@
       },
       {
         "q": "What is the price of the Full Body Checkup - Ultra (Women) package in Bangalore?",
-        "a": "The Full Body Checkup - Ultra (Women) package costs Rs. 4,199 (down from Rs. 13,600 MRP) for all 22 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Full Body Checkup - Ultra (Women) package costs Rs. 4,199 (down from Rs. 13,600 MRP) for all 22 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Full Body Checkup - Ultra (Women) package?",
@@ -908,13 +908,13 @@
       },
       {
         "name": "Apolipoprotein A1 (ApoA1)",
-        "slug": null,
-        "price": null
+        "slug": "apolipoprotein-a1-apoa1",
+        "price": 800
       },
       {
         "name": "Apolipoprotein B (ApoB)",
-        "slug": null,
-        "price": null
+        "slug": "apolipoprotein-b-apob",
+        "price": 800
       },
       {
         "name": "Lipoprotein (a), Serum",
@@ -951,7 +951,7 @@
       },
       {
         "q": "What is the price of the Advanced Heart Checkup package in Bangalore?",
-        "a": "The Advanced Heart Checkup package costs Rs. 2,499 for all 8 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Advanced Heart Checkup package costs Rs. 2,499 for all 8 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Advanced Heart Checkup package?",
@@ -1003,7 +1003,7 @@
       },
       {
         "q": "What is the price of the Diabetes Basic package in Bangalore?",
-        "a": "The Diabetes Basic package costs Rs. 599 (down from Rs. 760 MRP) for all 3 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Diabetes Basic package costs Rs. 599 (down from Rs. 760 MRP) for all 3 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Diabetes Basic package?",
@@ -1055,7 +1055,7 @@
       },
       {
         "q": "What is the price of the Infection Basic package in Bangalore?",
-        "a": "The Infection Basic package costs Rs. 999 (down from Rs. 1,200 MRP) for all 3 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Infection Basic package costs Rs. 999 (down from Rs. 1,200 MRP) for all 3 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Infection Basic package?",
@@ -1102,7 +1102,7 @@
       },
       {
         "q": "What is the price of the Vitamin Checkup package in Bangalore?",
-        "a": "The Vitamin Checkup package costs Rs. 1,499 (down from Rs. 3,100 MRP) for all 2 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Vitamin Checkup package costs Rs. 1,499 (down from Rs. 3,100 MRP) for all 2 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Vitamin Checkup package?",
@@ -1159,7 +1159,7 @@
       },
       {
         "q": "What is the price of the Fever & Infection Panel package in Bangalore?",
-        "a": "The Fever & Infection Panel package costs Rs. 1,249 (down from Rs. 1,550 MRP) for all 4 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Fever & Infection Panel package costs Rs. 1,249 (down from Rs. 1,550 MRP) for all 4 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Fever & Infection Panel package?",
@@ -1241,7 +1241,7 @@
       },
       {
         "q": "What is the price of the Pre-Surgical Panel package in Bangalore?",
-        "a": "The Pre-Surgical Panel package costs Rs. 3,199 (down from Rs. 5,795 MRP) for all 9 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Pre-Surgical Panel package costs Rs. 3,199 (down from Rs. 5,795 MRP) for all 9 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Pre-Surgical Panel package?",
@@ -1328,7 +1328,7 @@
       },
       {
         "q": "What is the price of the First Trimester Antenatal Panel package in Bangalore?",
-        "a": "The First Trimester Antenatal Panel package costs Rs. 2,599 (down from Rs. 3,920 MRP) for all 10 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The First Trimester Antenatal Panel package costs Rs. 2,599 (down from Rs. 3,920 MRP) for all 10 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the First Trimester Antenatal Panel package?",
@@ -1390,7 +1390,7 @@
       },
       {
         "q": "What is the price of the Second / Third Trimester Panel package in Bangalore?",
-        "a": "The Second / Third Trimester Panel package costs Rs. 1,349 (down from Rs. 1,930 MRP) for all 5 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Second / Third Trimester Panel package costs Rs. 1,349 (down from Rs. 1,930 MRP) for all 5 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Second / Third Trimester Panel package?",
@@ -1477,7 +1477,7 @@
       },
       {
         "q": "What is the price of the PCOS Workup Panel package in Bangalore?",
-        "a": "The PCOS Workup Panel package costs Rs. 4,399 (down from Rs. 7,660 MRP) for all 10 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The PCOS Workup Panel package costs Rs. 4,399 (down from Rs. 7,660 MRP) for all 10 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the PCOS Workup Panel package?",
@@ -1534,7 +1534,7 @@
       },
       {
         "q": "What is the price of the Menopause & Perimenopause Panel package in Bangalore?",
-        "a": "The Menopause & Perimenopause Panel package costs Rs. 1,299 (down from Rs. 2,730 MRP) for all 4 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Menopause & Perimenopause Panel package costs Rs. 1,299 (down from Rs. 2,730 MRP) for all 4 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Menopause & Perimenopause Panel package?",
@@ -1606,7 +1606,7 @@
       },
       {
         "q": "What is the price of the Female Infertility Workup package in Bangalore?",
-        "a": "The Female Infertility Workup package costs Rs. 3,099 (down from Rs. 5,930 MRP) for all 7 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Female Infertility Workup package costs Rs. 3,099 (down from Rs. 5,930 MRP) for all 7 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Female Infertility Workup package?",
@@ -1663,7 +1663,7 @@
       },
       {
         "q": "What is the price of the TORCH Comprehensive Panel package in Bangalore?",
-        "a": "The TORCH Comprehensive Panel package costs Rs. 4,899 (down from Rs. 6,380 MRP) for all 4 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The TORCH Comprehensive Panel package costs Rs. 4,899 (down from Rs. 6,380 MRP) for all 4 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the TORCH Comprehensive Panel package?",
@@ -1740,7 +1740,7 @@
       },
       {
         "q": "What is the price of the Diabetes Monitoring Panel package in Bangalore?",
-        "a": "The Diabetes Monitoring Panel package costs Rs. 3,049 (down from Rs. 5,060 MRP) for all 8 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Diabetes Monitoring Panel package costs Rs. 3,049 (down from Rs. 5,060 MRP) for all 8 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Diabetes Monitoring Panel package?",
@@ -1807,7 +1807,7 @@
       },
       {
         "q": "What is the price of the Insulin Resistance Panel package in Bangalore?",
-        "a": "The Insulin Resistance Panel package costs Rs. 3,099 (down from Rs. 4,035 MRP) for all 6 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Insulin Resistance Panel package costs Rs. 3,099 (down from Rs. 4,035 MRP) for all 6 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Insulin Resistance Panel package?",
@@ -1889,7 +1889,7 @@
       },
       {
         "q": "What is the price of the Comprehensive Endocrine Screen package in Bangalore?",
-        "a": "The Comprehensive Endocrine Screen package costs Rs. 3,699 (down from Rs. 6,460 MRP) for all 9 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Comprehensive Endocrine Screen package costs Rs. 3,699 (down from Rs. 6,460 MRP) for all 9 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Comprehensive Endocrine Screen package?",
@@ -1946,7 +1946,7 @@
       },
       {
         "q": "What is the price of the Anaemia Workup Panel package in Bangalore?",
-        "a": "The Anaemia Workup Panel package costs Rs. 2,249 (down from Rs. 3,600 MRP) for all 4 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Anaemia Workup Panel package costs Rs. 2,249 (down from Rs. 3,600 MRP) for all 4 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Anaemia Workup Panel package?",
@@ -2008,7 +2008,7 @@
       },
       {
         "q": "What is the price of the Liver Disease Panel package in Bangalore?",
-        "a": "The Liver Disease Panel package costs Rs. 1,999 (down from Rs. 3,565 MRP) for all 5 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Liver Disease Panel package costs Rs. 1,999 (down from Rs. 3,565 MRP) for all 5 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Liver Disease Panel package?",
@@ -2065,7 +2065,7 @@
       },
       {
         "q": "What is the price of the HIV Monitoring Panel package in Bangalore?",
-        "a": "The HIV Monitoring Panel package costs Rs. 3,149 (down from Rs. 4,830 MRP) for all 4 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The HIV Monitoring Panel package costs Rs. 3,149 (down from Rs. 4,830 MRP) for all 4 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the HIV Monitoring Panel package?",
@@ -2132,7 +2132,7 @@
       },
       {
         "q": "What is the price of the Hair Loss & Hormonal Panel package in Bangalore?",
-        "a": "The Hair Loss & Hormonal Panel package costs Rs. 2,649 (down from Rs. 5,680 MRP) for all 6 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Hair Loss & Hormonal Panel package costs Rs. 2,649 (down from Rs. 5,680 MRP) for all 6 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Hair Loss & Hormonal Panel package?",
@@ -2194,7 +2194,7 @@
       },
       {
         "q": "What is the price of the Autoimmune Skin Panel package in Bangalore?",
-        "a": "The Autoimmune Skin Panel package costs Rs. 2,249 (down from Rs. 3,455 MRP) for all 5 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Autoimmune Skin Panel package costs Rs. 2,249 (down from Rs. 3,455 MRP) for all 5 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Autoimmune Skin Panel package?",
@@ -2251,7 +2251,7 @@
       },
       {
         "q": "What is the price of the Allergy & Urticaria Panel package in Bangalore?",
-        "a": "The Allergy & Urticaria Panel package costs Rs. 1,649 (down from Rs. 2,280 MRP) for all 4 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The Allergy & Urticaria Panel package costs Rs. 1,649 (down from Rs. 2,280 MRP) for all 4 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the Allergy & Urticaria Panel package?",
@@ -2308,7 +2308,7 @@
       },
       {
         "q": "What is the price of the STI / Infection Screen package in Bangalore?",
-        "a": "The STI / Infection Screen package costs Rs. 1,599 (down from Rs. 2,780 MRP) for all 4 tests included, with home collection at no extra charge and no advance payment."
+        "a": "The STI / Infection Screen package costs Rs. 1,599 (down from Rs. 2,780 MRP) for all 4 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
       },
       {
         "q": "Is home collection available for the STI / Infection Screen package?",

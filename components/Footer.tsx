@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BUSINESS_NAME, PARTNER_TAGLINE, BOOKING_PHONE, BOOKING_PHONE_TEL, SUPPORT_EMAIL, SERVICE_AREAS } from "@/lib/site-config";
 
 export default function Footer() {
@@ -8,6 +9,13 @@ export default function Footer() {
         <p className="text-xs text-gray-400 -mt-2">{PARTNER_TAGLINE}</p>
         <p>Home sample collection across {SERVICE_AREAS.join(", ")} - and beyond, on request.</p>
         <p>NABL-accredited testing, in partnership with Fortis Hospitals.</p>
+        <p>
+          <Link href="/specialised-tests" className="text-brand hover:underline">Specialised tests by doctor specialty</Link>
+          {" "}&middot;{" "}
+          <Link href="/tests" className="text-brand hover:underline">All tests</Link>
+          {" "}&middot;{" "}
+          <Link href="/packages" className="text-brand hover:underline">All packages</Link>
+        </p>
         <p>
           Call to book: <a href={`tel:${BOOKING_PHONE_TEL}`} className="text-brand hover:underline">{BOOKING_PHONE}</a> &middot; {SUPPORT_EMAIL}
         </p>

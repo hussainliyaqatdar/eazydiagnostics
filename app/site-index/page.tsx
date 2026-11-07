@@ -21,6 +21,8 @@ const SECTIONS: Section[] = [
       { href: "/tests/cbc-5-edta-whole-blood", label: "Test page (example)", note: "One test: what it checks, sample type, price, FAQs, and an Add to cart button. Every test has its own /tests/<name> page." },
       { href: "/packages", label: "All packages", note: "Health packages (Full Body Checkups, women's health, heart, diabetes and more) with a comparison view." },
       { href: "/packages/full-body-checkup-mini", label: "Package page (example)", note: "One package: the tests it includes, price and savings, and an Add to cart button. Every package has its own /packages/<name> page." },
+      { href: "/specialised-tests", label: "Specialised tests", note: "Specialised tests grouped by doctor specialty (OB-GYN, cardiology, endocrinology, nephrology, general medicine and more), with a page per specialty. Built to rank for searches like \"NIPT test in Bangalore\"." },
+      { href: "/specialised-tests/cardiology", label: "Specialty page (example)", note: "One specialty: its specialised tests with price and report time, FAQs, and links to each test page. Every specialty has its own /specialised-tests/<specialty> page." },
       { href: "/search", label: "Search", note: "Search tests and packages by name, or by the other names a doctor may have used." },
       { href: "/cart", label: "Cart", note: "Review the items, apply a coupon code, and continue to checkout." },
       { href: "/checkout", label: "Checkout", note: "Enter patient details, who prescribed the test (optional), the address with a pinned Google Maps location (required) and a collection slot. Payment is after the sample is collected." },

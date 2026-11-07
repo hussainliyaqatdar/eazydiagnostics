@@ -132,6 +132,8 @@ const CURATED = {
   "Triglycerides, Serum": { name: "Triglycerides Test", aliases: ["TG", "Triglyceride"] },
   "HDL Cholesterol, Serum": { name: "HDL Cholesterol Test (Good Cholesterol)", aliases: ["HDL", "Good Cholesterol"] },
   "Direct LDL Cholesterol, Serum": { name: "LDL Cholesterol Test (Bad Cholesterol)", aliases: ["LDL", "Bad Cholesterol", "Direct LDL"] },
+  "Apolipoprotein A1 (ApoA1)": { name: "Apolipoprotein A1 (ApoA1) Test", aliases: ["Apo A1", "Apo (A1)", "ApoA1", "Apo A-I", "Apolipoprotein A-I", "Apolipoprotein A1", "HDL Protein Test"] },
+  "Apolipoprotein B (ApoB)": { name: "Apolipoprotein B (ApoB) Test", aliases: ["Apo B", "Apo (B)", "ApoB", "Apo B-100", "Apolipoprotein B-100", "Apolipoprotein B", "LDL Particle Count Test"] },
   "Lipoprotein (a), Serum": { name: "Lipoprotein(a) Test (Lp(a))", aliases: ["Lp(a)", "Lipoprotein A"] },
   "Homocysteine, Serum/Plasma": { name: "Homocysteine Test", aliases: ["Homocysteine", "Heart Risk Test"] },
   "H S Troponin I, Serum": { name: "Troponin I Test (High Sensitivity)", aliases: ["Troponin", "hs-Troponin I", "Heart Attack Test"] },

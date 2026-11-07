@@ -80,7 +80,9 @@
     "labName": "Insulin, Fasting Serum",
     "aliases": [
       "Insulin Fasting",
-      "Insulin Level"
+      "Insulin Level",
+      "Fasting Insulin",
+      "Insulin Fasting Test"
     ],
     "slugs": [
       "insulin-fasting-serum"
@@ -352,7 +354,10 @@
     "labName": "Homocysteine, Serum/Plasma",
     "aliases": [
       "Homocysteine",
-      "Heart Risk Test"
+      "Heart Risk Test",
+      "Homocysteine Level",
+      "Homocystine",
+      "Hcy Test"
     ],
     "slugs": [
       "homocysteine-serum-plasma"
@@ -399,7 +404,10 @@
       "Anti Mullerian Hormone",
       "Ovarian Reserve Test",
       "Egg Reserve",
-      "Fertility Test"
+      "Fertility Test",
+      "AMH Level",
+      "AMH test for fertility",
+      "Egg Reserve Test"
     ],
     "slugs": [
       "amh-mis-serum"
@@ -479,7 +487,9 @@
       "Dual Marker",
       "First Trimester Screening",
       "Down Syndrome Screening",
-      "Combined Screening"
+      "Combined Screening",
+      "Combined First Trimester Screen",
+      "PAPP-A and Free Beta hCG"
     ],
     "slugs": [
       "double-marker-test-serum"
@@ -492,7 +502,10 @@
       "Quad Marker",
       "Quadruple Marker",
       "Second Trimester Screening",
-      "Down Syndrome Screening"
+      "Down Syndrome Screening",
+      "Quad Test",
+      "Quadruple Test",
+      "AFP hCG uE3 Inhibin A"
     ],
     "slugs": [
       "quadruple-marker-test-serum"
@@ -505,7 +518,9 @@
       "TORCH",
       "TORCH Profile",
       "TORCH Panel",
-      "Toxoplasma Rubella CMV Herpes"
+      "Toxoplasma Rubella CMV Herpes",
+      "TORCH Screening",
+      "TORCH IgG IgM"
     ],
     "slugs": [
       "torch-igg-igm-evaluation-serum"
@@ -677,7 +692,9 @@
       "ANA",
       "ANA IFA",
       "Lupus Test",
-      "Autoimmune Test"
+      "Autoimmune Test",
+      "Antinuclear Antibody",
+      "ANA Profile"
     ],
     "slugs": [
       "anti-nuclear-antibody-ana-ifa-serum"
@@ -748,7 +765,8 @@
     "labName": "CA 125 (Ovarian Cancer Monitor), Serum",
     "aliases": [
       "CA125",
-      "Ovarian Cancer Marker"
+      "Ovarian Cancer Marker",
+      "CA 125 Ovarian"
     ],
     "slugs": [
       "ca-125-ovarian-cancer-monitor-serum"
@@ -782,7 +800,10 @@
     "labName": "1, 25 Dihydroxy Vitamin D, Serum",
     "aliases": [
       "1 25 Dihydroxy Vitamin D",
-      "Calcitriol"
+      "Calcitriol",
+      "Active Vitamin D",
+      "1 25 OH Vitamin D",
+      "Vitamin D 1,25"
     ],
     "slugs": [
       "1-25-dihydroxy-vitamin-d-serum"
@@ -793,7 +814,11 @@
     "labName": "17-a-Hydroxyprogesterone, Serum",
     "aliases": [
       "17 OHP",
-      "17-Hydroxyprogesterone"
+      "17-Hydroxyprogesterone",
+      "17-OHP",
+      "17 OH Progesterone",
+      "17 Hydroxyprogesterone",
+      "CAH Test"
     ],
     "slugs": [
       "17-a-hydroxyprogesterone-serum"
@@ -846,7 +871,12 @@
   "ABS TO EXTRACTABLE NUCLEAR ANTIGEN(ANA BLOT),SERUM": {
     "name": "Antibodies to Extractable Nuclear Antigen(ana Blot)",
     "labName": "Abs to Extractable Nuclear Antigen(ana Blot),Serum",
-    "aliases": [],
+    "aliases": [
+      "ENA Profile",
+      "ENA Panel",
+      "ANA Blot",
+      "Extractable Nuclear Antigen"
+    ],
     "slugs": [
       "abs-to-extractable-nuclear-antigen-ana-blot-serum"
     ]
@@ -1142,7 +1172,12 @@
   "ANCA POSITIVE REFLEX MPO, PR3 ANTIBODIES": {
     "name": "Anca Positive Reflex Mpo, Pr3 Antibodies",
     "labName": "Anca Positive Reflex Mpo, Pr3 Antibodies",
-    "aliases": [],
+    "aliases": [
+      "ANCA",
+      "p-ANCA c-ANCA",
+      "MPO PR3 Antibodies",
+      "Vasculitis Test"
+    ],
     "slugs": [
       "anca-positive-reflex-mpo-pr3-antibodies"
     ]
@@ -1221,7 +1256,10 @@
     "aliases": [
       "Anti CCP",
       "CCP",
-      "Arthritis Test"
+      "Arthritis Test",
+      "CCP Antibody",
+      "Cyclic Citrullinated Peptide",
+      "Rheumatoid Arthritis Test"
     ],
     "slugs": [
       "anti-ccp-antibodies-serum"
@@ -1230,7 +1268,11 @@
   "ANTI CARDIOLIPIN ANTIBODIES IGM, SERUM": {
     "name": "Anti Cardiolipin Antibodies IgM",
     "labName": "Anti Cardiolipin Antibodies IGM, Serum",
-    "aliases": [],
+    "aliases": [
+      "Anticardiolipin Antibody",
+      "ACA IgM",
+      "Antiphospholipid Antibodies"
+    ],
     "slugs": [
       "anti-cardiolipin-antibodies-igm-serum"
     ]
@@ -1251,7 +1293,8 @@
       "Anti Mullerian Hormone",
       "Ovarian Reserve Test",
       "Egg Reserve",
-      "Fertility Test"
+      "Fertility Test",
+      "AMH Level"
     ],
     "slugs": [
       "anti-mullerian-hormone"
@@ -1358,7 +1401,9 @@
     "labName": "Anti-Thyroglobulin Antibodies, Serum",
     "aliases": [
       "Anti TG",
-      "Thyroglobulin Antibodies"
+      "Thyroglobulin Antibodies",
+      "Anti Tg Antibody",
+      "ATG Test"
     ],
     "slugs": [
       "anti-thyroglobulin-antibodies-serum"
@@ -1370,7 +1415,9 @@
     "aliases": [
       "Anti TPO",
       "TPO Antibodies",
-      "Thyroid Peroxidase Antibodies"
+      "Thyroid Peroxidase Antibodies",
+      "Thyroid Peroxidase Antibody",
+      "Hashimoto Test"
     ],
     "slugs": [
       "anti-thyroid-peroxidase-antibodies-serum"
@@ -1748,7 +1795,8 @@
     "labName": "C Peptide, Serum",
     "aliases": [
       "C Peptide",
-      "Insulin Production Test"
+      "Insulin Production Test",
+      "Connecting Peptide"
     ],
     "slugs": [
       "c-peptide-serum"
@@ -1767,7 +1815,9 @@
     "labName": "CA 15-3, Serum",
     "aliases": [
       "CA153",
-      "Breast Cancer Marker"
+      "Breast Cancer Marker",
+      "CA15-3",
+      "CA 15 3"
     ],
     "slugs": [
       "ca-15-3-serum"
@@ -1778,7 +1828,9 @@
     "labName": "CA 19-9, Serum",
     "aliases": [
       "CA199",
-      "Pancreatic Cancer Marker"
+      "Pancreatic Cancer Marker",
+      "CA19-9",
+      "CA 19 9"
     ],
     "slugs": [
       "ca-19-9-serum"
@@ -1817,7 +1869,9 @@
     "labName": "Carcino Embryonic Antigen, Serum",
     "aliases": [
       "CEA",
-      "Cancer Marker"
+      "Cancer Marker",
+      "Carcinoembryonic Antigen",
+      "Colon Cancer Marker"
     ],
     "slugs": [
       "carcino-embryonic-antigen-serum"
@@ -2112,7 +2166,10 @@
     "name": "Cortisol Test (Stress Hormone)",
     "labName": "Cortisol, Serum",
     "aliases": [
-      "Cortisol"
+      "Cortisol",
+      "Serum Cortisol",
+      "Morning Cortisol",
+      "Stress Hormone Test"
     ],
     "slugs": [
       "cortisol-serum"
@@ -2136,7 +2193,9 @@
     "aliases": [
       "CK MB",
       "CKMB",
-      "Cardiac Enzyme"
+      "Cardiac Enzyme",
+      "CPK-MB",
+      "Creatine Kinase MB"
     ],
     "slugs": [
       "creatine-kinase-mb-serum"
@@ -2325,7 +2384,10 @@
     "labName": "D-Dimer, Citrate Plasma",
     "aliases": [
       "D Dimer",
-      "Blood Clot Test"
+      "Blood Clot Test",
+      "D-Dimer Quantitative",
+      "Fibrin Degradation Test",
+      "DVT Blood Test"
     ],
     "slugs": [
       "d-dimer-citrate-plasma"
@@ -2336,7 +2398,8 @@
     "labName": "Dehydroepiandrosterone-S, Serum",
     "aliases": [
       "DHEAS",
-      "DHEA Sulphate"
+      "DHEA Sulphate",
+      "Dehydroepiandrosterone Sulfate"
     ],
     "slugs": [
       "dehydroepiandrosterone-s-serum"
@@ -2374,7 +2437,10 @@
     "aliases": [
       "Dengue NS1",
       "Dengue Test",
-      "Dengue Fever Test"
+      "Dengue Fever Test",
+      "Dengue Antigen Test",
+      "Dengue Test at Home",
+      "Dengue Fever Blood Test"
     ],
     "slugs": [
       "dengue-ns1-antigen-test-serum"
@@ -2430,7 +2496,10 @@
     "aliases": [
       "dsDNA",
       "Anti ds DNA",
-      "Lupus Test"
+      "Lupus Test",
+      "Anti dsDNA",
+      "dsDNA Antibody",
+      "Anti Double Stranded DNA"
     ],
     "slugs": [
       "double-stranded-dna-ifa-serum"
@@ -2450,7 +2519,11 @@
     "aliases": [
       "Dual Marker",
       "Double Marker",
-      "FMF"
+      "FMF",
+      "FMF Dual Marker",
+      "Dual Marker Test",
+      "Double Marker FMF",
+      "First Trimester Screening FMF"
     ],
     "slugs": [
       "dual-marker-fmf-by-trf-method-serum"
@@ -2478,7 +2551,9 @@
     "aliases": [
       "EFTS",
       "Preeclampsia Test",
-      "First Trimester Screening"
+      "First Trimester Screening",
+      "Preeclampsia Screening",
+      "First Trimester Screening Preeclampsia"
     ],
     "slugs": [
       "efts-1st-trimester-quad-with-preeclampsia-serum"
@@ -2547,7 +2622,9 @@
     "labName": "Factor V Mutation Detection, EDTA Blood",
     "aliases": [
       "Factor V Leiden",
-      "Clotting Gene Test"
+      "Clotting Gene Test",
+      "FVL Mutation",
+      "Factor 5 Leiden"
     ],
     "slugs": [
       "factor-v-mutation-detection-edta-blood"
@@ -2569,7 +2646,10 @@
     "labName": "Fecal Calprotectin, Stool",
     "aliases": [
       "Calprotectin",
-      "IBD Test"
+      "IBD Test",
+      "Faecal Calprotectin",
+      "Fecal Calprotectin",
+      "IBD Stool Test"
     ],
     "slugs": [
       "fecal-calprotectin-stool"
@@ -2580,7 +2660,10 @@
     "labName": "Ferritin, Serum",
     "aliases": [
       "Ferritin",
-      "Iron Storage Test"
+      "Iron Storage Test",
+      "Serum Ferritin",
+      "Iron Stores Test",
+      "Ferritin Level"
     ],
     "slugs": [
       "ferritin-serum"
@@ -2699,7 +2782,9 @@
     "name": "Free Testosterone Test",
     "labName": "Free Testosterone, Serum",
     "aliases": [
-      "Testosterone"
+      "Testosterone",
+      "Free T Test",
+      "Free Testosterone Level"
     ],
     "slugs": [
       "free-testosterone-serum"
@@ -2916,7 +3001,10 @@
     "aliases": [
       "GAD",
       "Anti GAD",
-      "GAD65"
+      "GAD65",
+      "GAD65 Antibody",
+      "Type 1 Diabetes Antibody",
+      "LADA Test"
     ],
     "slugs": [
       "glutamic-acid-decarboxylase-antibody"
@@ -2976,7 +3064,11 @@
     "aliases": [
       "Troponin",
       "hs-Troponin I",
-      "Heart Attack Test"
+      "Heart Attack Test",
+      "hs Troponin I",
+      "Troponin I",
+      "High Sensitivity Troponin",
+      "Cardiac Troponin"
     ],
     "slugs": [
       "h-s-troponin-i-serum"
@@ -3065,7 +3157,9 @@
       "H Pylori",
       "Helicobacter Pylori",
       "Stomach Infection Test",
-      "Ulcer Bacteria Test"
+      "Ulcer Bacteria Test",
+      "H Pylori Stool Antigen",
+      "H pylori Test"
     ],
     "slugs": [
       "helicobacter-pylori-antigen-detection"
@@ -3246,7 +3340,8 @@
     "aliases": [
       "hsCRP",
       "High Sensitivity CRP",
-      "Cardiac CRP"
+      "Cardiac CRP",
+      "CRP for heart risk"
     ],
     "slugs": [
       "high-sensitivity-c-reactive-protein-serum"
@@ -3274,7 +3369,12 @@
     "aliases": [
       "HIV",
       "AIDS Test",
-      "HIV Combo"
+      "HIV Combo",
+      "HIV Duo",
+      "HIV Ag/Ab Combo",
+      "HIV 4th Gen",
+      "HIV Test at Home",
+      "HIV Antigen Antibody Test"
     ],
     "slugs": [
       "hiv-screening-4th-gen-assay-serum"
@@ -3345,7 +3445,9 @@
     "aliases": [
       "HLA B27",
       "B27",
-      "Ankylosing Spondylitis Test"
+      "Ankylosing Spondylitis Test",
+      "B27 Test",
+      "HLA-B27 PCR"
     ],
     "slugs": [
       "hla-b27-by-pcr"
@@ -3373,7 +3475,9 @@
     "aliases": [
       "HLA B27",
       "B27",
-      "Ankylosing Spondylitis Test"
+      "Ankylosing Spondylitis Test",
+      "HLA B27 Flow",
+      "B27 Flow Cytometry"
     ],
     "slugs": [
       "hla-b27-flow-cytometry-blood"
@@ -3385,7 +3489,10 @@
     "aliases": [
       "HOMA",
       "HOMA2",
-      "Insulin Resistance"
+      "Insulin Resistance",
+      "HOMA IR",
+      "Insulin Resistance Test",
+      "Insulin Resistance Index"
     ],
     "slugs": [
       "homeostatic-model-assessment-homa-2-serum"
@@ -3491,7 +3598,9 @@
     "aliases": [
       "IGF1",
       "IGF 1",
-      "Somatomedin C"
+      "Somatomedin C",
+      "Insulin Like Growth Factor 1",
+      "Growth Hormone Marker"
     ],
     "slugs": [
       "insulin-like-growth-factor-i-serum"
@@ -3680,7 +3789,9 @@
     "labName": "Lipoprotein (a), Serum",
     "aliases": [
       "Lp(a)",
-      "Lipoprotein A"
+      "Lipoprotein A",
+      "Lipoprotein little a",
+      "Lp a Test"
     ],
     "slugs": [
       "lipoprotein-a-serum"
@@ -3752,7 +3863,11 @@
   "LUPUS ANTICOAGULANT": {
     "name": "Lupus Anticoagulant",
     "labName": "Lupus Anticoagulant",
-    "aliases": [],
+    "aliases": [
+      "LA Test",
+      "Antiphospholipid Antibody Test",
+      "Lupus Anticoagulant Screen"
+    ],
     "slugs": [
       "lupus-anticoagulant"
     ]
@@ -3817,7 +3932,10 @@
     "aliases": [
       "Malaria",
       "Malaria Test",
-      "MP Antigen"
+      "MP Antigen",
+      "Malaria Antigen",
+      "Malaria Rapid Test",
+      "Malaria Test at Home"
     ],
     "slugs": [
       "malaria-antigen-detection-whole-blood"
@@ -3870,7 +3988,11 @@
   "METANEPHRINE FREE (PLASMA)": {
     "name": "Metanephrine Free (plasma)",
     "labName": "Metanephrine Free (plasma)",
-    "aliases": [],
+    "aliases": [
+      "Plasma Metanephrines",
+      "Free Metanephrine",
+      "Pheochromocytoma Test"
+    ],
     "slugs": [
       "metanephrine-free-plasma"
     ]
@@ -3897,7 +4019,10 @@
     "aliases": [
       "Microalbumin",
       "Urine Albumin",
-      "MAU"
+      "MAU",
+      "Microalbuminuria",
+      "Urine Albumin Creatinine Ratio",
+      "UACR"
     ],
     "slugs": [
       "microalbumin-urine"
@@ -4066,7 +4191,12 @@
       "Non Invasive Prenatal Test",
       "Prenatal Genetic Screening",
       "Down Syndrome Blood Test",
-      "Baby Chromosome Test"
+      "Baby Chromosome Test",
+      "Non Invasive Prenatal Screening",
+      "Cell Free DNA Test",
+      "cfDNA Test",
+      "Down Syndrome Screening Test",
+      "Prenatal DNA Test"
     ],
     "slugs": [
       "nipt"
@@ -4078,7 +4208,10 @@
     "aliases": [
       "NIPT Microdeletion",
       "NIPT Plus",
-      "Non Invasive Prenatal Test"
+      "Non Invasive Prenatal Test",
+      "Extended NIPT",
+      "NIPT Microdeletion Panel",
+      "22q11 Deletion Screening"
     ],
     "slugs": [
       "nipt-with-microdeletion"
@@ -4106,7 +4239,12 @@
     "aliases": [
       "NT proBNP",
       "BNP",
-      "Heart Failure Test"
+      "Heart Failure Test",
+      "NT pro BNP",
+      "NTproBNP",
+      "Pro BNP",
+      "BNP Test",
+      "Heart Failure Blood Test"
     ],
     "slugs": [
       "n-terminal-pro-b-type-natriuretic-peptide-serum"
@@ -4178,7 +4316,12 @@
   "OVARIAN MALIGNANCY RISK ALGORITHM (ROMA)-HE4+CA125": {
     "name": "Ovarian Malignancy Risk Algorithm (roma)-He4+ca125",
     "labName": "Ovarian Malignancy Risk Algorithm (roma)-He4+ca125",
-    "aliases": [],
+    "aliases": [
+      "ROMA",
+      "HE4 and CA125",
+      "HE4 Test",
+      "Ovarian Malignancy Risk"
+    ],
     "slugs": [
       "ovarian-malignancy-risk-algorithm-roma-he4ca125"
     ]
@@ -4450,7 +4593,9 @@
     "labName": "Procalcitonin, Serum",
     "aliases": [
       "PCT",
-      "Sepsis Marker"
+      "Sepsis Marker",
+      "Procalcitonin Level",
+      "Bacterial Infection Marker"
     ],
     "slugs": [
       "procalcitonin-serum"
@@ -4477,7 +4622,10 @@
   "PROTEIN C ACTIVITY, PLASMA": {
     "name": "Protein C Activity Test",
     "labName": "Protein C Activity, Plasma",
-    "aliases": [],
+    "aliases": [
+      "Protein C",
+      "Protein C Functional"
+    ],
     "slugs": [
       "protein-c-activity-plasma"
     ]
@@ -4506,7 +4654,10 @@
   "PROTEIN S ACTIVITY, PLASMA": {
     "name": "Protein S Activity Test",
     "labName": "Protein S Activity, Plasma",
-    "aliases": [],
+    "aliases": [
+      "Protein S",
+      "Protein S Functional"
+    ],
     "slugs": [
       "protein-s-activity-plasma"
     ]
@@ -4542,7 +4693,10 @@
     "labName": "PSA Free & Total, Serum",
     "aliases": [
       "PSA",
-      "Prostate Test"
+      "Prostate Test",
+      "Free PSA",
+      "Total PSA",
+      "PSA Free and Total"
     ],
     "slugs": [
       "psa-free-total-serum"
@@ -4554,7 +4708,10 @@
     "aliases": [
       "PTH",
       "Parathyroid Test",
-      "Intact PTH"
+      "Intact PTH",
+      "Parathyroid Hormone",
+      "PTH Test",
+      "Parathormone"
     ],
     "slugs": [
       "pth-intact-edta-calcium-serum"
@@ -4577,7 +4734,9 @@
     "aliases": [
       "Quadruple Marker",
       "Second Trimester Screening",
-      "Down Syndrome Screening"
+      "Down Syndrome Screening",
+      "Quad Test",
+      "Quadruple Test Pregnancy"
     ],
     "slugs": [
       "quadruple-marker-serum"
@@ -4588,7 +4747,9 @@
     "labName": "Quantitative D-Dimer, Citrate Plasma",
     "aliases": [
       "D Dimer",
-      "Blood Clot Test"
+      "Blood Clot Test",
+      "D Dimer Quantitative",
+      "D-Dimer"
     ],
     "slugs": [
       "quantitative-d-dimer-citrate-plasma"
@@ -4971,7 +5132,10 @@
     "name": "Testosterone Test (Free & Total)",
     "labName": "Testosterone,Free/Total, Serum",
     "aliases": [
-      "Testosterone"
+      "Testosterone",
+      "Free Testosterone Total Testosterone",
+      "Testosterone Free and Total",
+      "PCOS Hormone Test"
     ],
     "slugs": [
       "testosterone-free-total-serum"
@@ -4999,7 +5163,10 @@
   "THROMBOCHECK HEREDITARY": {
     "name": "Thrombocheck Hereditary",
     "labName": "Thrombocheck Hereditary",
-    "aliases": [],
+    "aliases": [
+      "Hereditary Thrombophilia Test",
+      "Inherited Clotting Disorder Test"
+    ],
     "slugs": [
       "thrombocheck-hereditary"
     ]
@@ -5007,7 +5174,11 @@
   "THROMBOCHECK PANEL": {
     "name": "Thrombocheck Panel",
     "labName": "Thrombocheck Panel",
-    "aliases": [],
+    "aliases": [
+      "Thrombophilia Panel",
+      "Thrombophilia Profile",
+      "Clotting Disorder Panel"
+    ],
     "slugs": [
       "thrombocheck-panel"
     ]
@@ -5015,7 +5186,12 @@
   "THROMBOCHECK TOTAL": {
     "name": "Thrombocheck Total",
     "labName": "Thrombocheck Total",
-    "aliases": [],
+    "aliases": [
+      "Thrombophilia Profile",
+      "Thrombophilia Panel",
+      "Clotting Disorder Test",
+      "Thrombophilia Screening"
+    ],
     "slugs": [
       "thrombocheck-total"
     ]
@@ -5023,7 +5199,11 @@
   "THYROGLOBULIN, SERUM": {
     "name": "Thyroglobulin Test",
     "labName": "Thyroglobulin, Serum",
-    "aliases": [],
+    "aliases": [
+      "Tg Test",
+      "Serum Thyroglobulin",
+      "Thyroid Cancer Marker"
+    ],
     "slugs": [
       "thyroglobulin-serum"
     ]
@@ -5068,7 +5248,9 @@
       "Anti tTG",
       "Gluten Allergy Test",
       "Celiac Test",
-      "Coeliac Test"
+      "Coeliac Test",
+      "tTG IgA",
+      "Coeliac Disease Test"
     ],
     "slugs": [
       "tissue-transglutaminase-iga-serum"
@@ -5209,7 +5391,10 @@
     "aliases": [
       "Triple Marker",
       "Triple Test",
-      "Down Syndrome Screening"
+      "Down Syndrome Screening",
+      "Triple Marker Screening",
+      "AFP hCG uE3",
+      "Triple Marker Test Bangalore"
     ],
     "slugs": [
       "triple-marker-test-by-trf-method-serum"
@@ -5220,7 +5405,8 @@
     "labName": "Triple Test",
     "aliases": [
       "Triple Marker",
-      "Down Syndrome Screening"
+      "Down Syndrome Screening",
+      "Triple Test Pregnancy"
     ],
     "slugs": [
       "triple-test"
@@ -5232,7 +5418,11 @@
     "aliases": [
       "Troponin",
       "hs-Troponin T",
-      "Heart Attack Test"
+      "Heart Attack Test",
+      "hs Troponin T",
+      "Troponin T",
+      "hsTnT",
+      "Cardiac Troponin T"
     ],
     "slugs": [
       "troponin-t-hs-serum"
@@ -5243,7 +5433,9 @@
     "labName": "TSH Receptor Antibodies, Serum",
     "aliases": [
       "TRAb",
-      "TSH Receptor Antibodies"
+      "TSH Receptor Antibodies",
+      "Graves Disease Test",
+      "TSI Test"
     ],
     "slugs": [
       "tsh-receptor-antibodies-serum"
@@ -5354,7 +5546,10 @@
     "labName": "Urinary Protein Creatinine Ratio",
     "aliases": [
       "UPCR",
-      "Urine Protein"
+      "Urine Protein",
+      "Urine PCR",
+      "Urine Protein Creatinine Ratio",
+      "Spot Urine Protein"
     ],
     "slugs": [
       "urinary-protein-creatinine-ratio"
@@ -5607,6 +5802,42 @@
     "aliases": [],
     "slugs": [
       "skin-biopsy-and-immunoflorescence"
+    ]
+  },
+  "Apolipoprotein A1 (ApoA1)": {
+    "name": "Apolipoprotein A1 (ApoA1) Test",
+    "labName": "Apolipoprotein A1 (ApoA1)",
+    "aliases": [
+      "Apo A1",
+      "Apo (A1)",
+      "ApoA1",
+      "Apo A-I",
+      "Apolipoprotein A-I",
+      "Apolipoprotein A1",
+      "HDL Protein Test",
+      "Apo A1 test",
+      "ApoA1 blood test"
+    ],
+    "slugs": [
+      "apolipoprotein-a1-apoa1"
+    ]
+  },
+  "Apolipoprotein B (ApoB)": {
+    "name": "Apolipoprotein B (ApoB) Test",
+    "labName": "Apolipoprotein B (ApoB)",
+    "aliases": [
+      "Apo B",
+      "Apo (B)",
+      "ApoB",
+      "Apo B-100",
+      "Apolipoprotein B-100",
+      "Apolipoprotein B",
+      "LDL Particle Count Test",
+      "Apo B test",
+      "ApoB blood test"
+    ],
+    "slugs": [
+      "apolipoprotein-b-apob"
     ]
   }
 }

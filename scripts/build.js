@@ -6,9 +6,11 @@ const curatedDescriptions = require("./test-descriptions");
 const packagesContent = require("./packages-content");
 const { estimateEta, DEFAULT_ETA } = require("./eta");
 const { CURATED: CURATED_FRIENDLY_NAMES, normKey, friendlyNameFor } = require("./friendly-names");
-const { PRICED_TEST_CODE_SET, testFaqs, packageFaqs } = require("./product-faqs");
+const { PRICED_TEST_CODE_SET, testFaqs, packageFaqs, specialisedFaqs } = require("./product-faqs");
+const { SEO: SPECIALISED_SEO } = require("./specialised-seo");
 
-const rawTests = require("./raw/tests-raw.json");
+// Spreadsheet rows, plus tests the lab sells that are not in the spreadsheet yet.
+const rawTests = [...require("./raw/tests-raw.json"), ...require("./extra-tests")];
 // "Thyroid Panel (T3, T4, TSH)" (PKG-TP) removed at the business's request -
 // each constituent test remains individually bookable.
 const EXCLUDED_PACKAGE_CODES = new Set(["PKG-TP"]);
@@ -38,6 +40,8 @@ const CATEGORY_RULES = [
 // GTT into Diabetes & Metabolic instead of Pregnancy Care). Checked first.
 const CATEGORY_OVERRIDES = {
   NIPT: "Pregnancy Care",
+  "APOLIPOPROTEIN A1 (APOA1)": "Heart Health",
+  "APOLIPOPROTEIN B (APOB)": "Heart Health",
   "NIPT WITH MICRODELETION": "Pregnancy Care",
   "ORAL GLUCOSE TOLERANCE TEST - GESTATIONAL": "Pregnancy Care",
   "GESTATIONAL GLUCOSE TOLERANCE (GTT) -3, PLASMA": "Pregnancy Care",
@@ -192,6 +196,25 @@ for (const t of tests) {
 for (const p of packages) {
   p.faqs = packageFaqs(p);
 }
+
+// ---- SEO / AEO content for the specialised tests (scripts/specialised-seo.js) ----
+// Adds the search names, the "seo" block the test page renders, and richer
+// answer-ready FAQs (replacing the generic ones where both exist).
+const testBySlug = new Map(tests.map((t) => [t.slug, t]));
+const unmatchedSeoSlugs = [];
+for (const [slug, seo] of Object.entries(SPECIALISED_SEO)) {
+  const t = testBySlug.get(slug);
+  if (!t) {
+    unmatchedSeoSlugs.push(slug);
+    continue;
+  }
+  const have = new Set(t.aliases.map((a) => a.toLowerCase()));
+  for (const term of seo.terms || []) if (!have.has(term.toLowerCase())) t.aliases.push(term);
+  // The curated plain-language summary replaces the generic fallback description everywhere it shows.
+  t.description = seo.what;
+  t.seo = { specialties: seo.specialties, short: seo.short, what: seo.what, when: seo.when, ...(seo.prep ? { prep: seo.prep } : {}) };
+  t.faqs = specialisedFaqs(t, seo);
+}
 const matchedPricedCodes = new Set(tests.filter((t) => t.faqs).map((t) => t.code.toUpperCase()));
 const unmatchedPricedCodes = [...PRICED_TEST_CODE_SET].filter((c) => !matchedPricedCodes.has(c));
 
@@ -236,5 +259,7 @@ if (nameCollisions.length) {
   console.log("  Different lab tests share one friendly name (customers couldn't tell them apart):");
   nameCollisions.forEach(([n, raws]) => console.log(`  "${n}" <- ${[...raws].join(" | ")}`));
 }
+if (unmatchedSeoSlugs.length) console.log("  Specialised SEO entries matching no test (check the slug): " + unmatchedSeoSlugs.join(", "));
+console.log(`Specialised SEO content: ${Object.keys(SPECIALISED_SEO).length - unmatchedSeoSlugs.length} tests`);
 console.log(`FAQs: ${matchedPricedCodes.size}/${PRICED_TEST_CODE_SET.size} priced tests + ${packages.length} packages`);
 if (unmatchedPricedCodes.length) console.log("  Priced test codes matching no test (check the code list):\n  " + unmatchedPricedCodes.join(", "));
