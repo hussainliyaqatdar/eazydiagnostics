@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import SearchModal from "@/components/SearchModal";
 import CartDrawer from "@/components/CartDrawer";
 import ReferralCapture from "@/components/ReferralCapture";
+import VisitBar from "@/components/VisitBar";
 import { getFeaturedCoupon } from "@/lib/coupon-config";
 import { BUSINESS_NAME, PARTNER_NAME, SITE_URL, BOOKING_PHONE, SERVICE_AREAS, GMB_RATING, GMB_PROFILE_URL } from "@/lib/site-config";
 
@@ -104,6 +105,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SearchModal />
             <CartDrawer featuredCoupon={featuredCoupon} />
             <ReferralCapture />
+            <VisitBar />
           </UIProvider>
         </CartProvider>
       </body>

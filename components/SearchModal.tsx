@@ -5,6 +5,7 @@ import { allPackages, getFrequentlyPrescribedTests, getPackageCategories, search
 import { useCartSummary } from "@/lib/cart-context";
 import { useUI } from "@/lib/ui-context";
 import AddToCartButton from "./AddToCartButton";
+import MemberSwitcher from "./MemberSwitcher";
 import type { TestItem } from "@/lib/types";
 
 const RESULT_LIMIT = 30; // cap on the default (not searching) package list
@@ -28,7 +29,7 @@ function testRow(t: TestItem): Row {
 
 export default function SearchModal() {
   const { searchModalOpen, closeSearchModal, openCartDrawer } = useUI();
-  const { count, total, discount, coupon } = useCartSummary();
+  const { count, total, discount, coupon, members } = useCartSummary();
   const [tab, setTab] = useState<"tests" | "packages">("tests");
   const [query, setQuery] = useState("");
   const [packageCategory, setPackageCategory] = useState(PACKAGE_CATEGORIES[0]);
@@ -112,6 +113,8 @@ export default function SearchModal() {
             className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand"
             aria-label="Search"
           />
+          {/* Once something is in the cart, say whose cart "Add" fills, and let a family add another member. */}
+          {(count > 0 || members.length > 1) && <MemberSwitcher />}
           <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
             {(["tests", "packages"] as const).map((t) => (
               <button

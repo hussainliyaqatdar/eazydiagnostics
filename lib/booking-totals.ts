@@ -5,6 +5,9 @@ import type { Booking } from "./types";
 export const FREE_COLLECTION_MIN = 1000;
 export const COLLECTION_CHARGE = 250;
 
+// Most members one home visit can cover (family at the same address).
+export const MAX_MEMBERS = 6;
+
 export function collectionChargeFor(itemsTotal: number): number {
   return itemsTotal > 0 && itemsTotal < FREE_COLLECTION_MIN ? COLLECTION_CHARGE : 0;
 }

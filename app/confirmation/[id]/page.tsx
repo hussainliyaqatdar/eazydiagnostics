@@ -17,6 +17,7 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
     );
   }
 
+  const members = booking.members;
   const consultItem = booking.items.find((i) => hasConsult(i.offer));
   const doctorName = consultItem?.offer?.doctorName;
 
@@ -24,13 +25,47 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
     <div className="max-w-xl mx-auto flex flex-col gap-6">
       <div className="text-center">
         <div className="text-4xl mb-2">✅</div>
-        <h1 className="text-2xl font-bold text-gray-900">Booking confirmed!</h1>
-        <p className="text-gray-600">Booking ID: {booking.id}</p>
+        <h1 className="text-2xl font-bold text-gray-900">{members ? `Visit confirmed for ${members.length} members!` : "Booking confirmed!"}</h1>
+        <p className="text-gray-600">{members ? "Visit" : "Booking"} ID: {booking.id}</p>
+        {members && <p className="text-sm text-gray-500">One phlebotomist, one visit - samples collected from everyone.</p>}
       </div>
 
+      {members &&
+        members.map((m) => (
+          <div key={m.name + m.age} className="bg-white border rounded-lg p-4 flex flex-col gap-2">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="font-semibold text-gray-900">{m.name}</h2>
+              <span className="text-xs text-gray-500">{m.age}, {m.gender}</span>
+            </div>
+            {m.items.map((i) => (
+              <div key={`${i.kind}-${i.slug}`} className="flex justify-between gap-3 text-sm">
+                <span>
+                  {i.name} {i.qty > 1 ? `\u00d7 ${i.qty}` : ""}
+                  {describeConsult(i.offer) && <span className="block text-xs text-brand-dark">{describeConsult(i.offer)}</span>}
+                </span>
+                <span className="shrink-0">
+                  {i.mrp > i.price && <span className="line-through text-gray-400 mr-1">Rs. {(i.mrp * i.qty).toLocaleString("en-IN")}</span>}
+                  <strong>Rs. {(i.price * i.qty).toLocaleString("en-IN")}</strong>
+                </span>
+              </div>
+            ))}
+            <div className="border-t pt-2 flex justify-between text-sm font-semibold text-gray-900">
+              <span>{m.name}&apos;s subtotal</span>
+              <span>Rs. {m.items.reduce((sum, i) => sum + i.price * i.qty, 0).toLocaleString("en-IN")}</span>
+            </div>
+            {m.whatsapp && <p className="text-xs text-gray-500">Report to WhatsApp {m.whatsapp}</p>}
+          </div>
+        ))}
+
       <div className="bg-white border rounded-lg p-4 flex flex-col gap-3">
-        <h2 className="font-semibold text-gray-900">What you booked</h2>
-        {booking.items.map((i) => (
+        <h2 className="font-semibold text-gray-900">{members ? "Visit total" : "What you booked"}</h2>
+        {members && (
+          <div className="flex justify-between text-sm text-gray-700">
+            <span>All {members.length} members</span>
+            <span>Rs. {booking.subtotalPrice.toLocaleString("en-IN")}</span>
+          </div>
+        )}
+        {!members && booking.items.map((i) => (
           <div key={`${i.kind}-${i.slug}`} className="flex justify-between gap-3 text-sm">
             <span>
               {i.name} {i.qty > 1 ? `× ${i.qty}` : ""}
@@ -62,7 +97,7 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
       <p className="text-xs text-gray-500 text-center -mt-4">No payment has been taken yet - pay only after your sample is collected.</p>
 
       <div className="bg-brand-light rounded-lg p-4 flex flex-col gap-1">
-        <h2 className="font-semibold text-gray-900 mb-1">Collection details</h2>
+        <h2 className="font-semibold text-gray-900 mb-1">Collection details{members ? " (one visit for everyone)" : ""}</h2>
         <p><strong>Date:</strong> {booking.date}</p>
         <p><strong>Time window:</strong> {booking.slot}</p>
         <p><strong>Address:</strong> {booking.patient.addressLine}, {booking.patient.locality}, {booking.patient.city} - {booking.patient.pincode}</p>
@@ -92,7 +127,7 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
 
       <p className="text-sm text-gray-600 text-center">
         Our phlebotomist will arrive within 60 minutes of your slot start time, and your report
-        will be sent via WhatsApp to <strong>{booking.patient.whatsapp}</strong> - typically within
+        will be sent via WhatsApp to <strong>{booking.patient.whatsapp}</strong>{members ? " (or each member's own number, if given)" : ""} - typically within
         6 hours for routine tests.
       </p>
 

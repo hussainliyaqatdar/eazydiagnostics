@@ -8,11 +8,11 @@ import { blockedByPackage, compactDescription, describeCoupon, type CouponRule }
 // header, so it stays pinned to the top with the nav as the page scrolls.
 export default function CouponBanner({ coupon }: { coupon: CouponRule | null }) {
   const pathname = usePathname();
-  const { lines } = useCart();
+  const { allLines } = useCart();
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
 
   // Tests-only offers aren't advertised to a visitor who has a package in the cart.
-  if (!coupon || pathname !== "/" || blockedByPackage(coupon, lines.some((l) => l.kind === "package"))) return null;
+  if (!coupon || pathname !== "/" || blockedByPackage(coupon, allLines.some((l) => l.kind === "package"))) return null;
 
   // The async Clipboard API is blocked in some in-app browsers (e.g. links opened
   // inside WhatsApp/Instagram) and on insecure origins, so fall back to the older
