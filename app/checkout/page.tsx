@@ -60,6 +60,9 @@ export default function CheckoutPage() {
   // A pasted Google Maps link we couldn't read coordinates from. It still counts
   // as the location: our phlebotomist opens the link directly.
   const [mapsLink, setMapsLink] = useState<string | null>(null);
+  // After a location is captured only "Update location" / "View on map" show; this is
+  // true once "Update location" is tapped, to bring back the ways of choosing one.
+  const [changingLocation, setChangingLocation] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
   const [showManualLocation, setShowManualLocation] = useState(false);
@@ -158,6 +161,8 @@ export default function CheckoutPage() {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setMapsLink(null);
         setLocating(false);
+        setChangingLocation(false);
+        setShowManualLocation(false);
       },
       () => {
         setLocationError("Couldn't access your location. Please allow location access, or fill the address manually.");
@@ -187,6 +192,57 @@ export default function CheckoutPage() {
       if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
     }
     return null;
+  }
+
+  // Reads the location off what was typed: coordinates, or any Google Maps link
+  // (the server resolves it; a valid link is accepted even with no readable
+  // coordinates). On success the chooser closes and the captured state shows.
+  async function applyManualLocation() {
+    setManualLocationError("");
+    const typed = manualLocationInput.trim();
+    const done = () => {
+      setLocationError("");
+      setChangingLocation(false);
+      setShowManualLocation(false);
+      setManualLocationInput("");
+    };
+    const parsed = parseManualLocation(typed);
+    if (parsed) {
+      setCoords(parsed);
+      setMapsLink(null);
+      done();
+      return;
+    }
+    if (/^https?:\/\//.test(typed)) {
+      setResolvingLink(true);
+      try {
+        const res = await fetch("/api/resolve-location", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: typed }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setManualLocationError(data.error || "Couldn't resolve that link.");
+        } else {
+          if (typeof data.lat === "number" && typeof data.lng === "number") {
+            setCoords({ lat: data.lat, lng: data.lng });
+            setMapsLink(null);
+          } else {
+            // No coordinates in the link: keep the link itself as the location.
+            setCoords(null);
+            setMapsLink(data.link || typed);
+          }
+          done();
+        }
+      } catch {
+        setManualLocationError("Couldn't resolve that link. Please check your connection and try again.");
+      } finally {
+        setResolvingLink(false);
+      }
+      return;
+    }
+    setManualLocationError("Please paste a Google Maps link (use Share in Google Maps and copy the link), or coordinates like 12.9081, 77.5831.");
   }
 
   function isShortLink(input: string) {
@@ -347,6 +403,7 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
     </div>
   );
 
+  const captured = !!(coords || mapsLink);
   const first = members[0];
   const firstMember = memberOf(first.id, first.label);
 
@@ -457,101 +514,97 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
         <div className="bg-white border rounded-lg p-4 flex flex-col gap-3">
           <h2 className="font-semibold text-gray-900">Collection address</h2>
 
-          <div className="bg-brand-light rounded-md px-3 py-2 flex flex-col gap-2">
-            <div className="flex flex-col gap-2">
-              <div className="text-sm text-gray-700">
-                <span className="font-medium">Google Maps Location*</span>
-                {!coords && !mapsLink && <span className="block text-xs text-gray-600">Required - so our phlebotomist can find you.</span>}
-                {(coords || mapsLink) && (
-                  <span className="block text-xs text-brand-dark">
-                    Location captured &mdash; <a className="underline" href={coords ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}` : mapsLink!} target="_blank" rel="noopener noreferrer">view on map</a>
-                  </span>
-                )}
-                {locationError && <span className="block text-xs text-red-600">{locationError}</span>}
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                {/* Primary: one tap, uses the phone's location. */}
-                <button
-                  type="button"
-                  onClick={useCurrentLocation}
-                  disabled={locating}
-                  className="text-sm font-semibold bg-brand text-white px-4 py-2.5 rounded-md hover:bg-brand-dark transition disabled:opacity-60 sm:flex-1"
-                >
-                  {locating ? "Locating…" : coords || mapsLink ? "Update current location" : "Use current location"}
-                </button>
-                {/* Secondary: paste a Google Maps link or coordinates instead. */}
-                <button
-                  type="button"
-                  onClick={() => setShowManualLocation((v) => !v)}
-                  aria-expanded={showManualLocation}
-                  className="text-sm font-medium bg-white border border-brand text-brand-dark px-4 py-2.5 rounded-md hover:bg-brand-light transition sm:flex-1"
-                >
-                  Add Manually
-                </button>
-              </div>
+          <div className="bg-brand-light rounded-md px-3 py-3 flex flex-col gap-3">
+            <div className="text-sm text-gray-700">
+              <span className="font-medium">Google Maps Location*</span>
+              {captured && !changingLocation ? (
+                <span className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-green-800">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-green-600" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9.5" strokeWidth="2" />
+                    <path d="M7.5 12.5l3 3 6-6.5" />
+                  </svg>
+                  Location captured
+                </span>
+              ) : (
+                <span className="block text-xs text-gray-600">Required - so our phlebotomist can find you.</span>
+              )}
+              {locationError && <span className="block text-xs text-red-600">{locationError}</span>}
             </div>
 
-            {showManualLocation && (
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  placeholder="Paste a Google Maps link, or lat,lng (e.g. 12.9081, 77.5831)"
-                  value={manualLocationInput}
-                  onChange={(e) => setManualLocationInput(e.target.value)}
-                  className="flex-1 border rounded-md px-3 py-2 text-sm bg-white min-w-0"
-                />
+            {captured && !changingLocation ? (
+              /* Captured: one primary action, one secondary. */
+              <div className="flex items-stretch gap-3">
+                <a
+                  href={coords ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}` : mapsLink!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 rounded-md border border-gray-300 bg-white px-4 py-2.5 text-center text-sm font-medium text-gray-700 transition hover:border-brand hover:text-brand"
+                >
+                  View on map
+                </a>
                 <button
                   type="button"
-                  disabled={resolvingLink}
-                  onClick={async () => {
-                    setManualLocationError("");
-                    const parsed = parseManualLocation(manualLocationInput);
-                    if (parsed) {
-                      setLocationError("");
-                      setCoords(parsed);
-                      setMapsLink(null);
-                      return;
-                    }
-                    // Any Google Maps link: shortened share links (maps.app.goo.gl, goo.gl/maps)
-                    // don't carry coordinates in the link itself, and some place links have none
-                    // at all - the server reads what it can, and the link is accepted either way.
-                    if (/^https?:\/\//.test(manualLocationInput.trim())) {
-                      setResolvingLink(true);
-                      try {
-                        const res = await fetch("/api/resolve-location", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ url: manualLocationInput.trim() }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) {
-                          setManualLocationError(data.error || "Couldn't resolve that link.");
-                        } else {
-                          setLocationError("");
-                          if (typeof data.lat === "number" && typeof data.lng === "number") {
-                            setCoords({ lat: data.lat, lng: data.lng });
-                            setMapsLink(null);
-                          } else {
-                            // No coordinates in the link: keep the link itself as the location.
-                            setCoords(null);
-                            setMapsLink(data.link || manualLocationInput.trim());
-                          }
-                        }
-                      } catch {
-                        setManualLocationError("Couldn't resolve that link. Please check your connection and try again.");
-                      } finally {
-                        setResolvingLink(false);
-                      }
-                      return;
-                    }
-                    setManualLocationError("Please paste a Google Maps link (use Share in Google Maps and copy the link), or coordinates like 12.9081, 77.5831.");
-                  }}
-                  className="text-xs font-medium bg-white border border-brand text-brand-dark px-3 py-1.5 rounded-md hover:bg-brand hover:text-white transition disabled:opacity-60 whitespace-nowrap shrink-0"
+                  onClick={() => setChangingLocation(true)}
+                  className="flex-1 rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
                 >
-                  {resolvingLink ? "Resolving link…" : "Set location"}
+                  Update location
                 </button>
               </div>
+            ) : (
+              /* Not captured yet (or updating): the two ways to share one. */
+              <>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={useCurrentLocation}
+                    disabled={locating}
+                    className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:opacity-60 sm:flex-1"
+                  >
+                    {locating ? "Locating\u2026" : "Use current location"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowManualLocation((v) => !v)}
+                    aria-expanded={showManualLocation}
+                    className="rounded-md border border-brand bg-white px-4 py-2.5 text-sm font-medium text-brand-dark transition hover:bg-brand-light sm:flex-1"
+                  >
+                    Add Manually
+                  </button>
+                </div>
+
+                {showManualLocation && (
+                  <div className="flex flex-col gap-2">
+                    <input
+                      placeholder="Paste a Google Maps link, or lat,lng (e.g. 12.9081, 77.5831)"
+                      value={manualLocationInput}
+                      onChange={(e) => setManualLocationInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          applyManualLocation();
+                        }
+                      }}
+                      className="min-w-0 rounded-md border bg-white px-3 py-2 text-sm"
+                    />
+                    <button
+                      type="button"
+                      disabled={resolvingLink || !manualLocationInput.trim()}
+                      onClick={applyManualLocation}
+                      className="rounded-md border border-brand bg-white px-3 py-2 text-sm font-medium text-brand-dark transition hover:bg-brand hover:text-white disabled:opacity-60"
+                    >
+                      {resolvingLink ? "Resolving link\u2026" : "Set location"}
+                    </button>
+                  </div>
+                )}
+                {manualLocationError && <span className="text-xs text-red-600">{manualLocationError}</span>}
+
+                {captured && (
+                  <button type="button" onClick={() => { setChangingLocation(false); setShowManualLocation(false); setLocationError(""); setManualLocationError(""); }} className="self-start text-xs font-medium text-gray-600 underline hover:text-gray-900">
+                    Keep current location
+                  </button>
+                )}
+              </>
             )}
-            {manualLocationError && <span className="text-xs text-red-600">{manualLocationError}</span>}
           </div>
 
           <input id="checkout-addressLine" placeholder="House/flat, street, landmark*" value={form.addressLine} onChange={(e) => update("addressLine", e.target.value)} className={fieldClass("checkout-addressLine")} />

@@ -179,28 +179,25 @@ export default function CartDrawer({ featuredCoupon = null }: { featuredCoupon?:
 
                       {m.items.map((i) => (
                         <div key={`${i.kind}-${i.slug}`} className="border rounded-lg overflow-hidden bg-white">
-                          <div className="p-3 flex items-center justify-between gap-2">
-                            <div className="min-w-0">
-                              <span className="text-xs uppercase tracking-wide text-gray-400">{i.kind}</span>
-                              <Link
-                                href={i.kind === "test" ? `/tests/${i.slug}` : `/packages/${i.slug}`}
-                                onClick={closeCartDrawer}
-                                className="block font-semibold text-gray-900 hover:text-brand truncate"
-                              >
-                                {i.name}
-                              </Link>
-                              <p className="text-xs text-gray-500">Qty: {i.qty}</p>
-                              {i.offer?.variant === "included" && describeConsult(i.offer) && (
-                                <p className="text-xs text-brand-dark mt-0.5">{describeConsult(i.offer)}</p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 shrink-0">
-                              <PriceTag mrp={i.mrp * i.qty} price={i.price * i.qty} size="sm" />
+                          {/* The name gets the whole row width (and wraps) so it is never cut off; the
+                              price sits on the line below, beside the quantity. */}
+                          <div className="p-3 flex flex-col gap-1.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <span className="text-xs uppercase tracking-wide text-gray-400">{i.kind}</span>
+                                <Link
+                                  href={i.kind === "test" ? `/tests/${i.slug}` : `/packages/${i.slug}`}
+                                  onClick={closeCartDrawer}
+                                  className="block break-words font-semibold leading-snug text-gray-900 hover:text-brand"
+                                >
+                                  {i.name}
+                                </Link>
+                              </div>
                               <button
                                 onClick={() => remove(i.kind, i.slug, m.id)}
                                 aria-label={`Remove ${i.name}${multi ? ` for ${m.label}` : ""} from cart`}
                                 title="Remove"
-                                className="text-gray-400 hover:text-red-500 transition p-1"
+                                className="-mr-1 -mt-1 shrink-0 p-1 text-gray-400 transition hover:text-red-500"
                               >
                                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M3 6h18" />
@@ -210,6 +207,15 @@ export default function CartDrawer({ featuredCoupon = null }: { featuredCoupon?:
                                   <path d="M14 11v6" />
                                 </svg>
                               </button>
+                            </div>
+                            <div className="flex items-end justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-xs text-gray-500">Qty: {i.qty}</p>
+                                {i.offer?.variant === "included" && describeConsult(i.offer) && (
+                                  <p className="mt-0.5 text-xs text-brand-dark">{describeConsult(i.offer)}</p>
+                                )}
+                              </div>
+                              <PriceTag mrp={i.mrp * i.qty} price={i.price * i.qty} size="sm" />
                             </div>
                           </div>
 
