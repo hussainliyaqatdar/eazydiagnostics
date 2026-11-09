@@ -9,10 +9,11 @@ type Slide = { image: string; alt: string; heading: string; subhead: string };
 // static text.
 const SLIDES: Slide[] = [
   {
-    image: "/images/corporate-professional-home-collection.webp",
-    alt: "A phlebotomist in gloves and a mask visits a corporate professional at home to draw a blood sample while he works on his laptop, using a professional collection kit with labelled sample tubes and a sharps container.",
-    heading: "Know Where Your Body Needs Attention",
-    subhead: "Comprehensive full body checkups for professionals who'd rather catch a problem early than manage one later.",
+    image: "/images/senior-citizen-home-collection.webp",
+    alt: "A phlebotomist in gloves and a mask visits a senior citizen at home to draw a blood sample while he sits comfortably on his sofa, using a professional collection kit with labelled sample tubes and a sharps container.",
+    heading: "Specialised Tests for Heart Health & Diabetes",
+    subhead:
+      "From lipid profiles and cardiac risk markers to HbA1c and blood sugar monitoring - specialised heart and diabetes tests, collected gently at home for your parents and loved ones.",
   },
   {
     image: "/images/hero-home-collection.webp",
@@ -22,11 +23,10 @@ const SLIDES: Slide[] = [
       "Accurate hormone panels, NIPT and other specialised DNA tests - hospital-grade prenatal reports without leaving your couch, trusted by expecting mothers across Bangalore.",
   },
   {
-    image: "/images/senior-citizen-home-collection.webp",
-    alt: "A phlebotomist in gloves and a mask visits a senior citizen at home to draw a blood sample while he sits comfortably on his sofa, using a professional collection kit with labelled sample tubes and a sharps container.",
-    heading: "Specialised Tests for Heart Health & Diabetes",
-    subhead:
-      "From lipid profiles and cardiac risk markers to HbA1c and blood sugar monitoring - specialised heart and diabetes tests, collected gently at home for your parents and loved ones.",
+    image: "/images/corporate-professional-home-collection.webp",
+    alt: "A phlebotomist in gloves and a mask visits a corporate professional at home to draw a blood sample while he works on his laptop, using a professional collection kit with labelled sample tubes and a sharps container.",
+    heading: "Know Where Your Body Needs Attention",
+    subhead: "Comprehensive full body checkups for professionals who'd rather catch a problem early than manage one later.",
   },
 ];
 
