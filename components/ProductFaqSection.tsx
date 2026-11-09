@@ -1,9 +1,16 @@
 import type { ProductFaq } from "@/lib/types";
+import { getBrand } from "@/lib/brand-server";
+import { brandText, mentionsPartnerBrand } from "@/lib/brand";
 
 // Per-product FAQ block for test/package pages - same accordion + FAQPage
 // schema pattern as the homepage's FAQSection, but driven by data generated
 // per item (scripts/product-faqs.js) instead of a fixed list.
-export default function ProductFaqSection({ faqs }: { faqs: ProductFaq[] }) {
+export default function ProductFaqSection({ faqs: allFaqs }: { faqs: ProductFaq[] }) {
+  // A clinic's version drops questions about the lab partner's brand and rewrites the rest.
+  const brand = getBrand();
+  const faqs = brand
+    ? allFaqs.filter((f) => !mentionsPartnerBrand(f.q)).map((f) => ({ q: brandText(f.q, brand), a: brandText(f.a, brand) }))
+    : allFaqs;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",

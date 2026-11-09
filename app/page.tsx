@@ -10,6 +10,8 @@ import FAQSection from "@/components/FAQSection";
 import { allTests, allPackages, getFrequentlyPrescribedTests } from "@/lib/catalog";
 import { SERVICE_AREAS } from "@/lib/site-config";
 import { SPECIALTIES, getSpecialtyTests } from "@/lib/specialties";
+import { getBrand } from "@/lib/brand-server";
+import { brandText } from "@/lib/brand";
 
 // Specialised tests linked from the home page: the ones people search for by name, so
 // the home page passes its authority straight to these product pages.
@@ -22,6 +24,7 @@ const FEATURED_SPECIALISED_SLUGS = [
 const FEATURED_PREGNANCY_TEST_SLUGS = ["double-marker-test-serum", "nipt", "oral-glucose-tolerance-test-gestational"];
 
 export default function Home() {
+  const brand = getBrand();
   const popularPackages = allPackages.filter((p) => !p.needsContent).slice(0, 3);
   const pregnancyPackages = allPackages.filter((p) => /trimester|pcos|torch|infertility|menopause/i.test(p.name)).slice(0, 3);
   const pregnancyTests = FEATURED_PREGNANCY_TEST_SLUGS.map((slug) => allTests.find((t) => t.slug === slug)).filter(Boolean) as typeof allTests;
@@ -48,7 +51,8 @@ export default function Home() {
 
       <TrustMarkers />
 
-      <ReviewsCarousel />
+      {/* The reviews are ours (from our Google profile), so they stay off a clinic's version. */}
+      {!brand && <ReviewsCarousel />}
 
       <section>
         <div className="flex items-center justify-between mb-4">
@@ -108,7 +112,7 @@ export default function Home() {
         </div>
         <p className="text-sm text-gray-600 mb-4">
           NIPT, Double Marker, Lipoprotein(a), ApoB, NT-proBNP, Procalcitonin, Thrombocheck and more - tests that are hard to find at a
-          neighbourhood lab, processed at Agilus (SRL) Diagnostics labs.
+          {brandText("neighbourhood lab, processed at Agilus (SRL) Diagnostics labs.", brand)}
         </p>
         <div className="flex flex-wrap gap-2 mb-4">
           {specialisedTests.map((t) => (

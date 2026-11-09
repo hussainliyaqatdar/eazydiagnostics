@@ -1,4 +1,5 @@
 import { BUSINESS_NAME, PARTNER_TAGLINE } from "@/lib/site-config";
+import type { ClinicBrand } from "@/lib/brand";
 
 // Nested-hearts mark: a smaller heart cradled inside a larger one, reading as
 // "caring for two" (mother + baby) - warm and immediately legible at small
@@ -18,7 +19,17 @@ export function LogoMark({ className = "w-9 h-9" }: { className?: string }) {
   );
 }
 
-export default function Logo({ className = "" }: { className?: string }) {
+export default function Logo({ className = "", brand = null }: { className?: string; brand?: ClinicBrand | null }) {
+  // A clinic's version: the clinic's own logo and name, nothing of ours.
+  if (brand) {
+    return (
+      <span className={`inline-flex items-center gap-2.5 ${className}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={brand.logo} alt={`${brand.name} logo`} className="h-11 w-11 shrink-0 object-contain" />
+        <span className="block text-lg font-bold leading-tight tracking-tight text-brand-dark">{brand.name}</span>
+      </span>
+    );
+  }
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <LogoMark />
