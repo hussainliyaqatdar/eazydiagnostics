@@ -1,4 +1,6 @@
 import { BUSINESS_NAME } from "@/lib/site-config";
+import { getBrand, getRef } from "@/lib/brand-server";
+import { PAY_AT_CLINIC, brandText, mentionsPartnerBrand } from "@/lib/brand";
 
 const FAQS = [
   {
@@ -64,10 +66,21 @@ const FAQS = [
 ];
 
 export default function FAQSection() {
+  // A clinic's version drops the questions about the lab partner's brand and
+  // rewrites the rest; anyone who came from a doctor's link is told to pay at the
+  // clinic front desk instead of after collection.
+  const brand = getBrand();
+  const referred = getRef() !== null;
+  const FAQS_SHOWN = FAQS.filter((f) => !brand || !mentionsPartnerBrand(f.q))
+    .map((f) =>
+      referred && f.q === "Do I need to pay in advance to book a test?"
+        ? { q: "How do I pay for my test?", a: `${PAY_AT_CLINIC}. There is nothing to pay online when you book.` }
+        : { q: brandText(f.q, brand), a: brandText(f.a, brand) }
+    );
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: FAQS.map((f) => ({
+    mainEntity: FAQS_SHOWN.map((f) => ({
       "@type": "Question",
       name: f.q,
       acceptedAnswer: { "@type": "Answer", text: f.a },
@@ -79,7 +92,7 @@ export default function FAQSection() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <h2 className="text-xl font-bold text-gray-900 mb-4">Frequently asked questions</h2>
       <div className="flex flex-col divide-y">
-        {FAQS.map((f) => (
+        {FAQS_SHOWN.map((f) => (
           <details key={f.q} className="group py-3">
             <summary className="flex items-center justify-between cursor-pointer list-none font-medium text-gray-900 gap-4">
               <span>{f.q}</span>

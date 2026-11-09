@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, useCartSummary } from "@/lib/cart-context";
 import { useUI } from "@/lib/ui-context";
+import { useBrand } from "@/components/BrandProvider";
+import { PAY_AT_CLINIC } from "@/lib/brand";
 import { describeConsult, hasConsult } from "@/lib/consult-offers";
 import { getUpcomingDates, formatDateLabel } from "@/lib/booking-dates";
 import DoctorPicker from "@/components/DoctorPicker";
@@ -16,6 +18,8 @@ const UPCOMING_DATES = getUpcomingDates();
 export default function CheckoutPage() {
   const { members: cartMembers, allLines, clear, setConsultDoctor } = useCart();
   const { openCartDrawer } = useUI();
+  // Came through a doctor's referral link: the patient pays at the clinic, not at the door.
+  const { brand, referred } = useBrand();
   // Priced items come from the cart summary so offer pricing (e.g. an included
   // consultation) is shown the same way here as in the cart drawer.
   const { items, members, emptyMembers, coupon, discount, total, collectionCharge, removeCoupon } = useCartSummary();
@@ -86,6 +90,8 @@ export default function CheckoutPage() {
   useEffect(() => {
     let stored: string | null = null;
     try { stored = localStorage.getItem(REFERRAL_STORAGE_KEY); } catch {}
+    // A clinic's own version always credits that clinic's doctor.
+    if (!stored && brand) stored = brand.doctorId;
     if (!stored) return;
     fetch("/api/affiliate-doctors")
       .then((r) => r.json())
@@ -390,7 +396,7 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
           </div>
         )}
         <div className="flex justify-between font-bold text-brand-dark">
-          <span>{multi ? "Visit total" : "Amount due"}</span>
+          <span>{multi ? "Visit total" : referred ? "Amount payable" : "Amount due"}</span>
           <span>{rs(total)}</span>
         </div>
       </div>
@@ -398,7 +404,7 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
         <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-green-600" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M5 12.5l4.5 4.5L19 7.5" />
         </svg>
-        No payment now - pay only after your sample is collected.
+        {referred ? `${PAY_AT_CLINIC}.` : "No payment now - pay only after your sample is collected."}
       </p>
     </div>
   );
@@ -688,7 +694,7 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
                   className="flex items-center justify-between gap-3 text-left md:flex-1"
                 >
                   <span>
-                    <span className="block text-xs text-gray-500">{multi ? `Amount due on collection - ${members.length} members` : "Amount due on collection"}</span>
+                    <span className="block text-xs text-gray-500">{referred ? "Amount payable at the clinic front desk" : "Amount due on collection"}{multi ? ` - ${members.length} members` : ""}</span>
                     <span className="text-xl font-bold leading-tight text-brand-dark">{rs(total)}</span>
                   </span>
                   <span className="flex items-center gap-1 text-xs font-medium text-brand">

@@ -18,6 +18,8 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
   }
 
   const members = booking.members;
+  // Booked through a doctor's referral link: the patient pays at the clinic.
+  const atClinic = !!booking.referral?.doctorId;
   const consultItem = booking.items.find((i) => hasConsult(i.offer));
   const doctorName = consultItem?.offer?.doctorName;
 
@@ -90,11 +92,11 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
           </div>
         ) : null}
         <div className="border-t pt-2 flex justify-between font-bold text-brand-dark">
-          <span>Amount due on collection</span>
+          <span>{atClinic ? "Amount payable at the clinic front desk" : "Amount due on collection"}</span>
           <span>Rs. {amountDue(booking).toLocaleString("en-IN")}</span>
         </div>
       </div>
-      <p className="text-xs text-gray-500 text-center -mt-4">No payment has been taken yet - pay only after your sample is collected.</p>
+      <p className="text-xs text-gray-500 text-center -mt-4">{atClinic ? "Pay now at the clinic front desk." : "No payment has been taken yet - pay only after your sample is collected."}</p>
 
       <div className="bg-brand-light rounded-lg p-4 flex flex-col gap-1">
         <h2 className="font-semibold text-gray-900 mb-1">Collection details{members ? " (one visit for everyone)" : ""}</h2>

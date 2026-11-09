@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { useUI } from "@/lib/ui-context";
+import { useBrand } from "./BrandProvider";
+import { homeHref } from "@/lib/brand";
 import { BOOKING_PHONE, BOOKING_PHONE_TEL } from "@/lib/site-config";
 import { getPackageCategories } from "@/lib/catalog";
 import Logo from "./Logo";
@@ -13,14 +15,15 @@ const PACKAGE_CATEGORIES = getPackageCategories();
 
 export default function Header({ featuredCoupon = null }: { featuredCoupon?: CouponRule | null }) {
   const { count } = useCart();
+  const { brand } = useBrand();
   const { openCartDrawer } = useUI();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <header className="bg-white border-b sticky top-0 z-30">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-        <Link href="/" className="shrink-0">
-          <Logo />
+        <Link href={homeHref(brand)} className="shrink-0">
+          <Logo brand={brand} />
         </Link>
 
         <div className="flex items-center gap-6 ml-auto">

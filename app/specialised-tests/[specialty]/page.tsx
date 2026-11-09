@@ -5,6 +5,8 @@ import TestCard from "@/components/TestCard";
 import ProductFaqSection from "@/components/ProductFaqSection";
 import { SPECIALTIES, getSpecialty, getSpecialtyTests } from "@/lib/specialties";
 import { BUSINESS_NAME, PARTNER_NAME, SERVICE_AREAS, SITE_URL } from "@/lib/site-config";
+import { getBrand } from "@/lib/brand-server";
+import { brandText, homeHref } from "@/lib/brand";
 import { COLLECTION_CHARGE, FREE_COLLECTION_MIN } from "@/lib/booking-totals";
 
 export function generateStaticParams() {
@@ -15,11 +17,12 @@ export function generateMetadata({ params }: { params: { specialty: string } }):
   const specialty = getSpecialty(params.specialty);
   if (!specialty) return {};
   const url = `${SITE_URL}/specialised-tests/${specialty.slug}`;
+  const description = brandText(specialty.description, getBrand());
   return {
     title: specialty.heading,
-    description: specialty.description,
+    description,
     alternates: { canonical: url },
-    openGraph: { title: specialty.heading, description: specialty.description },
+    openGraph: { title: specialty.heading, description },
   };
 }
 
@@ -30,16 +33,18 @@ export default function SpecialtyPage({ params }: { params: { specialty: string 
   if (!specialty) notFound();
   const tests = getSpecialtyTests(specialty.slug);
   if (tests.length === 0) notFound();
+  const brand = getBrand();
+  const t = (text: string) => brandText(text, brand);
 
   const names = tests.map((t) => t.seo!.short);
   const faqs = [
     {
       q: `Which ${specialty.name} tests can I get at home in Bangalore?`,
-      a: `${BUSINESS_NAME} offers home collection for ${names.join(", ")}. Each is processed at ${PARTNER_NAME} NABL-accredited labs, and the report is sent on WhatsApp.`,
+      a: t(`${BUSINESS_NAME} offers home collection for ${names.join(", ")}. Each is processed at ${PARTNER_NAME} NABL-accredited labs, and the report is sent on WhatsApp.`),
     },
     {
       q: `How much do these ${specialty.name} tests cost?`,
-      a: `Prices range from ${rs(Math.min(...tests.map((t) => t.price)))} to ${rs(Math.max(...tests.map((t) => t.price)))}, shown on each test page. There is no advance payment: you pay after the sample is collected. Home collection is free on orders of ${rs(FREE_COLLECTION_MIN)} or more; a flat ${rs(COLLECTION_CHARGE)} charge applies to smaller orders.`,
+      a: t(`Prices range from ${rs(Math.min(...tests.map((t) => t.price)))} to ${rs(Math.max(...tests.map((t) => t.price)))}, shown on each test page. There is no advance payment: you pay after the sample is collected. Home collection is free on orders of ${rs(FREE_COLLECTION_MIN)} or more; a flat ${rs(COLLECTION_CHARGE)} charge applies to smaller orders.`),
     },
     {
       q: "Where in Bangalore is home collection available?",
@@ -53,7 +58,7 @@ export default function SpecialtyPage({ params }: { params: { specialty: string 
       {
         "@type": "CollectionPage",
         name: specialty.heading,
-        description: specialty.description,
+        description: t(specialty.description),
         url: `${SITE_URL}/specialised-tests/${specialty.slug}`,
         mainEntity: {
           "@type": "ItemList",
@@ -81,7 +86,7 @@ export default function SpecialtyPage({ params }: { params: { specialty: string 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <nav className="text-sm text-gray-500" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-brand">Home</Link> {" / "}
+        <Link href={homeHref(brand)} className="hover:text-brand">Home</Link> {" / "}
         <Link href="/specialised-tests" className="hover:text-brand">Specialised tests</Link> {" / "}
         <span className="text-gray-700">{specialty.name}</span>
       </nav>
@@ -89,9 +94,9 @@ export default function SpecialtyPage({ params }: { params: { specialty: string 
       <header className="flex flex-col gap-3">
         <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{specialty.heading}</h1>
         <p className="text-gray-700 leading-relaxed">
-          These tests are commonly ordered by {specialty.doctors}. {BUSINESS_NAME}, an authorised partner of {PARTNER_NAME}, collects the
-          sample at your home in Bangalore, the sample is processed at {PARTNER_NAME} NABL-accredited labs, and the report arrives on
-          WhatsApp. You pay only after the sample is collected.
+          {brand
+            ? `These tests are commonly ordered by ${specialty.doctors}. ${brand.name} arranges for the sample to be collected at your home in Bangalore, it is processed at NABL-accredited partner labs, and the report arrives on WhatsApp. Pay now at the clinic front desk.`
+            : `These tests are commonly ordered by ${specialty.doctors}. ${BUSINESS_NAME}, an authorised partner of ${PARTNER_NAME}, collects the sample at your home in Bangalore, the sample is processed at ${PARTNER_NAME} NABL-accredited labs, and the report arrives on WhatsApp. You pay only after the sample is collected.`}
         </p>
       </header>
 

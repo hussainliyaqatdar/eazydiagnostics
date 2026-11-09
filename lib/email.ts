@@ -110,7 +110,12 @@ export function renderOwnerNotification(booking: Booking) {
     ${(booking.couponCode && booking.couponDiscount) || booking.collectionCharge ? `<p style="text-align:right;margin:0;">Visit subtotal: ${money(booking.subtotalPrice)}</p>` : ""}
     ${booking.couponCode && booking.couponDiscount ? `<p style="text-align:right;margin:0;color:#0F6E6E;">Coupon ${booking.couponCode}: -${money(booking.couponDiscount)}</p>` : ""}
     ${booking.collectionCharge ? `<p style="text-align:right;margin:0;">Collection charges: ${money(booking.collectionCharge)}</p>` : ""}
-    <p style="text-align:right;font-weight:bold;">Amount due on collection: ${money(amountDue(booking))}</p>
+    <p style="text-align:right;font-weight:bold;">${booking.referral?.doctorId ? "Amount payable at the clinic front desk" : "Amount due on collection"}: ${money(amountDue(booking))}</p>
+    ${
+      booking.referral?.doctorId
+        ? `<p style="background:#FFF4EC;border-left:4px solid #FF7A45;padding:8px 12px;margin:12px 0;">Booked through <strong>${esc(booking.referral.clinic || booking.referral.name)}</strong>'s referral link. The patient pays at the clinic front desk (not to the phlebotomist) - the clinic settles with us on the fortnightly invoice.</p>`
+        : ""
+    }
     <p style="color:#999;font-size:12px;">Booking ID: ${booking.id}</p>
   </div>`;
   return { subject, html };

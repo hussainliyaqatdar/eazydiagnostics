@@ -9,6 +9,8 @@ import PackageCard from "@/components/PackageCard";
 import ProductFaqSection from "@/components/ProductFaqSection";
 import { getTestSpecialties, getSpecialtyTests } from "@/lib/specialties";
 import { SERVICE_AREAS } from "@/lib/site-config";
+import { getBrand } from "@/lib/brand-server";
+import { brandText, homeHref } from "@/lib/brand";
 import { BUSINESS_NAME, PARTNER_NAME, SITE_URL } from "@/lib/site-config";
 
 export function generateStaticParams() {
@@ -22,6 +24,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   // and description that name the test the way people search for it.
   if (test.seo) {
     const label = testLabel(test.seo.short);
+    const brand = getBrand();
+    if (brand) {
+      const description = brandText(`${label} at home in Bangalore from Rs. ${test.price.toLocaleString("en-IN")}. Sample collected at home, tested at NABL-accredited labs, report in ${test.eta} on WhatsApp.`, brand);
+      return { title: `${label} - home collection`, description, alternates: { canonical: `${SITE_URL}/tests/${test.slug}` }, openGraph: { title: `${label} - home collection`, description } };
+    }
     // "<test> in Bangalore | Home Collection | Agilus (SRL)": the phrases people type
     // (home collection, Bangalore, Agilus, SRL) in the order they matter. Absolute so
     // the site name isn't appended and pushed past what Google shows.
@@ -50,6 +57,9 @@ function testLabel(short: string): string {
 export default function TestPage({ params }: { params: { slug: string } }) {
   const test = getTestBySlug(params.slug);
   if (!test) notFound();
+  // In a clinic's version the lab partner's name and ours are left out of the page.
+  const brand = getBrand();
+  const t = (text: string) => brandText(text, brand);
 
   const relatedTests = allTests.filter((t) => t.category === test.category && t.slug !== test.slug).slice(0, 3);
   const inPackages = allPackages.filter((p) => p.constituents.some((c) => c.slug === test.slug)).slice(0, 3);
@@ -114,7 +124,7 @@ export default function TestPage({ params }: { params: { slug: string } }) {
       priceCurrency: "INR",
       availability: "https://schema.org/InStock",
       url: `${SITE_URL}/tests/${test.slug}`,
-      seller: { "@type": "MedicalBusiness", name: BUSINESS_NAME, url: SITE_URL },
+      seller: { "@type": "MedicalBusiness", name: brand ? brand.name : BUSINESS_NAME, url: SITE_URL },
     },
   };
   const breadcrumb = {
@@ -134,7 +144,7 @@ export default function TestPage({ params }: { params: { slug: string } }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <nav className="text-sm text-gray-500" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-brand">Home</Link> {" / "}
+        <Link href={homeHref(brand)} className="hover:text-brand">Home</Link> {" / "}
         {specialties[0] ? (
           <Link href={`/specialised-tests/${specialties[0].slug}`} className="hover:text-brand">{specialties[0].name}</Link>
         ) : (
@@ -149,7 +159,7 @@ export default function TestPage({ params }: { params: { slug: string } }) {
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{test.name}</h1>
           {test.seo && (
             <p className="mt-1 text-sm font-medium text-brand-dark">
-              Home collection in Bangalore &middot; Tested at {PARTNER_NAME} labs
+              {t(`Home collection in Bangalore \u00b7 Tested at ${PARTNER_NAME} labs`)}
             </p>
           )}
           {aliases.length > 0 && (
@@ -196,8 +206,7 @@ export default function TestPage({ params }: { params: { slug: string } }) {
             </div>
           )}
           <p className="text-sm text-gray-600 border-t pt-4">
-            Home sample collection across Bangalore, processed at {PARTNER_NAME} NABL-accredited labs. The report arrives on WhatsApp, and you pay
-            only after the sample is collected. This page is general information, not medical advice; please discuss your result with your doctor.
+            {t(`Home sample collection across Bangalore, processed at ${PARTNER_NAME} NABL-accredited labs. The report arrives on WhatsApp, and you pay only after the sample is collected. This page is general information, not medical advice; please discuss your result with your doctor.`)}
           </p>
         </section>
       )}
@@ -209,19 +218,21 @@ export default function TestPage({ params }: { params: { slug: string } }) {
           </h2>
           <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
             <div><dt className="text-gray-500">Test</dt><dd className="font-medium text-gray-900">{test.name}</dd></div>
-            <div><dt className="text-gray-500">Price</dt><dd className="font-medium text-gray-900">Rs. {test.price.toLocaleString("en-IN")} (pay after collection)</dd></div>
+            <div><dt className="text-gray-500">Price</dt><dd className="font-medium text-gray-900">Rs. {test.price.toLocaleString("en-IN")} ({brand ? "pay now at the clinic front desk" : "pay after collection"})</dd></div>
             <div><dt className="text-gray-500">Report time</dt><dd className="font-medium text-gray-900">{test.eta}, on WhatsApp</dd></div>
-            <div><dt className="text-gray-500">Processed at</dt><dd className="font-medium text-gray-900">{PARTNER_NAME} NABL-accredited labs</dd></div>
+            <div><dt className="text-gray-500">Processed at</dt><dd className="font-medium text-gray-900">{t(`${PARTNER_NAME} NABL-accredited labs`)}</dd></div>
             {specialties[0] && (
               <div><dt className="text-gray-500">Usually ordered by</dt><dd className="font-medium text-gray-900">{specialties.map((s) => s.name).join(", ")}</dd></div>
             )}
             <div><dt className="text-gray-500">Home collection areas</dt><dd className="font-medium text-gray-900">{SERVICE_AREAS.join(", ")}, and other parts of Bangalore on request</dd></div>
           </dl>
-          <p className="text-sm text-gray-700 leading-relaxed">
-            {BUSINESS_NAME} is an authorised partner of {PARTNER_NAME}. Agilus Diagnostics was earlier known as SRL Diagnostics, so if you
-            searched for the {test.seo.short} at SRL or Agilus, this is the same lab network - with a phlebotomist coming to your home in
-            Bangalore instead of you travelling to a collection centre.
-          </p>
+          {!brand && (
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {BUSINESS_NAME} is an authorised partner of {PARTNER_NAME}. Agilus Diagnostics was earlier known as SRL Diagnostics, so if you
+              searched for the {test.seo.short} at SRL or Agilus, this is the same lab network - with a phlebotomist coming to your home in
+              Bangalore instead of you travelling to a collection centre.
+            </p>
+          )}
         </section>
       )}
 
