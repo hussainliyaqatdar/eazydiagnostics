@@ -171,6 +171,9 @@ export type Booking = {
   date: string;
   slot: string;
   paymentStatus: "due";
+  // Fulfilment status, changed from the admin portal. Set when read back from the
+  // database; new bookings start as "booked".
+  status?: import("./order-status").OrderStatus;
 };
 
 // A doctor registered through /for-doctors. `id` is also their affiliate-link code.

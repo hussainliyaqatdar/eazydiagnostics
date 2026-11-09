@@ -48,6 +48,24 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS collection_charge integer;
 -- Who each item is for, when a visit has more than one member (null for a single member).
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS members jsonb;
 
+-- Where the order is in fulfilment (see lib/order-status.ts). Changed from /admin/orders.
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'booked';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS status_updated_at timestamptz;
+
+-- One row per WhatsApp message sent about an order, so the admin can see what reached
+-- whom and why a message failed.
+CREATE TABLE IF NOT EXISTS order_notifications (
+  id          bigserial PRIMARY KEY,
+  order_id    text NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  status      text NOT NULL,
+  recipient   text NOT NULL,
+  to_number   text NOT NULL,
+  ok          boolean NOT NULL,
+  detail      text NOT NULL DEFAULT '',
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS order_notifications_order_idx ON order_notifications (order_id, created_at);
+
 CREATE INDEX IF NOT EXISTS orders_collection_idx ON orders (collection_date, collection_slot);
 CREATE INDEX IF NOT EXISTS orders_doctor_idx ON orders (doctor_id);
 `;
