@@ -16,17 +16,17 @@ const SLIDES: Slide[] = [
       "From lipid profiles and cardiac risk markers to HbA1c and blood sugar monitoring - specialised heart and diabetes tests, collected gently at home for your parents and loved ones.",
   },
   {
-    image: "/images/corporate-professional-home-collection.webp",
-    alt: "A phlebotomist in gloves and a mask visits a corporate professional at home to draw a blood sample while he works on his laptop, using a professional collection kit with labelled sample tubes and a sharps container.",
-    heading: "Know Where Your Body Needs Attention",
-    subhead: "Comprehensive full body checkups for professionals who'd rather catch a problem early than manage one later.",
-  },
-  {
     image: "/images/hero-home-collection.webp",
     alt: "A phlebotomist in gloves and a mask visits a pregnant woman at home to collect a blood sample, using a professional collection kit with labelled sample tubes and a sharps container.",
     heading: "Your Pregnancy, Cared For At Home",
     subhead:
       "Accurate hormone panels, NIPT and other specialised DNA tests - hospital-grade prenatal reports without leaving your couch, trusted by expecting mothers across Bangalore.",
+  },
+  {
+    image: "/images/corporate-professional-home-collection.webp",
+    alt: "A phlebotomist in gloves and a mask visits a corporate professional at home to draw a blood sample while he works on his laptop, using a professional collection kit with labelled sample tubes and a sharps container.",
+    heading: "Know Where Your Body Needs Attention",
+    subhead: "Comprehensive full body checkups for professionals who'd rather catch a problem early than manage one later.",
   },
 ];
 
