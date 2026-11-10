@@ -134,6 +134,8 @@ export type BookingMember = {
   // Only when their report should go to a different number than the visit's.
   whatsapp?: string;
   items: BookingLineItem[];
+  // The doctor this member chose as "Prescribed by" (when they picked one).
+  referral?: BookingReferral;
 };
 
 export type BookingReferral = {
@@ -170,7 +172,12 @@ export type Booking = {
   collectionCharge?: number;
   date: string;
   slot: string;
-  paymentStatus: "due";
+  paymentStatus: import("./order-status").PaymentStatus;
+  // Who collects the patient's payment ("clinic" | "eazy"), from the prescribing doctor's clinic.
+  paymentCollector?: "clinic" | "eazy";
+  // Fulfilment status, changed from the admin portal. Set when read back from the
+  // database; new bookings start as "booked".
+  status?: import("./order-status").OrderStatus;
 };
 
 // A doctor registered through /for-doctors. `id` is also their affiliate-link code.
@@ -179,9 +186,18 @@ export type Doctor = {
   slug: string; // unique, URL-friendly, from the clinic name
   registeredAt: string; // India time, for display
   name: string;
+  // The clinic's name (the clinic itself is `clinicId`).
   clinic: string;
-  mobile: string;
+  clinicId: string;
+  mobile: string; // the doctor's WhatsApp number: updates and reports are sent here
   email: string;
   specialty: string;
-  degree: string;
+  degree: string; // qualifications, e.g. "MBBS, MD"
+  // False for a doctor who joined an existing clinic through the public form and has not
+  // been approved by an admin yet.
+  approved: boolean;
+  // B2B discount off list price, in percent.
+  discounts: { routine: number; special: number; package: number };
+  hasCertificate: boolean;
+  certificateName?: string;
 };

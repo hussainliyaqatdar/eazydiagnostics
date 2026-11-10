@@ -23,8 +23,8 @@ const FEATURED_SPECIALISED_SLUGS = [
 
 const FEATURED_PREGNANCY_TEST_SLUGS = ["double-marker-test-serum", "nipt", "oral-glucose-tolerance-test-gestational"];
 
-export default function Home() {
-  const brand = getBrand();
+export default async function Home() {
+  const brand = await getBrand();
   const popularPackages = allPackages.filter((p) => !p.needsContent).slice(0, 3);
   const pregnancyPackages = allPackages.filter((p) => /trimester|pcos|torch|infertility|menopause/i.test(p.name)).slice(0, 3);
   const pregnancyTests = FEATURED_PREGNANCY_TEST_SLUGS.map((slug) => allTests.find((t) => t.slug === slug)).filter(Boolean) as typeof allTests;

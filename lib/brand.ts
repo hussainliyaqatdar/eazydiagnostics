@@ -13,8 +13,11 @@ export type ClinicBrand = {
   // The doctor's affiliate id: the key a referral link carries.
   doctorId: string;
   name: string;
-  // Path under /public, or a full URL.
-  logo: string;
+  // Path under /public, or a URL; null for a clinic with no logo uploaded yet (the name alone is shown).
+  logo: string | null;
+  // False when Eazy Diagnostics (not the clinic) collects the payment: the site then keeps saying the
+  // patient pays after the sample is collected. Missing means the clinic collects (the default).
+  payAtClinic?: boolean;
 };
 
 // Clinics that have their own branded version of the site. A demo for now: add
@@ -27,6 +30,8 @@ export const CLINIC_BRANDS: Record<string, ClinicBrand> = {
 // referral link is opened.
 export const REF_COOKIE = "diag-ref";
 export const REF_HEADER = "x-diag-ref";
+// Set by the middleware on /admin pages, which always show our own branding.
+export const ADMIN_HEADER = "x-diag-admin";
 // /?ref=clear drops the remembered doctor (handy when demoing both versions).
 export const REF_CLEAR = "CLEAR";
 
@@ -95,6 +100,7 @@ export function mentionsPartnerBrand(text: string): boolean {
 // after collection". Rules run in order, most specific first.
 export function brandText(text: string, brand: ClinicBrand | null): string {
   if (!brand) return text;
+  const clinicPays = brand.payAtClinic !== false;
   return text
     .replace(/NABL-accredited labs (?:run by|of) (?:Agilus \(SRL\) Diagnostics|Agilus Diagnostics)(?:, our authorised lab partner)?/gi, "NABL-accredited partner labs")
     .replace(/(?:Agilus \(SRL\) Diagnostics|Agilus \(formerly SRL\) Diagnostics) (?:NABL-accredited )?labs/gi, "NABL-accredited partner labs")
@@ -102,8 +108,8 @@ export function brandText(text: string, brand: ClinicBrand | null): string {
     .replace(/\bour authorised lab partner\b/gi, "our partner lab")
     .replace(new RegExp(BUSINESS_NAME, "g"), brand.name)
     .replace(/\bEazy\b/g, brand.name)
-    .replace(/pay(?:s)? only after (?:the|your) sample (?:is|has been) collected/gi, "pay now at the clinic front desk")
-    .replace(/\byou pay after (?:the|your) sample is collected/gi, "you pay now at the clinic front desk")
-    .replace(/\bPay after collection\b/g, PAY_AT_CLINIC)
+    .replace(/pay(?:s)? only after (?:the|your) sample (?:is|has been) collected/gi, (m) => (clinicPays ? "pay now at the clinic front desk" : m))
+    .replace(/\byou pay after (?:the|your) sample is collected/gi, (m) => (clinicPays ? "you pay now at the clinic front desk" : m))
+    .replace(/\bPay after collection\b/g, (m) => (clinicPays ? PAY_AT_CLINIC : m))
     .replace(/our partner lab (?:our|the) partner lab/gi, "our partner lab");
 }

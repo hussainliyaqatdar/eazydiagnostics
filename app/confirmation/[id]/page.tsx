@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getBooking } from "@/lib/orders";
-import { amountDue } from "@/lib/booking-totals";
+import { amountDue, paidAtClinic } from "@/lib/booking-totals";
 import { describeConsult, hasConsult } from "@/lib/consult-offers";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
 
   const members = booking.members;
   // Booked through a doctor's referral link: the patient pays at the clinic.
-  const atClinic = !!booking.referral?.doctorId;
+  const atClinic = paidAtClinic(booking);
   const consultItem = booking.items.find((i) => hasConsult(i.offer));
   const doctorName = consultItem?.offer?.doctorName;
 

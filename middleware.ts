@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { REF_CLEAR, REF_COOKIE, REF_HEADER, validRef } from "./lib/brand";
+import { ADMIN_HEADER, REF_CLEAR, REF_COOKIE, REF_HEADER, validRef } from "./lib/brand";
 import { REF_PARAM } from "./lib/referral-storage";
 
 // Two jobs:
@@ -48,7 +48,12 @@ export function middleware(req: NextRequest) {
   if (path.startsWith("/admin") || path.startsWith("/api/admin")) {
     const denied = adminDenied(req);
     if (denied) return denied;
-    return NextResponse.next();
+    // The admin pages are ours, never a clinic's: they ignore any referral cookie left in this browser
+    // (a header the visitor sent is replaced, never trusted).
+    const adminHeaders = new Headers(req.headers);
+    adminHeaders.set(ADMIN_HEADER, "1");
+    adminHeaders.delete(REF_HEADER);
+    return NextResponse.next({ request: { headers: adminHeaders } });
   }
 
   const asked = req.nextUrl.searchParams.get(REF_PARAM)?.trim().toUpperCase();

@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   // and description that name the test the way people search for it.
   if (test.seo) {
     const label = testLabel(test.seo.short);
-    const brand = getBrand();
+    const brand = await getBrand();
     if (brand) {
       const description = brandText(`${label} at home in Bangalore from Rs. ${test.price.toLocaleString("en-IN")}. Sample collected at home, tested at NABL-accredited labs, report in ${test.eta} on WhatsApp.`, brand);
       return { title: `${label} - home collection`, description, alternates: { canonical: `${SITE_URL}/tests/${test.slug}` }, openGraph: { title: `${label} - home collection`, description } };
@@ -54,11 +54,11 @@ function testLabel(short: string): string {
   return /test|panel|profile|screen|checkup/i.test(short) ? short : `${short} test`;
 }
 
-export default function TestPage({ params }: { params: { slug: string } }) {
+export default async function TestPage({ params }: { params: { slug: string } }) {
   const test = getTestBySlug(params.slug);
   if (!test) notFound();
   // In a clinic's version the lab partner's name and ours are left out of the page.
-  const brand = getBrand();
+  const brand = await getBrand();
   const t = (text: string) => brandText(text, brand);
 
   const relatedTests = allTests.filter((t) => t.category === test.category && t.slug !== test.slug).slice(0, 3);
@@ -218,7 +218,7 @@ export default function TestPage({ params }: { params: { slug: string } }) {
           </h2>
           <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
             <div><dt className="text-gray-500">Test</dt><dd className="font-medium text-gray-900">{test.name}</dd></div>
-            <div><dt className="text-gray-500">Price</dt><dd className="font-medium text-gray-900">Rs. {test.price.toLocaleString("en-IN")} ({brand ? "pay now at the clinic front desk" : "pay after collection"})</dd></div>
+            <div><dt className="text-gray-500">Price</dt><dd className="font-medium text-gray-900">Rs. {test.price.toLocaleString("en-IN")} ({brand && brand.payAtClinic !== false ? "pay now at the clinic front desk" : "pay after collection"})</dd></div>
             <div><dt className="text-gray-500">Report time</dt><dd className="font-medium text-gray-900">{test.eta}, on WhatsApp</dd></div>
             <div><dt className="text-gray-500">Processed at</dt><dd className="font-medium text-gray-900">{t(`${PARTNER_NAME} NABL-accredited labs`)}</dd></div>
             {specialties[0] && (

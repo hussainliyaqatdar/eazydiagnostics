@@ -31,9 +31,15 @@ export const LIMITS = {
 // What the "Full name" field starts with, so the doctor only has to add a name.
 export const NAME_PREFIX = "Dr. ";
 
+// A clinic can have several doctors. A doctor either picks their clinic from the list
+// (`clinicId`) or, if it is not there, types its name (`clinicName`) and a new clinic is created.
+export const CLINIC_ID_RE = /^CL-[A-Z0-9]{3,24}$/;
+
 export type DoctorSignup = {
   fullName: string;
+  // The name of a new clinic; the chosen clinic's own name when `clinicId` is set (filled in by the server).
   clinicName: string;
+  clinicId?: string;
   mobile: string; // 10-digit Indian WhatsApp number
   email: string; // "" when not given
   specialty: string;
@@ -73,9 +79,13 @@ export function validateDoctorSignup(raw: unknown): { ok: true; value: DoctorSig
   if (nameWithoutTitle.length < LIMITS.fullName.min) errors.fullName = "Enter the doctor's full name.";
   else if (fullName.length > LIMITS.fullName.max) errors.fullName = `Keep the name under ${LIMITS.fullName.max} characters.`;
 
+  // An existing clinic is chosen by id; otherwise the name of a new one is needed.
+  const clinicId = typeof input.clinicId === "string" && CLINIC_ID_RE.test(input.clinicId) ? input.clinicId : undefined;
   const clinicName = text(input.clinicName, LIMITS.clinicName.max);
-  if (clinicName.length < LIMITS.clinicName.min) errors.clinicName = "Enter the clinic name.";
-  else if (clinicName.length > LIMITS.clinicName.max) errors.clinicName = `Keep this under ${LIMITS.clinicName.max} characters.`;
+  if (!clinicId) {
+    if (clinicName.length < LIMITS.clinicName.min) errors.clinicName = "Choose your clinic, or enter its name.";
+    else if (clinicName.length > LIMITS.clinicName.max) errors.clinicName = `Keep this under ${LIMITS.clinicName.max} characters.`;
+  }
 
   // The WhatsApp number is how the team reaches the doctor, so it is required.
   let mobile = "";
@@ -101,5 +111,5 @@ export function validateDoctorSignup(raw: unknown): { ok: true; value: DoctorSig
   if (input.consent !== true) errors.consent = "Tick to continue.";
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
-  return { ok: true, value: { fullName, clinicName, mobile, email, specialty, degree } };
+  return { ok: true, value: { fullName, clinicName, ...(clinicId ? { clinicId } : {}), mobile, email, specialty, degree } };
 }

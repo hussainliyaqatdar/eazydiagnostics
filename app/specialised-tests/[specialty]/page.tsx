@@ -13,11 +13,11 @@ export function generateStaticParams() {
   return SPECIALTIES.filter((s) => getSpecialtyTests(s.slug).length > 0).map((s) => ({ specialty: s.slug }));
 }
 
-export function generateMetadata({ params }: { params: { specialty: string } }): Metadata {
+export async function generateMetadata({ params }: { params: { specialty: string } }): Promise<Metadata> {
   const specialty = getSpecialty(params.specialty);
   if (!specialty) return {};
   const url = `${SITE_URL}/specialised-tests/${specialty.slug}`;
-  const description = brandText(specialty.description, getBrand());
+  const description = brandText(specialty.description, await getBrand());
   return {
     title: specialty.heading,
     description,
@@ -28,12 +28,12 @@ export function generateMetadata({ params }: { params: { specialty: string } }):
 
 const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
 
-export default function SpecialtyPage({ params }: { params: { specialty: string } }) {
+export default async function SpecialtyPage({ params }: { params: { specialty: string } }) {
   const specialty = getSpecialty(params.specialty);
   if (!specialty) notFound();
   const tests = getSpecialtyTests(specialty.slug);
   if (tests.length === 0) notFound();
-  const brand = getBrand();
+  const brand = await getBrand();
   const t = (text: string) => brandText(text, brand);
 
   const names = tests.map((t) => t.seo!.short);
@@ -95,7 +95,7 @@ export default function SpecialtyPage({ params }: { params: { specialty: string 
         <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{specialty.heading}</h1>
         <p className="text-gray-700 leading-relaxed">
           {brand
-            ? `These tests are commonly ordered by ${specialty.doctors}. ${brand.name} arranges for the sample to be collected at your home in Bangalore, it is processed at NABL-accredited partner labs, and the report arrives on WhatsApp. Pay now at the clinic front desk.`
+            ? `These tests are commonly ordered by ${specialty.doctors}. ${brand.name} arranges for the sample to be collected at your home in Bangalore, it is processed at NABL-accredited partner labs, and the report arrives on WhatsApp. ${brand.payAtClinic !== false ? "Pay now at the clinic front desk." : "You pay only after the sample is collected."}`
             : `These tests are commonly ordered by ${specialty.doctors}. ${BUSINESS_NAME}, an authorised partner of ${PARTNER_NAME}, collects the sample at your home in Bangalore, the sample is processed at ${PARTNER_NAME} NABL-accredited labs, and the report arrives on WhatsApp. You pay only after the sample is collected.`}
         </p>
       </header>

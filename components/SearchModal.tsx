@@ -6,6 +6,7 @@ import { useCartSummary } from "@/lib/cart-context";
 import { useUI } from "@/lib/ui-context";
 import AddToCartButton from "./AddToCartButton";
 import MemberSwitcher from "./MemberSwitcher";
+import PackageContents from "./PackageContents";
 import type { TestItem } from "@/lib/types";
 
 const RESULT_LIMIT = 30; // cap on the default (not searching) package list
@@ -179,6 +180,7 @@ export default function SearchModal() {
                 ) : (
                   r.sub && <p className="text-xs text-gray-500 truncate">{r.sub}</p>
                 )}
+                {r.kind === "package" && <PackageContents slug={r.slug} className="mt-1.5" />}
                 <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
                   <ClockIcon />
                   <span>Reports in {r.eta}</span>

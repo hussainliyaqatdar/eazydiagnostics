@@ -10,7 +10,7 @@ import CartDrawer from "@/components/CartDrawer";
 import ReferralCapture from "@/components/ReferralCapture";
 import VisitBar from "@/components/VisitBar";
 import { BrandProvider } from "@/components/BrandProvider";
-import { getBrand, getRef } from "@/lib/brand-server";
+import { getReferral } from "@/lib/brand-server";
 import { getFeaturedCoupon } from "@/lib/coupon-config";
 import { BUSINESS_NAME, PARTNER_NAME, SITE_URL, BOOKING_PHONE, SERVICE_AREAS, GMB_RATING, GMB_PROFILE_URL } from "@/lib/site-config";
 
@@ -62,25 +62,24 @@ const BASE_METADATA: Metadata = {
 // A clinic's version of the site (opened through its doctor's referral link) is
 // titled with the clinic's name and logo, and kept out of search results: the
 // public site is the one that should rank.
-export function generateMetadata(): Metadata {
-  const brand = getBrand();
+export async function generateMetadata(): Promise<Metadata> {
+  const { brand } = await getReferral();
   if (!brand) return BASE_METADATA;
   const description = `Book blood tests and health checkups with home sample collection from ${brand.name}.`;
   return {
     metadataBase: new URL(SITE_URL),
     title: { default: brand.name, template: `%s | ${brand.name}` },
     description,
-    icons: { icon: brand.logo },
+    ...(brand.logo ? { icons: { icon: brand.logo } } : {}),
     robots: { index: false, follow: false },
     openGraph: { type: "website", siteName: brand.name, title: brand.name, description },
   };
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // The one coupon we advertise publicly; other codes stay server-side.
   const featuredCoupon = getFeaturedCoupon();
-  const brand = getBrand();
-  const referred = getRef() !== null;
+  const { brand, payAtClinic } = await getReferral();
   const orgJsonLd = brand
     ? {
         "@context": "https://schema.org",
@@ -127,7 +126,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             })(window, document, "clarity", "script", "ypv0iaj9lx");`,
           }}
         />
-        <BrandProvider brand={brand} referred={referred}>
+        <BrandProvider brand={brand} payAtClinic={payAtClinic}>
         <CartProvider>
           <UIProvider>
             <Header featuredCoupon={featuredCoupon} />

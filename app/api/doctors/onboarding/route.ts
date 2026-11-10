@@ -46,8 +46,14 @@ export async function POST(req: NextRequest) {
   const id = `DR-${now.getTime().toString(36).toUpperCase()}`;
 
   try {
-    await registerDoctor(id, signup);
+    // Joining an existing clinic through this public form waits for an admin's approval (anyone
+    // could otherwise attach themselves to a clinic); a doctor who adds a new clinic is listed straight away.
+    const joined = await registerDoctor(id, signup, signup.clinicId ? { clinicId: signup.clinicId, approved: false } : {});
+    signup.clinicName = joined.clinicName;
   } catch (err) {
+    if (err instanceof Error && err.message === "clinic-not-found") {
+      return NextResponse.json({ error: "Please fix the highlighted fields.", errors: { clinicName: "That clinic is no longer on the list. Choose another or enter its name." } }, { status: 400 });
+    }
     console.error("Doctor sign-up could not be saved:", err);
     return NextResponse.json(
       { error: "We couldn't save the details just now. Please try again in a few minutes." },

@@ -1,5 +1,5 @@
 import { BUSINESS_NAME } from "@/lib/site-config";
-import { getBrand, getRef } from "@/lib/brand-server";
+import { getReferral } from "@/lib/brand-server";
 import { PAY_AT_CLINIC, brandText, mentionsPartnerBrand } from "@/lib/brand";
 
 const FAQS = [
@@ -65,12 +65,11 @@ const FAQS = [
   },
 ];
 
-export default function FAQSection() {
+export default async function FAQSection() {
   // A clinic's version drops the questions about the lab partner's brand and
   // rewrites the rest; anyone who came from a doctor's link is told to pay at the
   // clinic front desk instead of after collection.
-  const brand = getBrand();
-  const referred = getRef() !== null;
+  const { brand, payAtClinic: referred } = await getReferral();
   const FAQS_SHOWN = FAQS.filter((f) => !brand || !mentionsPartnerBrand(f.q))
     .map((f) =>
       referred && f.q === "Do I need to pay in advance to book a test?"
