@@ -10,6 +10,7 @@ import { collectionChargeFor, MAX_MEMBERS } from "@/lib/booking-totals";
 import { hasConsult, isOfferEligible, priceWithOffer } from "@/lib/consult-offers";
 import { getConsultDoctor } from "@/lib/consult-doctors";
 import { cleanReferralName, findAffiliateDoctor } from "@/lib/affiliate-doctors";
+import { paymentCollectorForDoctor } from "@/lib/clinics";
 import { isGoogleMapsUrl } from "@/lib/maps-link";
 import type { Booking, BookingLineItem, BookingMember, BookingReferral, CartLine } from "@/lib/types";
 
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     // A single member's cart; or, for a visit with several members, `members`
     // (each with their own cart). One visit has one address and one slot.
     cart?: CartLine[];
-    members?: { name?: string; age?: string; gender?: string; whatsapp?: string; cart?: CartLine[] }[];
+    members?: { name?: string; age?: string; gender?: string; whatsapp?: string; cart?: CartLine[]; referredBy?: { doctorId?: string; name?: string } }[];
     date: string;
     slot: string;
     couponCode?: string;
@@ -111,16 +112,33 @@ export async function POST(req: NextRequest) {
   };
   const memberItems = memberCarts.map((c) => c.map(buildItem));
   const items: BookingLineItem[] = memberItems.flat();
+  // "Prescribed by" is optional, and each member can have their own. A registered doctor is
+  // looked up by id so the stored name/clinic are ours, not the browser's; anything else
+  // is free text. A member without one falls back to the visit's default.
+  async function resolveReferral(raw: { doctorId?: string; name?: string } | undefined): Promise<BookingReferral | undefined> {
+    const doctor = await findAffiliateDoctor(raw?.doctorId).catch(() => undefined);
+    if (doctor) return { doctorId: doctor.id, name: doctor.name, clinic: doctor.clinic };
+    const name = cleanReferralName(raw?.name);
+    return name ? { name } : undefined;
+  }
+  const visitReferral = await resolveReferral(referredBy);
+
   // Who each item is for - kept only when there is more than one member.
   const members: BookingMember[] | undefined =
     rawMembers && rawMembers.length > 1
-      ? rawMembers.map((m, i) => ({
-          name: m.name!.trim().slice(0, 80),
-          age: m.age!.trim().slice(0, 10),
-          gender: m.gender!.trim().slice(0, 20),
-          ...(m.whatsapp?.trim() ? { whatsapp: m.whatsapp.trim().slice(0, 20) } : {}),
-          items: memberItems[i],
-        }))
+      ? await Promise.all(
+          rawMembers.map(async (m, i) => {
+            const referral = (await resolveReferral(m.referredBy)) ?? visitReferral;
+            return {
+              name: m.name!.trim().slice(0, 80),
+              age: m.age!.trim().slice(0, 10),
+              gender: m.gender!.trim().slice(0, 20),
+              ...(m.whatsapp?.trim() ? { whatsapp: m.whatsapp.trim().slice(0, 20) } : {}),
+              items: memberItems[i],
+              ...(referral ? { referral } : {}),
+            } as BookingMember;
+          })
+        )
       : undefined;
 
   const subtotalMrp = items.reduce((s, i) => s + i.mrp * i.qty, 0);
@@ -158,16 +176,12 @@ export async function POST(req: NextRequest) {
   // Small orders pay a flat collection charge, worked out here from our own prices.
   const collectionCharge = collectionChargeFor(subtotalPrice);
 
-  // "Prescribed by" is optional. A registered doctor is looked up by id so the
-  // stored name/clinic are ours, not the browser's; anything else is free text.
-  let referral: BookingReferral | undefined;
-  const refDoctor = await findAffiliateDoctor(referredBy?.doctorId).catch(() => undefined);
-  if (refDoctor) {
-    referral = { doctorId: refDoctor.id, name: refDoctor.name, clinic: refDoctor.clinic };
-  } else {
-    const name = cleanReferralName(referredBy?.name);
-    if (name) referral = { name };
-  }
+  // The visit's own "Prescribed by" (shown in lists and used for the payment wording): the
+  // first member's registered doctor if there is one, else the first typed name.
+  const referral: BookingReferral | undefined =
+    members?.map((m) => m.referral).find((r) => r?.doctorId) ?? members?.map((m) => m.referral).find(Boolean) ?? visitReferral;
+  // Who collects the payment: set by the prescribing doctor's clinic (clinic by default).
+  const paymentCollector = (await paymentCollectorForDoctor(referral?.doctorId).catch(() => null)) ?? undefined;
 
   // No payment is collected at booking time - the site's promise is "pay
   // only after sample collection." Payment is taken in member (cash/UPI) or
@@ -186,7 +200,8 @@ export async function POST(req: NextRequest) {
     ...(collectionCharge ? { collectionCharge } : {}),
     date,
     slot,
-    paymentStatus: "due",
+    paymentStatus: "pending",
+    ...(paymentCollector ? { paymentCollector } : {}),
   };
 
   // Never tell the customer an order went through when it was not saved.

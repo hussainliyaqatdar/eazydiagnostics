@@ -1,88 +1,86 @@
 import type { Metadata } from "next";
-import CopyLinkButton from "@/components/CopyLinkButton";
-import DeleteDoctorButton from "@/components/DeleteDoctorButton";
-import { affiliateLink } from "@/lib/affiliate-link";
-import { formatMobile } from "@/lib/doctor-onboarding";
-import { listDoctors, type Doctor } from "@/lib/doctors";
+import Link from "next/link";
+import CreateClinicForm from "@/components/admin/CreateClinicForm";
+import { clinicLogoUrl, listClinics, type Clinic } from "@/lib/clinics";
+import { listDoctors } from "@/lib/doctors";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Registered doctors", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Clinics and doctors", robots: { index: false, follow: false } };
 
-export default async function AdminDoctorsPage() {
-  let doctors: Doctor[] = [];
+export default async function AdminClinicsPage() {
+  let clinics: Clinic[] = [];
+  let pending = 0;
   let loadError = "";
   try {
-    // Newest first.
-    doctors = (await listDoctors()).reverse();
+    clinics = await listClinics();
+    pending = (await listDoctors()).filter((d) => !d.approved).length;
   } catch (err) {
-    console.error("Admin: doctor list could not be loaded:", err);
-    loadError = `Couldn't load the registered doctors: ${err instanceof Error ? err.message : "unknown error"}`;
+    console.error("Admin: clinics could not be loaded:", err);
+    loadError = `Couldn't load the clinics: ${err instanceof Error ? err.message : "unknown error"}`;
   }
+  const doctorTotal = clinics.reduce((n, c) => n + c.doctorCount, 0);
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Registered doctors</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Clinics and doctors</h1>
           <p className="text-sm text-gray-500">
-            {doctors.length} registered. Each doctor&apos;s affiliate link pre-fills &ldquo;Prescribed by&rdquo; at checkout - share it, or turn it into a QR code.
+            {clinics.length} clinic{clinics.length === 1 ? "" : "s"}, {doctorTotal} doctor{doctorTotal === 1 ? "" : "s"}. Open a clinic to edit its details, logo, doctors and who collects payment.
           </p>
         </div>
-        <a href="/for-doctors#signup" className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
-          Register a doctor
-        </a>
+        <div className="flex flex-wrap items-center gap-2">
+          <a href="/for-doctors#signup" className="rounded-md border border-brand px-3 py-2 text-sm font-semibold text-brand hover:bg-brand-light">
+            Doctor sign-up form
+          </a>
+          <CreateClinicForm />
+        </div>
       </div>
 
-      {loadError && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{loadError}</p>}
-      {!loadError && doctors.length === 0 && (
-        <p className="text-gray-500">
-          No doctors yet. Register one with the button above.
+      {pending > 0 && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {pending} doctor{pending === 1 ? "" : "s"} joined an existing clinic and {pending === 1 ? "is" : "are"} waiting for your approval (marked below).
         </p>
       )}
 
-      {doctors.length > 0 && (
+      {loadError && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{loadError}</p>}
+      {!loadError && clinics.length === 0 && <p className="text-gray-500">No clinics yet. Use Register a clinic.</p>}
+
+      {clinics.length > 0 && (
         <div className="overflow-x-auto rounded-lg border bg-white">
-          <table className="w-full min-w-[56rem] text-left text-sm">
+          <table className="w-full min-w-[48rem] text-left text-sm">
             <thead className="border-b bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-3 py-2 font-semibold">Doctor</th>
                 <th className="px-3 py-2 font-semibold">Clinic</th>
-                <th className="px-3 py-2 font-semibold">Contact</th>
-                <th className="px-3 py-2 font-semibold">Registered (IST)</th>
-                <th className="px-3 py-2 font-semibold">Affiliate booking link</th>
-                <th className="px-3 py-2 font-semibold"><span className="sr-only">Actions</span></th>
+                <th className="px-3 py-2 font-semibold">Address</th>
+                <th className="px-3 py-2 font-semibold">Doctors</th>
+                <th className="px-3 py-2 font-semibold">Payment collected by</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {doctors.map((d) => {
-                const link = affiliateLink(d.id);
+              {clinics.map((c) => {
+                const logo = clinicLogoUrl(c);
                 return (
-                  <tr key={d.id} className="align-top">
+                  <tr key={c.id} className="align-middle">
                     <td className="px-3 py-3">
-                      <span className="block font-medium text-gray-900">{d.name}</span>
-                      <span className="block text-xs text-gray-500">
-                        {d.specialty} &middot; {d.degree}
-                      </span>
-                      <span className="block text-xs text-gray-400">{d.id} &middot; {d.slug}</span>
+                      <Link href={`/admin/clinics/${c.id}`} className="flex items-center gap-3 font-medium text-brand hover:underline">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-gray-50">
+                          {logo ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={logo} alt="" className="h-full w-full object-contain" />
+                          ) : (
+                            <span className="text-[10px] text-gray-400">no logo</span>
+                          )}
+                        </span>
+                        <span>
+                          {c.name}
+                          <span className="block text-xs font-normal text-gray-400">{c.id}</span>
+                        </span>
+                      </Link>
                     </td>
-                    <td className="px-3 py-3 text-gray-800">{d.clinic}</td>
-                    <td className="px-3 py-3 text-gray-800">
-                      {d.mobile && <span className="block">{formatMobile(d.mobile)} (WhatsApp)</span>}
-                      {d.email && <span className="block break-all">{d.email}</span>}
-                      {!d.mobile && !d.email && <span className="text-gray-400">-</span>}
-                    </td>
-                    <td className="px-3 py-3 whitespace-nowrap text-gray-600">{d.registeredAt}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-start gap-2">
-                        <a href={link} target="_blank" rel="noopener noreferrer" className="min-w-0 break-all text-brand hover:underline">
-                          {link}
-                        </a>
-                        <CopyLinkButton text={link} />
-                      </div>
-                    </td>
-                    <td className="px-3 py-3">
-                      <DeleteDoctorButton id={d.id} name={d.name} />
-                    </td>
+                    <td className="px-3 py-3 text-gray-700">{c.address || <span className="text-gray-400">-</span>}</td>
+                    <td className="px-3 py-3 text-gray-700">{c.doctorCount}</td>
+                    <td className="px-3 py-3 text-gray-700">{c.paymentCollector === "clinic" ? "Clinic" : "Eazy Diagnostics"}</td>
                   </tr>
                 );
               })}

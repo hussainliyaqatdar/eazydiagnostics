@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default function PackagePage({ params }: { params: { slug: string } }) {
+export default async function PackagePage({ params }: { params: { slug: string } }) {
   const pkg = getPackageBySlug(params.slug);
   if (!pkg) notFound();
 
@@ -44,7 +44,7 @@ export default function PackagePage({ params }: { params: { slug: string } }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <nav className="text-sm text-gray-500" aria-label="Breadcrumb">
-        <Link href={homeHref(getBrand())} className="hover:text-brand">Home</Link> {" / "}
+        <Link href={homeHref(await getBrand())} className="hover:text-brand">Home</Link> {" / "}
         <Link href={`/search?q=${encodeURIComponent(pkg.category)}`} className="hover:text-brand">{pkg.category}</Link> {" / "}
         <span className="text-gray-700">{pkg.name}</span>
       </nav>

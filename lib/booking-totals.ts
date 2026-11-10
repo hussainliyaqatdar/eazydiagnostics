@@ -12,6 +12,12 @@ export function collectionChargeFor(itemsTotal: number): number {
   return itemsTotal > 0 && itemsTotal < FREE_COLLECTION_MIN ? COLLECTION_CHARGE : 0;
 }
 
+// Whether the patient pays at the clinic's front desk: the order's saved payment collector, or - for
+// orders from before that was saved - whether a registered doctor prescribed it.
+export function paidAtClinic(b: Pick<Booking, "paymentCollector" | "referral">): boolean {
+  return b.paymentCollector ? b.paymentCollector === "clinic" : !!b.referral?.doctorId;
+}
+
 // What the customer owes on collection. Bookings made before coupons or the
 // collection charge existed lack those fields, so they count as 0.
 export function amountDue(booking: Pick<Booking, "subtotalPrice" | "couponDiscount" | "collectionCharge">): number {

@@ -10,7 +10,8 @@ export type AffiliateDoctor = {
 };
 
 export async function getAffiliateDoctors(): Promise<AffiliateDoctor[]> {
-  return (await listDoctors()).map((d) => ({ id: d.id, name: d.name, clinic: d.clinic }));
+  // A doctor who joined a clinic through the public form is listed once an admin approves them.
+  return (await listDoctors()).filter((d) => d.approved).map((d) => ({ id: d.id, name: d.name, clinic: d.clinic }));
 }
 
 export async function findAffiliateDoctor(id: string | undefined): Promise<AffiliateDoctor | undefined> {

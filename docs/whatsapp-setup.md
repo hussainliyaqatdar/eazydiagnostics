@@ -1,21 +1,34 @@
 # WhatsApp order updates
 
-When an order's status is changed on **/admin/orders**, the site WhatsApps the patient and, for some
-statuses, the doctor who referred them. It uses Meta's WhatsApp Cloud API (the official WhatsApp Business API).
+The site WhatsApps patients and prescribing doctors when something changes on an order in the admin portal. It uses
+Meta's WhatsApp Cloud API (the official WhatsApp Business API).
 
-| Status | Patient | Referring doctor |
+## What triggers a message
+
+| Change (on `/admin/orders`) | Patient | Prescribing doctor |
 |---|---|---|
-| Booked (new) | - | - |
-| Confirmed | yes | - |
-| Phlebotomist on the way | yes | - |
-| Sample collected | yes | yes |
-| At the lab - processing | yes | - |
-| Report ready | yes | yes |
-| Cancelled | yes | yes |
+| Visit status -> Visit scheduled / Samples collected / Reached lab / Partially complete / Completed / Cancelled | yes | yes |
+| Visit status -> Booked (the starting state) | - | - |
+| Payment -> Paid / Refunded | yes | - |
+| Payment -> Pending (a correction) | - | - |
+| A member's report -> Partial report / Full report | that member | that member's doctor |
 
-Change who hears about what in `NOTIFY` in `lib/order-status.ts`, and the wording in `patientLine` / `doctorLine` in the same file.
-A doctor is messaged only if the patient picked them from the registered-doctors list (their number is the WhatsApp number
-they gave at /for-doctors). Everyone named on a multi-member visit who gave their own WhatsApp number is also messaged.
+- **Doctors are messaged only if the patient chose them as "Prescribed by" for a member from the registered-doctors list
+  at booking.** Each member has their own prescribing doctor. A doctor who was only typed in, or no doctor, gets nothing.
+  A doctor with several members on one visit gets one message listing them. The number used is the doctor's WhatsApp
+  number (the one given at `/for-doctors`, editable on the clinic page). A doctor who joined an existing clinic and has
+  not been approved yet is not messaged.
+- **Patients:** the visit's contact number, plus any member who gave their own number for their report. A number
+  shared by several members hears once.
+- **No double sends.** Setting the status a visit (or payment, or report) already has changes nothing and sends nothing.
+  Two clicks at the same moment change it once. Every message is also reserved in the `order_notifications` table under a
+  unique (order, number, event) key before it is sent, so the same news can never be recorded or sent twice to the same
+  number. A message that fails is **not** retried automatically; see "Using it".
+- Report messages carry a link (`/api/reports/<random token>`) to the member's report - the clinic-branded copy when
+  there is one. The link is a long random token, so only someone who was sent it can open it.
+
+Change who hears about what in `NOTIFY_VISIT` in `lib/order-status.ts`, and the wording in `patientLine` / `doctorLine` /
+`paymentLine` / `reportLine` in the same file.
 
 ## One-time setup (done in Meta's dashboards, not in code)
 
@@ -29,10 +42,11 @@ they gave at /for-doctors). Everyone named on a multi-member visit who gave thei
 4. Note the **Phone number ID** (WhatsApp -> API Setup).
 5. Create and get approved the two **message templates** below (WhatsApp -> Message templates). Category: **Utility**. Language: **English**.
    Approval usually takes minutes to a day.
-6. On the server (e.g. Render -> Environment) set `WHATSAPP_ACCESS_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`.
+6. On the server (e.g. Render -> Environment) set `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` and `SITE_URL`
+   (the public address, used to build report links).
 
 WhatsApp only lets a business start a conversation with an approved template, which is why the wording lives in the variables
-below instead of free text.
+below instead of free text. All events (status, payment, report) use the same two templates; the last variable carries the sentence.
 
 ### Template `order_status_patient`
 
@@ -55,10 +69,18 @@ variables the same, or change `lib/order-notifications.ts` to match.
 
 ## Using it
 
-Open `/admin/orders`, pick a new status and press **Update & notify**. The page shows who was reached or why a message failed,
-and every message is kept in the WhatsApp log column. Typical failures: template not approved yet / name mismatch, expired token,
-or a number that is not on WhatsApp. A failed message is not re-sent automatically - fix the cause and set the status again
-(set another status and back, or message the patient by hand).
+- **`/admin/orders`**: change a visit's status or payment; each change shows who was reached or why not. Open an order
+  (`/admin/orders/<id>`) to see each member, upload their report PDF, set its status (No report yet -> Partial report -> Full
+  report), and read the order's WhatsApp log.
+- **Reports:** a member has one report at a time; a full report replaces a partial one. Upload the lab's PDF with
+  **Upload report** - saving a file never sends a message; only **Change status -> Update & notify** does. The saved file is
+  shown in a preview pane so you can check the header before you notify. If the member's prescribing doctor is registered, the PDF is re-saved with that doctor's clinic header (clinic
+  name, logo and address on the left; the doctor's name and qualifications on the right) added above every page - the lab's own
+  content is not touched. With no registered doctor the report is kept exactly as the lab produced it. After changing a clinic's
+  logo or a doctor's details, press **rebuild header**.
+- A failed message (template not approved yet / name mismatch, expired token, a number not on WhatsApp) is shown in red with the
+  reason. It is not re-sent automatically: fix the cause, then set another status and back, or message the patient by hand.
+- With no token configured, changes are still saved and the log says nothing was sent.
 
 ## Consent
 

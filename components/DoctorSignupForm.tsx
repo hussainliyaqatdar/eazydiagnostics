@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LIMITS,
   NAME_PREFIX,
@@ -11,6 +11,8 @@ import {
 
 type FormState = {
   fullName: string;
+  // "" (typing a new clinic's name), or the id of the existing clinic picked from the suggestions.
+  clinicChoice: string;
   clinicName: string;
   mobile: string;
   email: string;
@@ -22,6 +24,7 @@ type FormState = {
 
 const INITIAL: FormState = {
   fullName: NAME_PREFIX,
+  clinicChoice: "",
   clinicName: "",
   mobile: "",
   email: "",
@@ -77,8 +80,38 @@ export default function DoctorSignupForm() {
   const [errors, setErrors] = useState<DoctorSignupErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [done, setDone] = useState<{ name: string } | null>(null);
+  const [done, setDone] = useState<{ name: string; clinic?: string } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  // The clinics already registered, so a doctor of a multi-doctor clinic can join theirs.
+  const [clinics, setClinics] = useState<{ id: string; name: string }[]>([]);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
+
+  useEffect(() => {
+    fetch("/api/clinics")
+      .then((r) => r.json())
+      .then((list) => setClinics(Array.isArray(list) ? list : []))
+      .catch(() => setClinics([]));
+  }, []);
+
+  // Typing a clinic's name suggests the listed clinics that match; picking one joins it, and
+  // "+ Add" keeps the typed name as a brand-new clinic.
+  const query = form.clinicName.trim();
+  const exact = clinics.find((c) => c.name.toLowerCase() === query.toLowerCase());
+  const matches = query ? clinics.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())).slice(0, 6) : clinics.slice(0, 6);
+  const canAdd = query.length >= 2 && !exact;
+  const options: ({ kind: "clinic"; id: string; name: string } | { kind: "add" })[] = [
+    ...matches.map((c) => ({ kind: "clinic" as const, id: c.id, name: c.name })),
+    ...(canAdd ? [{ kind: "add" as const }] : []),
+  ];
+  const joiningExisting = form.clinicChoice !== "";
+
+  function pickClinic(o: (typeof options)[number]) {
+    if (o.kind === "clinic") setForm((f) => ({ ...f, clinicChoice: o.id, clinicName: o.name }));
+    setErrors((e) => ({ ...e, clinicName: undefined }));
+    setSuggestOpen(false);
+    setActiveIdx(-1);
+  }
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -102,7 +135,11 @@ export default function DoctorSignupForm() {
     if (submitting) return;
     setSubmitError("");
 
-    const result = validateDoctorSignup(form);
+    // What is sent: the picked clinic's id, or the typed name of a new one (a name that exactly matches a
+    // listed clinic joins that clinic rather than creating a duplicate).
+    const clinicId = form.clinicChoice || exact?.id || undefined;
+    const payload = { ...form, clinicId, clinicName: clinicId ? "" : form.clinicName };
+    const result = validateDoctorSignup(payload);
     if (!result.ok) {
       setErrors(result.errors);
       focusFirstError(result.errors);
@@ -114,11 +151,11 @@ export default function DoctorSignupForm() {
       const res = await fetch("/api/doctors/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setDone({ name: result.value.fullName });
+        setDone({ name: result.value.fullName, clinic: clinicId ? clinics.find((c) => c.id === clinicId)?.name : undefined });
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
@@ -146,6 +183,11 @@ export default function DoctorSignupForm() {
         <p className="text-gray-700">
           <strong>Our team will share the personal booking link shortly.</strong>
         </p>
+        {done.clinic && (
+          <p className="text-sm text-gray-600">
+            You asked to join <strong>{done.clinic}</strong>. Our team will confirm it with the clinic before you are listed.
+          </p>
+        )}
         <button
           type="button"
           onClick={() => {
@@ -187,19 +229,72 @@ export default function DoctorSignupForm() {
         />
       </Field>
 
-      <Field id="field-clinicName" label="Clinic name" error={errors.clinicName}>
-        <input
-          id="field-clinicName"
-          type="text"
-          autoComplete="organization"
-          placeholder="e.g. Sri Family Clinic, JP Nagar"
-          maxLength={LIMITS.clinicName.max}
-          value={form.clinicName}
-          onChange={(e) => set("clinicName", e.target.value)}
-          aria-invalid={errors.clinicName ? true : undefined}
-          aria-describedby={errors.clinicName ? "field-clinicName-error" : undefined}
-          className={inputClass(!!errors.clinicName)}
-        />
+      <Field
+        id="field-clinicName"
+        label="Clinic name"
+        hint="Start typing. Pick your clinic if it is listed, or choose + Add to register a new one."
+        error={errors.clinicName}
+      >
+        <div className="relative">
+          <input
+            id="field-clinicName"
+            type="text"
+            role="combobox"
+            aria-expanded={suggestOpen}
+            aria-controls="clinic-suggestions"
+            aria-autocomplete="list"
+            autoComplete="off"
+            placeholder="e.g. Sri Family Clinic, JP Nagar"
+            maxLength={LIMITS.clinicName.max}
+            value={form.clinicName}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, clinicName: e.target.value, clinicChoice: "" }));
+              if (errors.clinicName) setErrors((er) => ({ ...er, clinicName: undefined }));
+              setSuggestOpen(true);
+              setActiveIdx(-1);
+            }}
+            onFocus={() => setSuggestOpen(true)}
+            onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setSuggestOpen(true);
+                setActiveIdx((i) => Math.min(i + 1, options.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setActiveIdx((i) => Math.max(i - 1, 0));
+              } else if (e.key === "Enter" && suggestOpen && activeIdx >= 0 && options[activeIdx]) {
+                e.preventDefault();
+                pickClinic(options[activeIdx]);
+              } else if (e.key === "Escape") {
+                setSuggestOpen(false);
+              }
+            }}
+            aria-invalid={errors.clinicName ? true : undefined}
+            aria-describedby={errors.clinicName ? "field-clinicName-error" : undefined}
+            className={inputClass(!!errors.clinicName)}
+          />
+          {suggestOpen && options.length > 0 && (
+            <ul id="clinic-suggestions" role="listbox" className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border bg-white py-1 shadow-lg">
+              {options.map((o, i) => (
+                <li
+                  key={o.kind === "clinic" ? o.id : "add"}
+                  role="option"
+                  aria-selected={i === activeIdx}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    pickClinic(o);
+                  }}
+                  className={`cursor-pointer px-3 py-2 text-sm ${i === activeIdx ? "bg-brand-light" : "hover:bg-gray-50"} ${o.kind === "add" ? "font-semibold text-brand" : "text-gray-800"}`}
+                >
+                  {o.kind === "clinic" ? o.name : `+ Add “${query}” as a new clinic`}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {joiningExisting && <p className="text-xs text-gray-500">Joining a listed clinic: our team confirms it before you are listed.</p>}
+        {!joiningExisting && query.length >= 2 && !exact && !suggestOpen && <p className="text-xs text-gray-500">A new clinic will be created with this name.</p>}
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">

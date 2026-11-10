@@ -2,8 +2,8 @@ import Link from "next/link";
 import { getBrand } from "@/lib/brand-server";
 import { BUSINESS_NAME, PARTNER_TAGLINE, BOOKING_PHONE, BOOKING_PHONE_TEL, SUPPORT_EMAIL, SERVICE_AREAS } from "@/lib/site-config";
 
-export default function Footer() {
-  const brand = getBrand();
+export default async function Footer() {
+  const brand = await getBrand();
   return (
     <footer className="border-t mt-16 py-8 text-sm text-gray-500">
       <div className="max-w-6xl mx-auto px-4 flex flex-col gap-2">

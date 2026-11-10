@@ -1,5 +1,5 @@
 import { saveEmail } from "./store";
-import { amountDue } from "./booking-totals";
+import { amountDue, paidAtClinic } from "./booking-totals";
 import { describeConsult, hasConsult } from "./consult-offers";
 import { BUSINESS_NAME, CONSULT_BOOKING_URL, SUPPORT_EMAIL } from "./site-config";
 import { formatMobile, type DoctorSignup } from "./doctor-onboarding";
@@ -110,9 +110,9 @@ export function renderOwnerNotification(booking: Booking) {
     ${(booking.couponCode && booking.couponDiscount) || booking.collectionCharge ? `<p style="text-align:right;margin:0;">Visit subtotal: ${money(booking.subtotalPrice)}</p>` : ""}
     ${booking.couponCode && booking.couponDiscount ? `<p style="text-align:right;margin:0;color:#0F6E6E;">Coupon ${booking.couponCode}: -${money(booking.couponDiscount)}</p>` : ""}
     ${booking.collectionCharge ? `<p style="text-align:right;margin:0;">Collection charges: ${money(booking.collectionCharge)}</p>` : ""}
-    <p style="text-align:right;font-weight:bold;">${booking.referral?.doctorId ? "Amount payable at the clinic front desk" : "Amount due on collection"}: ${money(amountDue(booking))}</p>
+    <p style="text-align:right;font-weight:bold;">${paidAtClinic(booking) ? "Amount payable at the clinic front desk" : "Amount due on collection"}: ${money(amountDue(booking))}</p>
     ${
-      booking.referral?.doctorId
+      booking.referral?.doctorId && paidAtClinic(booking)
         ? `<p style="background:#FFF4EC;border-left:4px solid #FF7A45;padding:8px 12px;margin:12px 0;">Booked through <strong>${esc(booking.referral.clinic || booking.referral.name)}</strong>'s referral link. The patient pays at the clinic front desk (not to the phlebotomist) - the clinic settles with us on the fortnightly invoice.</p>`
         : ""
     }
@@ -225,7 +225,7 @@ function signupRows(signup: DoctorSignup) {
     .join("");
 }
 
-// Dev-inbox copies of these emails (/admin/inbox) hold doctors' memberal details
+// Dev-inbox copies of these emails (/admin/inbox) hold doctors' personal details
 // and that page has no login, so they are only kept when running locally.
 function keepInDevInbox(email: Parameters<typeof saveEmail>[0]) {
   if (process.env.NODE_ENV !== "production") saveEmail(email);
@@ -237,7 +237,7 @@ export function renderDoctorConfirmation(signup: DoctorSignup) {
   <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#222;line-height:1.5;">
     <h2 style="color:#0F6E6E;">Thank you, ${esc(signup.fullName)}!</h2>
     <p>You're registered as a partner doctor with ${esc(BUSINESS_NAME)}, so your patients can book trusted diagnostics at home.</p>
-    <p><strong>Our team will share your memberal booking link shortly.</strong> Patients who book through it are linked to you.</p>
+    <p><strong>Our team will share your personal booking link shortly.</strong> Patients who book through it are linked to you.</p>
     <h3 style="margin-bottom:4px;">What we have</h3>
     <table style="border-collapse:collapse;font-size:14px;">${signupRows(signup)}</table>
     <p>Spotted a mistake? Just email us at <a href="mailto:${esc(SUPPORT_EMAIL)}">${esc(SUPPORT_EMAIL)}</a>.</p>
@@ -252,7 +252,11 @@ export function renderOwnerDoctorAlert(signup: DoctorSignup, id: string, submitt
   const html = `
   <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#222;line-height:1.5;">
     <h2 style="color:#FF7A45;">New doctor registered</h2>
-    <p>Submitted ${esc(submittedAt)} (IST). Doctor ID: <strong>${esc(id)}</strong>. They are on the admin doctors page and in the checkout "Prescribed by" list.</p>
+    <p>Submitted ${esc(submittedAt)} (IST). Doctor ID: <strong>${esc(id)}</strong>. ${
+      signup.clinicId
+        ? `<strong>They asked to join an existing clinic (${esc(signup.clinicName)}) and are waiting for your approval</strong> - open the clinic on the admin page and press Approve. Until then they are not in the checkout "Prescribed by" list.`
+        : "They are on the admin clinics page and in the checkout \"Prescribed by\" list."
+    }</p>
     <table style="border-collapse:collapse;font-size:14px;">${signupRows(signup)}</table>
     <p><strong>Affiliate booking link to share:</strong><br><a href="${esc(link)}">${esc(link)}</a></p>
   </div>`;

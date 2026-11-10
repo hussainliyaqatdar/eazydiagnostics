@@ -8,8 +8,8 @@ import { brandText } from "@/lib/brand";
 const TITLE = "Specialised Blood Tests at Home in Bangalore";
 const DESCRIPTION = `NIPT, Double Marker, Lipoprotein(a), NT-proBNP, Procalcitonin, Thrombocheck and more specialised tests by doctor specialty, with home collection in Bangalore and ${PARTNER_NAME} lab processing.`;
 
-export function generateMetadata(): Metadata {
-  const description = brandText(DESCRIPTION, getBrand());
+export async function generateMetadata(): Promise<Metadata> {
+  const description = brandText(DESCRIPTION, await getBrand());
   return {
     title: TITLE,
     description,
@@ -20,8 +20,8 @@ export function generateMetadata(): Metadata {
 
 const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
 
-export default function SpecialisedTestsPage() {
-  const brand = getBrand();
+export default async function SpecialisedTestsPage() {
+  const brand = await getBrand();
   const groups = SPECIALTIES.map((s) => ({ s, tests: getSpecialtyTests(s.slug) })).filter((g) => g.tests.length > 0);
 
   const jsonLd = {
@@ -48,7 +48,7 @@ export default function SpecialisedTestsPage() {
         <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{TITLE}</h1>
         <p className="text-gray-700 leading-relaxed">
           {brand
-            ? `Many specialised tests are hard to find at a neighbourhood lab. ${brand.name} arranges these tests at your home in Bangalore, processed at NABL-accredited partner labs. Pick a specialty to see the tests, what each one is for, the price and the report time. Pay now at the clinic front desk.`
+            ? `Many specialised tests are hard to find at a neighbourhood lab. ${brand.name} arranges these tests at your home in Bangalore, processed at NABL-accredited partner labs. Pick a specialty to see the tests, what each one is for, the price and the report time. ${brand.payAtClinic !== false ? "Pay now at the clinic front desk." : "You pay only after the sample is collected."}`
             : `Many specialised tests are hard to find at a neighbourhood lab. ${BUSINESS_NAME} is an authorised partner of ${PARTNER_NAME}, so these tests are collected at your home in Bangalore and processed at ${PARTNER_NAME} NABL-accredited labs. Pick a specialty to see the tests, what each one is for, the price and the report time. You pay only after the sample is collected.`}
         </p>
       </header>

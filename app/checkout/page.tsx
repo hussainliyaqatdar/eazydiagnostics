@@ -19,7 +19,7 @@ export default function CheckoutPage() {
   const { members: cartMembers, allLines, clear, setConsultDoctor } = useCart();
   const { openCartDrawer } = useUI();
   // Came through a doctor's referral link: the patient pays at the clinic, not at the door.
-  const { brand, referred } = useBrand();
+  const { brand, payAtClinic: referred } = useBrand();
   // Priced items come from the cart summary so offer pricing (e.g. an included
   // consultation) is shown the same way here as in the cart drawer.
   const { items, members, emptyMembers, coupon, discount, total, collectionCharge, removeCoupon } = useCartSummary();
@@ -59,7 +59,10 @@ export default function CheckoutPage() {
     const key = `checkout-${id}-${field}`;
     if (missing.includes(key)) setMissing((m) => m.filter((k) => k !== key));
   }
+  // "Prescribed by": the visit's default (filled from a doctor's referral link, or chosen on a single-member
+  // visit), and - on a multi-member visit - each member's own choice, which wins over the default.
   const [referral, setReferral] = useState<ReferralValue>({ name: "" });
+  const [memberReferral, setMemberReferral] = useState<Record<string, ReferralValue>>({});
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   // A pasted Google Maps link we couldn't read coordinates from. It still counts
   // as the location: our phlebotomist opens the link directly.
@@ -292,7 +295,8 @@ export default function CheckoutPage() {
       // as a plain cart, exactly as before.
       const visitMembers = cartMembers.map((m) => {
         const p = memberOf(m.id, m.label);
-        return { name: p.name.trim(), age: p.age.trim(), gender: p.gender, ...(p.whatsapp.trim() ? { whatsapp: p.whatsapp.trim() } : {}), cart: m.lines };
+        const prescriber = memberReferral[m.id] ?? referral;
+        return { name: p.name.trim(), age: p.age.trim(), gender: p.gender, ...(p.whatsapp.trim() ? { whatsapp: p.whatsapp.trim() } : {}), ...(prescriber.name.trim() ? { referredBy: prescriber } : {}), cart: m.lines };
       });
       const res = await fetch("/api/bookings", {
         method: "POST",
@@ -498,11 +502,16 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
                     </select>
                     <input id={`checkout-${m.id}-age`} placeholder="Age*" value={p.age} onChange={(e) => updateMember(m.id, m.label, "age", e.target.value)} className={fieldClass(`checkout-${m.id}-age`)} />
                     <input placeholder="Different WhatsApp for this report (optional)" value={p.whatsapp} onChange={(e) => updateMember(m.id, m.label, "whatsapp", e.target.value)} className="border rounded-md px-3 py-2 text-sm sm:col-span-2" />
+                    <div className="flex flex-col gap-1 sm:col-span-2">
+                      <span className="text-xs font-medium text-gray-600">Prescribed by <span className="font-normal text-gray-400">(optional - the doctor who prescribed {p.name.trim() ? `${p.name.trim()}'s` : "these"} tests)</span></span>
+                      <ReferralCombobox value={memberReferral[m.id] ?? referral} onChange={(v) => setMemberReferral((r) => ({ ...r, [m.id]: v }))} />
+                    </div>
                   </div>
                 </div>
               );
             })}
 
+        {!multi && (
         <div className="bg-white border rounded-lg p-4 flex flex-col gap-3">
           <div>
             <h2 className="font-semibold text-gray-900">Prescribed by <span className="text-sm font-normal text-gray-500">(optional)</span></h2>
@@ -510,6 +519,7 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
           </div>
           <ReferralCombobox value={referral} onChange={setReferral} />
         </div>
+        )}
 
 
         </>

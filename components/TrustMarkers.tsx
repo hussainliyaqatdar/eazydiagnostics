@@ -5,10 +5,10 @@ import { CLINIC_TRUST_MARKERS } from "@/lib/brand";
 
 // `twoByTwo` keeps the cards in a 2x2 block at every width - for narrower
 // columns (e.g. beside the doctor sign-up form) where four across is too tight.
-export default function TrustMarkers({ twoByTwo = false }: { twoByTwo?: boolean }) {
+export default async function TrustMarkers({ twoByTwo = false }: { twoByTwo?: boolean }) {
   // A clinic's version has its own copy and picture in the same grid; the doctor
   // sign-up page (twoByTwo) always shows the standard cards.
-  const clinic = !!getBrand() && !twoByTwo;
+  const clinic = !!(await getBrand()) && !twoByTwo;
   const markers: { label: string; alt: string; image: string; crop?: { size: string; position: string } }[] = clinic ? CLINIC_TRUST_MARKERS : TRUST_MARKERS;
   const grid = (
     <div className={`grid grid-cols-2 gap-4 py-6 ${twoByTwo ? "" : "md:grid-cols-4"}`}>

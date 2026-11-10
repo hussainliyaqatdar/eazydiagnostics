@@ -24,8 +24,10 @@ export default function Logo({ className = "", brand = null }: { className?: str
   if (brand) {
     return (
       <span className={`inline-flex items-center gap-2.5 ${className}`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={brand.logo} alt={`${brand.name} logo`} className="h-11 w-11 shrink-0 object-contain" />
+        {brand.logo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={brand.logo} alt={`${brand.name} logo`} className="h-11 w-11 shrink-0 object-contain" />
+        )}
         <span className="block text-lg font-bold leading-tight tracking-tight text-brand-dark">{brand.name}</span>
       </span>
     );
