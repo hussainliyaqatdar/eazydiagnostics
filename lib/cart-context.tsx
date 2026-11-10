@@ -61,9 +61,11 @@ type CartContextType = {
 };
 
 const CartContext = createContext<CartContextType | null>(null);
-const OLD_STORAGE_KEY = "diagnostics-cart-v2"; // single-member carts, before visits
-const STORAGE_KEY = "diagnostics-visit-v1";
-const COUPON_KEY = "diagnostics-coupon-v1";
+// Carts used to be saved under one shared key, so every link opened in a browser saw the same cart.
+// They are now kept per referral link (see CartProvider's `scope`); the shared keys are deleted.
+const LEGACY_KEYS = ["diagnostics-cart-v2", "diagnostics-visit-v1", "diagnostics-coupon-v1"];
+const STORAGE_KEY = "diagnostics-visit-v2";
+const COUPON_KEY = "diagnostics-coupon-v2";
 
 const FIRST_MEMBER: CartMember = { id: "m1", label: "You", lines: [] };
 
@@ -103,15 +105,46 @@ async function checkCoupon(code: string): Promise<ApplyCouponResult> {
   }
 }
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+// True when this page load is someone opening a link to the home page (typing it, a bookmark, a link
+// from another site or a referral link) - not a reload or back/forward, and not moving around the site.
+function openedHomeFresh(): boolean {
+  try {
+    if (window.location.pathname !== "/") return false;
+    const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    return !nav || nav.type === "navigate";
+  } catch {
+    return false;
+  }
+}
+
+// `scope` names whose cart this is: the doctor id of the referral link the visitor came through, or
+// "direct" for the plain site. Each scope has its own cart, and opening the home page starts it empty.
+export function CartProvider({ children, scope = "direct" }: { children: React.ReactNode; scope?: string }) {
   const [members, setMembers] = useState<CartMember[]>([FIRST_MEMBER]);
   const [activeId, setActiveId] = useState<string>(FIRST_MEMBER.id);
   const [coupon, setCoupon] = useState<CouponRule | null>(null);
   const [loaded, setLoaded] = useState(false);
 
+  const storageKey = `${STORAGE_KEY}:${scope}`;
+  const couponKey = `${COUPON_KEY}:${scope}`;
+
   useEffect(() => {
+    setLoaded(false);
+    for (const k of LEGACY_KEYS) {
+      try { localStorage.removeItem(k); } catch {}
+    }
+    // Every home-page link open flushes this link's cart (and its coupon).
+    if (openedHomeFresh()) {
+      try {
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem(couponKey);
+      } catch {}
+    }
+    setMembers([FIRST_MEMBER]);
+    setActiveId(FIRST_MEMBER.id);
+    setCoupon(null);
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey);
       if (raw) {
         const saved = JSON.parse(raw) as { members?: CartMember[]; activeId?: string };
         if (saved.members?.length) {
@@ -119,15 +152,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           setMembers(saved.members.map((m) => ({ ...m, label: m.label.replace(/^Person (\d+)$/, "Member $1") })));
           setActiveId(saved.members.some((m) => m.id === saved.activeId) ? saved.activeId! : saved.members[0].id);
         }
-      } else {
-        // A cart saved before visits existed becomes the first member's cart.
-        const old = localStorage.getItem(OLD_STORAGE_KEY);
-        if (old) setMembers([{ ...FIRST_MEMBER, lines: JSON.parse(old) }]);
       }
     } catch {}
     let stored: CouponRule | null = null;
     try {
-      const raw = localStorage.getItem(COUPON_KEY);
+      const raw = localStorage.getItem(couponKey);
       if (raw) stored = JSON.parse(raw);
     } catch {}
     if (stored) {
@@ -140,18 +169,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       });
     }
     setLoaded(true);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope]);
 
   useEffect(() => {
     if (!loaded) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ members, activeId }));
-  }, [members, activeId, loaded]);
+    try { localStorage.setItem(storageKey, JSON.stringify({ members, activeId })); } catch {}
+  }, [members, activeId, loaded, storageKey]);
 
   useEffect(() => {
     if (!loaded) return;
-    if (coupon) localStorage.setItem(COUPON_KEY, JSON.stringify(coupon));
-    else localStorage.removeItem(COUPON_KEY);
-  }, [coupon, loaded]);
+    try {
+      if (coupon) localStorage.setItem(couponKey, JSON.stringify(coupon));
+      else localStorage.removeItem(couponKey);
+    } catch {}
+  }, [coupon, loaded, couponKey]);
 
   const active = members.find((m) => m.id === activeId) ?? members[0];
   const allLines = members.flatMap((m) => m.lines);
