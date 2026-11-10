@@ -52,7 +52,7 @@ export default function SearchPage({ searchParams }: Props) {
 
       <div className="grid md:grid-cols-3 gap-4">
         {results.map((r) =>
-          r.kind === "test" ? <TestCard key={`t-${r.item.slug}`} test={r.item} /> : <PackageCard key={`p-${r.item.slug}`} pkg={r.item} />
+          r.kind === "test" ? <TestCard key={`t-${r.item.slug}`} test={r.item} /> : <PackageCard key={`p-${r.item.slug}`} pkg={r.item} showContents />
         )}
       </div>
     </div>
