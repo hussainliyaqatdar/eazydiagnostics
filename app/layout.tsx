@@ -10,7 +10,7 @@ import CartDrawer from "@/components/CartDrawer";
 import ReferralCapture from "@/components/ReferralCapture";
 import VisitBar from "@/components/VisitBar";
 import { BrandProvider } from "@/components/BrandProvider";
-import { getReferral } from "@/lib/brand-server";
+import { getRef, getReferral } from "@/lib/brand-server";
 import { getFeaturedCoupon } from "@/lib/coupon-config";
 import { BUSINESS_NAME, PARTNER_NAME, SITE_URL, BOOKING_PHONE, SERVICE_AREAS, GMB_RATING, GMB_PROFILE_URL } from "@/lib/site-config";
 
@@ -127,7 +127,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }}
         />
         <BrandProvider brand={brand} payAtClinic={payAtClinic}>
-        <CartProvider>
+        <CartProvider scope={getRef() ?? "direct"}>
           <UIProvider>
             <Header featuredCoupon={featuredCoupon} />
             <main className="max-w-6xl mx-auto px-4 py-8 min-h-[70vh]">{children}</main>
