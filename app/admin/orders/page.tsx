@@ -33,7 +33,7 @@ export default async function AdminOrdersPage() {
         <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
         <p className="text-sm text-gray-500">
           Each order is a visit with one or more members. Change the visit or payment status here, or open an order to manage each member&apos;s report.
-          Patients and prescribing doctors get a WhatsApp update when a status changes.
+          Patients and prescribing doctors get a WhatsApp update when a status changes (<Link href="/admin/whatsapp" className="text-brand hover:underline">manage templates</Link>).
         </p>
       </div>
 

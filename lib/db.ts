@@ -133,6 +133,37 @@ CREATE INDEX IF NOT EXISTS order_notifications_order_idx ON order_notifications 
 ALTER TABLE order_notifications ADD COLUMN IF NOT EXISTS event_key text;
 CREATE UNIQUE INDEX IF NOT EXISTS order_notifications_event_idx ON order_notifications (order_id, to_number, event_key) WHERE event_key IS NOT NULL;
 
+-- Which template a message used and how far it got (sent / delivered / read / failed), updated from
+-- WhatsApp's webhook. wa_message_id is the id WhatsApp gave the message when it accepted it.
+ALTER TABLE order_notifications ADD COLUMN IF NOT EXISTS template text;
+ALTER TABLE order_notifications ADD COLUMN IF NOT EXISTS wa_message_id text;
+ALTER TABLE order_notifications ADD COLUMN IF NOT EXISTS delivery_status text;
+ALTER TABLE order_notifications ADD COLUMN IF NOT EXISTS delivery_updated_at timestamptz;
+CREATE INDEX IF NOT EXISTS order_notifications_wa_idx ON order_notifications (wa_message_id) WHERE wa_message_id IS NOT NULL;
+
+-- WhatsApp message templates managed from /admin/whatsapp. A template is written here, submitted to
+-- Meta for approval, and once APPROVED is used for the events it is bound to. variables[i] says what
+-- fills {{i+1}} (a key from lib/whatsapp-events.ts).
+CREATE TABLE IF NOT EXISTS whatsapp_templates (
+  id              bigserial PRIMARY KEY,
+  name            text NOT NULL,
+  language        text NOT NULL DEFAULT 'en',
+  category        text NOT NULL DEFAULT 'UTILITY',
+  audience        text NOT NULL,
+  events          jsonb NOT NULL DEFAULT '[]',
+  body            text NOT NULL,
+  footer          text,
+  variables       jsonb NOT NULL DEFAULT '[]',
+  meta_id         text,
+  status          text NOT NULL DEFAULT 'DRAFT',
+  rejected_reason text,
+  enabled         boolean NOT NULL DEFAULT true,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now(),
+  synced_at       timestamptz,
+  UNIQUE (name, language)
+);
+
 -- The audit trail of an order: every status change, report upload and removal (WhatsApp sends are
 -- in order_notifications and merged in when it is shown).
 CREATE TABLE IF NOT EXISTS order_events (

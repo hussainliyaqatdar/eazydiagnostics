@@ -153,9 +153,12 @@ export async function claimNotification(n: { orderId: string; eventKey: string; 
   return rows.length > 0 ? Number(rows[0].id) : null;
 }
 
-export async function finishNotification(id: number, ok: boolean, detail: string): Promise<void> {
+export async function finishNotification(id: number, ok: boolean, detail: string, extra: { template?: string; messageId?: string } = {}): Promise<void> {
   const db = await getDb();
-  await db.query("UPDATE order_notifications SET ok = $2, detail = $3 WHERE id = $1", [id, ok, detail.slice(0, 400)]);
+  await db.query(
+    "UPDATE order_notifications SET ok = $2, detail = $3, template = $4, wa_message_id = $5, delivery_status = $6, delivery_updated_at = now() WHERE id = $1",
+    [id, ok, detail.slice(0, 400), extra.template ?? null, extra.messageId ?? null, ok ? "sent" : "failed"]
+  );
 }
 
 // WhatsApp messages sent for these orders, oldest first, grouped by order id.

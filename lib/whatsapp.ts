@@ -15,14 +15,22 @@ const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
 export const PATIENT_TEMPLATE = process.env.WHATSAPP_PATIENT_TEMPLATE || "order_status_patient";
 export const DOCTOR_TEMPLATE = process.env.WHATSAPP_DOCTOR_TEMPLATE || "order_status_doctor";
-const TEMPLATE_LANGUAGE = process.env.WHATSAPP_TEMPLATE_LANGUAGE || "en";
+export const TEMPLATE_LANGUAGE = process.env.WHATSAPP_TEMPLATE_LANGUAGE || "en";
+// Needed to create / list / delete templates (the WhatsApp Business Account the number belongs to).
+const WABA_ID = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+// Webhook: the token Meta is told to echo back when subscribing, and the app secret its calls are signed with.
+export const WEBHOOK_VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+export const APP_SECRET = process.env.WHATSAPP_APP_SECRET;
 
-export type DeliveryResult = { ok: boolean; detail: string };
+export type DeliveryResult = { ok: boolean; detail: string; messageId?: string };
 
 export function whatsappConfigStatus() {
   return {
     tokenSet: !!ACCESS_TOKEN,
     phoneNumberIdSet: !!PHONE_NUMBER_ID,
+    businessAccountIdSet: !!WABA_ID,
+    verifyTokenSet: !!WEBHOOK_VERIFY_TOKEN,
+    appSecretSet: !!APP_SECRET,
     patientTemplate: PATIENT_TEMPLATE,
     doctorTemplate: DOCTOR_TEMPLATE,
     language: TEMPLATE_LANGUAGE,
@@ -50,7 +58,7 @@ function cleanParam(value: string): string {
 // Sends one template message and reports what happened. Retries once on a network
 // error or a 5xx; a 4xx (bad token, unapproved template, number not on WhatsApp)
 // will not fix itself, so its reason is returned as-is for the admin to see.
-export async function sendTemplate(to: string, template: string, params: string[]): Promise<DeliveryResult> {
+export async function sendTemplate(to: string, template: string, params: string[], opts: { language?: string } = {}): Promise<DeliveryResult> {
   if (!whatsappConfigured()) {
     const detail = "WhatsApp is not set up (WHATSAPP_ACCESS_TOKEN / WHATSAPP_PHONE_NUMBER_ID missing), so nothing was sent.";
     if (process.env.NODE_ENV === "production") console.error(`[whatsapp] ${detail} (${template} to ${to})`);
@@ -64,8 +72,9 @@ export async function sendTemplate(to: string, template: string, params: string[
     type: "template",
     template: {
       name: template,
-      language: { code: TEMPLATE_LANGUAGE },
-      components: [{ type: "body", parameters: params.map((text) => ({ type: "text", text: cleanParam(text) })) }],
+      language: { code: opts.language || TEMPLATE_LANGUAGE },
+      // A template with no variables takes no components.
+      ...(params.length > 0 ? { components: [{ type: "body", parameters: params.map((text) => ({ type: "text", text: cleanParam(text) })) }] } : {}),
     },
   };
 
@@ -80,7 +89,9 @@ export async function sendTemplate(to: string, template: string, params: string[
       });
       if (res.ok) {
         console.log(`[whatsapp] Sent ${template} to ${to}.`);
-        return { ok: true, detail: "Sent." };
+        // WhatsApp's id for the message; the webhook reports delivered / read / failed against it.
+        const messageId = ((await res.json().catch(() => null)) as { messages?: { id?: string }[] } | null)?.messages?.[0]?.id;
+        return { ok: true, detail: "Sent.", messageId };
       }
       const text = await res.text().catch(() => "");
       let reason = text;
@@ -98,4 +109,93 @@ export async function sendTemplate(to: string, template: string, params: string[
     }
   }
   return { ok: false, detail };
+}
+
+// ---- Graph API: connection and template management -------------------------------------
+export type GraphResult<T> = { ok: true; data: T } | { ok: false; error: string };
+
+async function graph<T>(method: "GET" | "POST" | "DELETE", path: string, body?: unknown): Promise<GraphResult<T>> {
+  if (!ACCESS_TOKEN) return { ok: false, error: "WHATSAPP_ACCESS_TOKEN is not set." };
+  try {
+    const res = await fetch(`${API_BASE}/${API_VERSION}/${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${ACCESS_TOKEN}`, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(20_000),
+    });
+    const text = await res.text();
+    let json: unknown = null;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      // Not JSON.
+    }
+    if (res.ok) return { ok: true, data: json as T };
+    const err = (json as { error?: { message?: string; error_user_msg?: string; error_user_title?: string } } | null)?.error;
+    return { ok: false, error: `${err?.error_user_msg || err?.message || text || `HTTP ${res.status}`}`.slice(0, 500) };
+  } catch (err) {
+    return { ok: false, error: `Could not reach WhatsApp: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+const needWaba = (): GraphResult<never> | null =>
+  WABA_ID ? null : { ok: false, error: "WHATSAPP_BUSINESS_ACCOUNT_ID is not set (needed to manage templates)." };
+
+// The number messages go out from: confirms the token and phone number id work.
+export async function metaPhoneInfo(): Promise<GraphResult<{ display_phone_number?: string; verified_name?: string; quality_rating?: string }>> {
+  if (!PHONE_NUMBER_ID) return { ok: false, error: "WHATSAPP_PHONE_NUMBER_ID is not set." };
+  return graph("GET", `${PHONE_NUMBER_ID}?fields=display_phone_number,verified_name,quality_rating`);
+}
+
+export type MetaTemplate = {
+  id: string;
+  name: string;
+  language: string;
+  status: string;
+  category?: string;
+  rejected_reason?: string;
+  components?: { type: string; text?: string }[];
+};
+
+export async function metaListTemplates(): Promise<GraphResult<MetaTemplate[]>> {
+  const missing = needWaba();
+  if (missing) return missing;
+  const all: MetaTemplate[] = [];
+  let path: string | null = `${WABA_ID}/message_templates?fields=name,language,status,category,rejected_reason,components&limit=100`;
+  for (let page = 0; page < 10 && path; page++) {
+    const res: GraphResult<{ data?: MetaTemplate[]; paging?: { next?: string } }> = await graph("GET", path);
+    if (!res.ok) return res;
+    all.push(...(res.data.data ?? []));
+    // The "next" link is a full URL: keep only what follows the version.
+    const next: string | undefined = res.data.paging?.next;
+    path = next ? next.replace(/^https?:\/\/[^/]+\/v[\d.]+\//, "") : null;
+  }
+  return { ok: true, data: all };
+}
+
+type TemplateSubmission = { name: string; language: string; category: string; body: string; footer?: string; examples: string[] };
+
+function components(t: TemplateSubmission) {
+  return [
+    { type: "BODY", text: t.body, ...(t.examples.length > 0 ? { example: { body_text: [t.examples] } } : {}) },
+    ...(t.footer ? [{ type: "FOOTER", text: t.footer }] : []),
+  ];
+}
+
+export async function metaCreateTemplate(t: TemplateSubmission): Promise<GraphResult<{ id: string; status?: string }>> {
+  const missing = needWaba();
+  if (missing) return missing;
+  return graph("POST", `${WABA_ID}/message_templates`, { name: t.name, language: t.language, category: t.category, components: components(t) });
+}
+
+// Edits a template Meta already holds (only allowed for approved / rejected / paused ones, and the
+// category cannot change). The edit goes back for review.
+export async function metaUpdateTemplate(metaId: string, t: TemplateSubmission): Promise<GraphResult<{ success?: boolean }>> {
+  return graph("POST", metaId, { components: components(t) });
+}
+
+export async function metaDeleteTemplate(name: string): Promise<GraphResult<{ success?: boolean }>> {
+  const missing = needWaba();
+  if (missing) return missing;
+  return graph("DELETE", `${WABA_ID}/message_templates?name=${encodeURIComponent(name)}`);
 }

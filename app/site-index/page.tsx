@@ -48,6 +48,7 @@ const SECTIONS: Section[] = [
     title: "Admin",
     blurb: "Open to anyone with the URL for now. Set ADMIN_PASSWORD on the server to put these behind a browser login.",
     entries: [
+      { href: "/admin/whatsapp", label: "WhatsApp", note: "Write and manage message templates, send them to Meta for approval, see what is sent for each change, and follow every message through Sent, Delivered and Read." },
       { href: "/admin/orders", label: "Orders", note: "Every visit with its members. Change the visit status (Booked, Visit scheduled, Samples collected, Reached lab, Partially complete, Completed, Cancelled) and the payment status (Pending, Paid, Refunded); open an order to upload each member's partial or full report, which is branded with their prescribing doctor's clinic. Patients and prescribing doctors get a WhatsApp update on each change." },
       { href: "/admin/doctors", label: "Clinics and doctors", note: "Register clinics; open one to edit its name, address and logo, who collects payment (clinic by default), and its doctors (name, qualifications, WhatsApp number, email, certificate, B2B discounts). Also approves doctors who joined an existing clinic. Each doctor's affiliate booking link is on the clinic page." },
       { href: "/admin/email", label: "Email delivery", note: "Check that order and doctor-registration emails are set up (Resend key, owner and sender addresses) and send a test email." },
