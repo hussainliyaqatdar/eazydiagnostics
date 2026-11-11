@@ -1,13 +1,13 @@
 "use client";
 import { useMemo, useRef, useState } from "react";
 import Modal from "../Modal";
+import { useToast } from "../Toaster";
 import { buttonClass, inputClass, labelClass, quietButtonClass, sendJson } from "../api";
 import type { WaTemplate } from "@/lib/whatsapp-templates";
 import {
   AUDIENCES,
   AUDIENCE_LABELS,
   CATEGORIES,
-  EVENTS,
   LANGUAGES,
   LIMITS,
   VARIABLE_SOURCES,
@@ -22,27 +22,30 @@ import {
 type Props = {
   // The template being edited, or null to write a new one.
   template: WaTemplate | null;
-  // Events already handled by another switched-on template, keyed "audience:event" -> its name.
-  taken: Record<string, string>;
+  // Every template, so a new one can start from an existing one as a reference.
+  templates: WaTemplate[];
   onClose: () => void;
   onSaved: () => void;
 };
 
-// Write or edit a template: its wording with {{variables}}, what fills each variable, who receives it and
-// for which events. A live preview shows it as the recipient would read it.
-export default function TemplateForm({ template, taken, onClose, onSaved }: Props) {
+// Write or edit a template: its wording with {{variables}}, what fills each variable, and who receives it.
+// Which status events use it is chosen on the "Template - Status Mapping" tab, not here. A live preview
+// shows it as the recipient would read it.
+export default function TemplateForm({ template, templates, onClose, onSaved }: Props) {
   const editing = !!template;
-  const [name, setName] = useState(template?.name ?? "");
-  const [language, setLanguage] = useState(template?.language ?? "en");
-  const [category, setCategory] = useState<TemplateCategory>(template?.category ?? "UTILITY");
-  const [audience, setAudience] = useState<Audience>(template?.audience ?? "patient");
-  const [events, setEvents] = useState<string[]>(template?.events ?? []);
-  const [body, setBody] = useState(template?.body ?? "");
-  const [footer, setFooter] = useState(template?.footer ?? "");
-  const [vars, setVars] = useState<(VariableSource | "")[]>(template?.variables ?? []);
+  const start = template;
+  const [name, setName] = useState(start?.name ?? "");
+  const [language, setLanguage] = useState(start?.language ?? "en");
+  const [category, setCategory] = useState<TemplateCategory>(start?.category ?? "UTILITY");
+  const [audience, setAudience] = useState<Audience>(start?.audience ?? "patient");
+  const [body, setBody] = useState(start?.body ?? "");
+  const [footer, setFooter] = useState(start?.footer ?? "");
+  const [vars, setVars] = useState<(VariableSource | "")[]>(start?.variables ?? []);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const { toast } = useToast();
   const [touched, setTouched] = useState(false);
+  // The existing template this one was started from, if any.
+  const [reference, setReference] = useState<number | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   // Wording is locked while Meta is reviewing it.
@@ -51,8 +54,8 @@ export default function TemplateForm({ template, taken, onClose, onSaved }: Prop
   const count = variableCount(body);
   const sources: (VariableSource | "")[] = useMemo(() => Array.from({ length: count }, (_, i) => vars[i] ?? ""), [count, vars]);
 
-  const errors = validateTemplate({ name, language, category, audience, events, body, footer, variables: sources as VariableSource[] }, true);
-  const draftErrors = validateTemplate({ name, language, category, audience, events, body, footer, variables: sources as VariableSource[] }, false);
+  const errors = validateTemplate({ name, language, category, audience, events: [], body, footer, variables: sources as VariableSource[] }, true);
+  const draftErrors = validateTemplate({ name, language, category, audience, events: [], body, footer, variables: sources as VariableSource[] }, false);
 
   function insertVariable(source: VariableSource) {
     const next = count + 1;
@@ -69,14 +72,24 @@ export default function TemplateForm({ template, taken, onClose, onSaved }: Prop
     });
   }
 
-  function toggleEvent(key: string) {
-    setEvents((cur) => (cur.includes(key) ? cur.filter((e) => e !== key) : [...cur, key]));
-  }
-
-  function changeAudience(a: Audience) {
-    setAudience(a);
-    // Events this audience is never sent are dropped.
-    setEvents((cur) => cur.filter((k) => EVENTS.find((e) => e.key === k)?.audiences.includes(a)));
+  // Starts from an existing template: its wording, variable mapping, footer, category and language are
+  // copied in (who it is sent to stays as chosen here), ready to be adjusted.
+  function useReference(id: number | null) {
+    setReference(id);
+    const ref = templates.find((t) => t.id === id);
+    if (!ref) return;
+    setBody(ref.body);
+    setFooter(ref.footer);
+    setVars(ref.variables);
+    setCategory(ref.category);
+    setLanguage(ref.language);
+    // A name is suggested only when none has been typed: "<base>_<audience>".
+    if (!name.trim()) {
+      const base = `${ref.name.replace(/_(patient|doctor)s?$/, "")}_${audience}`;
+      let candidate = base;
+      for (let n = 2; templates.some((t) => t.name === candidate && t.language === ref.language); n++) candidate = `${base}_${n}`;
+      setName(candidate);
+    }
   }
 
   async function save(submit: boolean) {
@@ -84,23 +97,28 @@ export default function TemplateForm({ template, taken, onClose, onSaved }: Prop
     const errs = submit ? errors : draftErrors;
     if (Object.values(errs).some(Boolean)) return;
     setBusy(true);
-    setError("");
-    const payload = { name, language, category, audience, events, body, footer, variables: sources, submit };
+    // Events are not sent: a new template starts unmapped, and an edit leaves its mapping as it is.
+    const payload = { name, language, category, audience, body, footer, variables: sources, submit };
     const res = editing
       ? await sendJson<{ submitError?: string }>(`/api/admin/whatsapp/templates/${template!.id}`, "PATCH", payload)
       : await sendJson<{ submitError?: string }>("/api/admin/whatsapp/templates", "POST", payload);
     if (!res.ok) {
-      setError(res.error);
+      toast({ kind: "error", title: "Couldn't save the template", message: res.error });
       setBusy(false);
       return;
     }
     if (res.data.submitError) {
       // Saved, but Meta turned it down: keep the form open so it can be fixed.
-      setError(`Saved, but Meta did not accept it: ${res.data.submitError}`);
+      toast({ kind: "warning", title: "Saved, but Meta did not accept it", message: res.data.submitError });
       setBusy(false);
       onSaved();
       return;
     }
+    toast({
+      kind: "success",
+      title: submit ? "Template saved and sent to Meta" : editing ? "Template saved" : "Draft saved",
+      message: editing ? name : `${name}. Map it to a status on the Template - Status Mapping tab to start using it.`,
+    });
     onSaved();
     onClose();
   }
@@ -113,6 +131,22 @@ export default function TemplateForm({ template, taken, onClose, onSaved }: Prop
     <Modal title={editing ? `Edit ${template!.name}` : "New WhatsApp template"} onClose={onClose} wide>
       <div className="grid gap-5 md:grid-cols-[1fr_17rem]">
         <div className="flex flex-col gap-4">
+          {!editing && templates.length > 0 && (
+            <label className={`${labelClass} rounded-md bg-gray-50 p-3`}>
+              Start from an existing template (optional)
+              <select value={reference ?? ""} onChange={(e) => useReference(e.target.value ? Number(e.target.value) : null)} className={inputClass} aria-label="Start from an existing template">
+                <option value="">Start blank</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name} ({AUDIENCE_LABELS[t.audience].toLowerCase()}s)</option>
+                ))}
+              </select>
+              <span className="font-normal text-gray-500">
+                {reference
+                  ? "Its wording, variables, footer and category are copied below. Adjust them for this audience; the audience stays as you chose."
+                  : "Copies an existing template's wording and variables so you do not start from scratch."}
+              </span>
+            </label>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={labelClass}>
               Template name*
@@ -137,11 +171,12 @@ export default function TemplateForm({ template, taken, onClose, onSaved }: Prop
             </label>
             <label className={labelClass}>
               Sent to
-              <select value={audience} onChange={(e) => changeAudience(e.target.value as Audience)} className={inputClass}>
+              <select value={audience} onChange={(e) => setAudience(e.target.value as Audience)} disabled={editing} className={inputClass}>
                 {AUDIENCES.map((a) => (
                   <option key={a} value={a}>{AUDIENCE_LABELS[a]}s</option>
                 ))}
               </select>
+              <span className="font-normal text-gray-400">Patients and doctors each get their own template for an event.</span>
             </label>
           </div>
 
@@ -166,7 +201,7 @@ export default function TemplateForm({ template, taken, onClose, onSaved }: Prop
               value={body}
               onChange={(e) => setBody(e.target.value)}
               disabled={locked}
-              rows={5}
+              rows={4}
               maxLength={LIMITS.body}
               placeholder="Hi {{1}}, your sample for booking {{2}} has been collected. Thank you for choosing us."
               className={`${inputClass} font-normal`}
@@ -209,30 +244,6 @@ export default function TemplateForm({ template, taken, onClose, onSaved }: Prop
             {show(errors.footer)}
           </label>
 
-          <fieldset className="rounded-md border p-3">
-            <legend className="px-1 text-xs font-medium text-gray-600">Use this template when...</legend>
-            <div className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
-              {EVENTS.map((ev) => {
-                const applies = ev.audiences.includes(audience);
-                const other = taken[`${audience}:${ev.key}`];
-                const blocked = !applies || (!!other && !events.includes(ev.key));
-                return (
-                  <label key={ev.key} className={`flex items-start gap-2 text-sm ${blocked ? "text-gray-400" : "text-gray-800"}`}>
-                    <input type="checkbox" checked={events.includes(ev.key)} disabled={blocked} onChange={() => toggleEvent(ev.key)} className="mt-1" />
-                    <span>
-                      {ev.label}
-                      <span className="block text-[11px] text-gray-400">
-                        {ev.group}
-                        {!applies ? ` - not sent to ${AUDIENCE_LABELS[audience].toLowerCase()}s` : other && !events.includes(ev.key) ? ` - used by ${other}` : ""}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-            {show(errors.events)}
-            <p className="mt-2 text-xs text-gray-500">An event with no template of its own uses the generic update template.</p>
-          </fieldset>
         </div>
 
         {/* Live preview, as the recipient would see it. */}
@@ -248,13 +259,12 @@ export default function TemplateForm({ template, taken, onClose, onSaved }: Prop
         </aside>
       </div>
 
-      {locked && <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Meta is reviewing this template, so its wording cannot change until the result is in. You can still change who gets it.</p>}
+      {locked && <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Meta is reviewing this template, so its wording cannot change until the result is in.</p>}
       {wordingChanged && sent && !locked && (
-        <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Changing the wording sends the template back to Meta for review. Until it is approved again, the generic update template is used.</p>
+        <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Changing the wording sends the template back to Meta for review. Until it is approved again, nothing is sent for the statuses mapped to it.</p>
       )}
-      {error && <p role="alert" className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="sticky -bottom-4 -mx-5 -mb-4 mt-4 flex flex-wrap items-center gap-2 border-t bg-white px-5 py-3">
         {editing ? (
           <>
             <button type="button" onClick={() => save(false)} disabled={busy} className={buttonClass}>

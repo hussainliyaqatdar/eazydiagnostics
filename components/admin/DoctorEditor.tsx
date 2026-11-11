@@ -5,6 +5,7 @@ import CopyLinkButton from "@/components/CopyLinkButton";
 import DeleteDoctorButton from "@/components/DeleteDoctorButton";
 import { buttonClass, inputClass, labelClass, quietButtonClass, sendForm, sendJson } from "./api";
 import type { Doctor } from "@/lib/types";
+import { useToast } from "./Toaster";
 
 type Props =
   | { mode: "edit"; doctor: Doctor; link: string; clinics: { id: string; name: string }[] }
@@ -26,17 +27,16 @@ export default function DoctorEditor(props: Props) {
   const [pkg, setPkg] = useState(String(doctor?.discounts.package ?? 15));
   const [clinicId, setClinicId] = useState(doctor?.clinicId ?? "");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const { toast } = useToast();
   const certRef = useRef<HTMLInputElement>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setMessage(null);
     if (props.mode === "add") {
       const result = await sendJson(`/api/admin/clinics/${props.clinicId}/doctors`, "POST", { name, degree, specialty, mobile, email });
       if (!result.ok) {
-        setMessage({ ok: false, text: result.error });
+        toast({ kind: "error", title: "Couldn't add the doctor", message: result.error });
         setBusy(false);
         return;
       }
@@ -45,7 +45,7 @@ export default function DoctorEditor(props: Props) {
       setSpecialty("");
       setMobile("");
       setEmail("");
-      setMessage({ ok: true, text: "Doctor added." });
+      toast({ kind: "success", title: "Doctor added", message: name });
       setBusy(false);
       if (props.onDone) props.onDone();
       else router.refresh();
@@ -55,7 +55,7 @@ export default function DoctorEditor(props: Props) {
       name, degree, specialty, mobile, email, clinicId,
       discounts: { routine, special, package: pkg },
     });
-    setMessage(result.ok ? { ok: true, text: "Saved." } : { ok: false, text: result.error });
+    toast(result.ok ? { kind: "success", title: "Doctor saved", message: name } : { kind: "error", title: "Couldn't save the doctor", message: result.error });
     setBusy(false);
     if (result.ok) router.refresh();
   }
@@ -64,7 +64,7 @@ export default function DoctorEditor(props: Props) {
     if (props.mode !== "edit") return;
     setBusy(true);
     const result = await sendJson(`/api/admin/doctors/${props.doctor.id}`, "PATCH", { approved: true });
-    setMessage(result.ok ? { ok: true, text: "Approved." } : { ok: false, text: result.error });
+    toast(result.ok ? { kind: "success", title: "Doctor approved", message: "They can now be chosen at checkout and are messaged on WhatsApp." } : { kind: "error", title: "Couldn't approve the doctor", message: result.error });
     setBusy(false);
     if (result.ok) router.refresh();
   }
@@ -72,11 +72,10 @@ export default function DoctorEditor(props: Props) {
   async function uploadCertificate(file: File | undefined) {
     if (!file || props.mode !== "edit") return;
     setBusy(true);
-    setMessage(null);
     const form = new FormData();
     form.append("file", file);
     const result = await sendForm(`/api/admin/doctors/${props.doctor.id}/certificate`, form);
-    setMessage(result.ok ? { ok: true, text: "Certificate uploaded." } : { ok: false, text: result.error });
+    toast(result.ok ? { kind: "success", title: "Certificate uploaded" } : { kind: "error", title: "Couldn't upload the certificate", message: result.error });
     setBusy(false);
     if (certRef.current) certRef.current.value = "";
     if (result.ok) router.refresh();
@@ -173,11 +172,6 @@ export default function DoctorEditor(props: Props) {
           {busy ? "Saving..." : props.mode === "add" ? "Add doctor" : "Save doctor"}
         </button>
         {props.mode === "edit" && <DeleteDoctorButton id={doctor!.id} name={doctor!.name} />}
-        {message && (
-          <span role={message.ok ? "status" : "alert"} className={`text-sm ${message.ok ? "text-green-700" : "text-red-700"}`}>
-            {message.text}
-          </span>
-        )}
       </div>
     </form>
   );

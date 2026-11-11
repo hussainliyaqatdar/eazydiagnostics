@@ -3,31 +3,34 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ORDER_STATUSES, PAYMENT_LABELS, PAYMENT_STATUSES, STATUS_LABELS, type OrderStatus, type PaymentStatus } from "@/lib/order-status";
 import { sendJson } from "./api";
+import { statusToast, type Outcome } from "./outcomes";
 import { PaymentPill, VisitPill } from "./StatusPill";
+import { useToast } from "./Toaster";
 
-type Outcome = { recipient: string; ok: boolean; detail: string; skipped?: boolean };
 type Kind = "status" | "payment";
 
 // The visit's status and its payment status, always shown as read-only pills. "Change" opens a picker
-// for one of them; saving a changed value updates it and WhatsApps the patient (and the prescribing
-// doctors); picking the value it already has changes nothing and sends nothing.
+// for one of them. Saving a changed value updates it and WhatsApps the patient (and the prescribing
+// doctors) with the template mapped to that status - or, if none is mapped, sends nothing. Either way the
+// result is shown as a toast. Picking the value it already has changes nothing and sends nothing.
 export default function OrderControls({ id, status, paymentStatus }: { id: string; status: OrderStatus; paymentStatus: PaymentStatus; compact?: boolean }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [editing, setEditing] = useState<Kind | null>(null);
   const [nextStatus, setNextStatus] = useState(status);
   const [nextPayment, setNextPayment] = useState(paymentStatus);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [outcomes, setOutcomes] = useState<{ changed: boolean; list: Outcome[] } | null>(null);
 
   async function save(kind: Kind) {
     setBusy(true);
-    setError("");
-    setOutcomes(null);
     const result = await sendJson<{ changed: boolean; notifications: Outcome[] }>("/api/admin/orders", "PATCH", kind === "status" ? { id, status: nextStatus } : { id, paymentStatus: nextPayment });
-    if (!result.ok) setError(result.error);
+    if (!result.ok) toast({ kind: "error", title: "Couldn't update the order", message: result.error });
     else {
-      setOutcomes({ changed: result.data.changed, list: result.data.notifications ?? [] });
+      toast(
+        kind === "status"
+          ? statusToast("Visit status", STATUS_LABELS[nextStatus], result.data.changed, result.data.notifications ?? [])
+          : statusToast("Payment", PAYMENT_LABELS[nextPayment], result.data.changed, result.data.notifications ?? [])
+      );
       setEditing(null);
       router.refresh();
     }
@@ -35,8 +38,6 @@ export default function OrderControls({ id, status, paymentStatus }: { id: strin
   }
 
   function open(kind: Kind) {
-    setError("");
-    setOutcomes(null);
     setNextStatus(status);
     setNextPayment(paymentStatus);
     setEditing(kind);
@@ -85,19 +86,6 @@ export default function OrderControls({ id, status, paymentStatus }: { id: strin
     <div className="flex min-w-[15rem] max-w-md flex-col gap-2.5">
       {row("status", "Visit", <VisitPill status={status} />)}
       {row("payment", "Payment", <PaymentPill status={paymentStatus} />)}
-      {error && <p role="alert" className="text-xs text-red-700">{error}</p>}
-      {outcomes && (
-        <ul role="status" className="flex flex-col gap-0.5 text-xs">
-          {!outcomes.changed && <li className="text-gray-500">Already at that status - nothing changed, nothing sent.</li>}
-          {outcomes.changed && outcomes.list.length === 0 && <li className="text-gray-500">Saved. No WhatsApp message goes out for this change.</li>}
-          {outcomes.list.map((o, i) => (
-            <li key={i} className={o.ok ? "text-green-700" : "text-red-700"}>
-              {o.skipped ? "= Already sent to" : o.ok ? "✓ Sent to" : "✗ Not sent to"} {o.recipient}
-              {o.ok ? "" : ` - ${o.detail}`}
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }

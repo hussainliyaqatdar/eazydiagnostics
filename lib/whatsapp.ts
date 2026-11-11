@@ -2,9 +2,8 @@
 //
 // Messages we start (an order update the customer did not just ask for) must use a
 // pre-approved TEMPLATE; free-form text is only allowed inside 24 hours of the
-// customer's own message. So every update goes out as one of two generic
-// templates (patient / doctor) whose last variable carries the status sentence -
-// see docs/whatsapp-setup.md for the exact template text to submit to Meta.
+// customer's own message. So every update goes out as an approved template mapped to the
+// status on /admin/whatsapp (see docs/whatsapp-setup.md).
 import { normalizeMobile } from "./doctor-onboarding";
 
 // Overridable only so the flow can be tested against a stand-in server.
@@ -13,8 +12,6 @@ const API_VERSION = process.env.WHATSAPP_API_VERSION || "v21.0";
 const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
-export const PATIENT_TEMPLATE = process.env.WHATSAPP_PATIENT_TEMPLATE || "order_status_patient";
-export const DOCTOR_TEMPLATE = process.env.WHATSAPP_DOCTOR_TEMPLATE || "order_status_doctor";
 export const TEMPLATE_LANGUAGE = process.env.WHATSAPP_TEMPLATE_LANGUAGE || "en";
 // Needed to create / list / delete templates (the WhatsApp Business Account the number belongs to).
 const WABA_ID = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
@@ -31,8 +28,6 @@ export function whatsappConfigStatus() {
     businessAccountIdSet: !!WABA_ID,
     verifyTokenSet: !!WEBHOOK_VERIFY_TOKEN,
     appSecretSet: !!APP_SECRET,
-    patientTemplate: PATIENT_TEMPLATE,
-    doctorTemplate: DOCTOR_TEMPLATE,
     language: TEMPLATE_LANGUAGE,
   };
 }

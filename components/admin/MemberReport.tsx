@@ -3,9 +3,10 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { REPORT_LABELS, REPORT_STATUSES, type ReportStatus } from "@/lib/order-status";
 import { buttonClass, sendForm, sendJson } from "./api";
+import { statusToast, type Outcome } from "./outcomes";
 import { ReportPill } from "./StatusPill";
+import { useToast } from "./Toaster";
 
-type Outcome = { recipient: string; ok: boolean; detail: string; skipped?: boolean };
 type Result = { uploaded: boolean; branded?: boolean; clinicName?: string; changed: boolean; notifications: Outcome[] };
 
 // A member's report. Its status (No report yet -> Partial -> Full) is a read-only pill; "Change status"
@@ -39,8 +40,7 @@ export default function MemberReport({
   const [next, setNext] = useState<ReportStatus>(status === "none" ? "partial" : status);
   const [changing, setChanging] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [result, setResult] = useState<Result | null>(null);
+  const { toast } = useToast();
   const [showOriginal, setShowOriginal] = useState(false);
   const [preview, setPreview] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -48,14 +48,16 @@ export default function MemberReport({
   const base = `/api/admin/orders/${orderId}/members/${memberId}/report`;
   const fileUrl = `/api/admin/reports/${memberId}`;
 
-  async function post(form: FormData, after?: () => void) {
+  // What was sent decides what the toast says: a file (saved quietly), a header rebuild, or a status change.
+  async function post(form: FormData, kind: "file" | "rebuild" | "status", after?: () => void) {
     setBusy(true);
-    setError("");
-    setResult(null);
     const res = await sendForm<Result>(base, form);
-    if (!res.ok) setError(res.error);
+    if (!res.ok) toast({ kind: "error", title: kind === "status" ? "Couldn't update the report status" : "Couldn't save the report", message: res.error });
     else {
-      setResult(res.data);
+      const d = res.data;
+      if (kind === "status") toast(statusToast("Report status", REPORT_LABELS[next], d.changed, d.notifications ?? []));
+      else if (kind === "rebuild") toast({ kind: "success", title: "Report header rebuilt", message: d.branded ? `Now with ${d.clinicName}'s details. No message sent.` : "No clinic header applies. No message sent." });
+      else toast({ kind: "success", title: "Report saved", message: `${d.branded ? `With ${d.clinicName}'s header.` : "No clinic header."} No message sent.` });
       after?.();
       router.refresh();
     }
@@ -67,7 +69,7 @@ export default function MemberReport({
     if (!file) return;
     const form = new FormData();
     form.append("file", file);
-    post(form, () => {
+    post(form, "file", () => {
       if (fileRef.current) fileRef.current.value = "";
       setPicked("");
       setShowOriginal(false);
@@ -78,21 +80,23 @@ export default function MemberReport({
   function saveStatus() {
     const form = new FormData();
     form.append("status", next);
-    post(form, () => setChanging(false));
+    post(form, "status", () => setChanging(false));
   }
 
   function rebuild() {
     const form = new FormData();
     form.append("rebrand", "1");
-    post(form);
+    post(form, "rebuild");
   }
 
   async function remove() {
     setBusy(true);
-    setError("");
     const res = await sendJson(base, "DELETE");
-    if (!res.ok) setError(res.error);
-    else router.refresh();
+    if (!res.ok) toast({ kind: "error", title: "Couldn't remove the report", message: res.error });
+    else {
+      toast({ kind: "success", title: "Report removed", message: "Status is back to No report yet. No message sent." });
+      router.refresh();
+    }
     setBusy(false);
   }
 
@@ -122,7 +126,7 @@ export default function MemberReport({
           </span>
         )}
       </div>
-      {changing && <p className="text-xs text-gray-500">Updating the status WhatsApps {notifyTo}{hasReport ? ", with the report link" : ""}.</p>}
+      {changing && <p className="text-xs text-gray-500">If a template is mapped to this status, updating it WhatsApps {notifyTo}{hasReport ? ", with the report link" : ""}. With none mapped, nothing is sent.</p>}
       {!hasReport && next === "full" && changing && <p className="text-xs text-amber-700">Upload the full report PDF first so the message can carry its link.</p>}
 
       {/* The file: saving it never sends a message. */}
@@ -141,21 +145,6 @@ export default function MemberReport({
       <p className="text-xs text-gray-500">
         {doctorLabel ? `The header shows ${doctorLabel} (name, logo and address) and the doctor's name and qualifications.` : "No registered prescribing doctor, so the report is kept as the lab produced it (no clinic header)."}
       </p>
-
-      {error && <p role="alert" className="text-xs text-red-700">{error}</p>}
-      {result && (
-        <ul role="status" className="flex flex-col gap-0.5 text-xs">
-          {result.uploaded && <li className="text-green-700">✓ Report saved{result.branded ? ` with ${result.clinicName}'s header` : " (no clinic header)"}. No message sent.</li>}
-          {!result.uploaded && !result.changed && <li className="text-gray-500">Nothing changed - no message sent.</li>}
-          {result.changed && result.notifications.length === 0 && <li className="text-gray-500">Status saved. No message goes out for this status.</li>}
-          {result.notifications.map((o, i) => (
-            <li key={i} className={o.ok ? "text-green-700" : "text-red-700"}>
-              {o.skipped ? "= Already sent to" : o.ok ? "✓ Sent to" : "✗ Not sent to"} {o.recipient}
-              {o.ok ? "" : ` - ${o.detail}`}
-            </li>
-          ))}
-        </ul>
-      )}
 
       {/* The stored report: shown only when asked for. */}
       {hasReport && (

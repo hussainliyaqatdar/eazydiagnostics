@@ -3,6 +3,7 @@
 // for the event it is sending. The Graph API calls themselves live in lib/whatsapp.ts.
 import { getDb } from "./db";
 import {
+  EVENT_BY_KEY,
   isVariableSource,
   renderExample,
   SOURCE_BY_KEY,
@@ -89,18 +90,24 @@ export async function getTemplate(id: number): Promise<WaTemplate | undefined> {
   return rows[0] ? toTemplate(rows[0]) : undefined;
 }
 
-// The template to use for an event, if one is bound, approved and switched on.
-export async function findTemplateFor(event: string, audience: Audience): Promise<WaTemplate | undefined> {
+// The template mapped to an event for an audience (switched on), whatever state it is in at Meta. The caller
+// decides whether it can be sent: only an APPROVED one with every variable mapped can.
+export async function findMappedTemplate(event: string, audience: Audience): Promise<WaTemplate | undefined> {
   const db = await getDb();
   const rows = await db.query<Row>(
     `SELECT ${COLUMNS} FROM whatsapp_templates
-     WHERE status = 'APPROVED' AND enabled AND audience = $1 AND events @> $2::jsonb
+     WHERE enabled AND audience = $1 AND events @> $2::jsonb
      ORDER BY updated_at DESC LIMIT 1`,
     [audience, JSON.stringify([event])]
   );
-  const t = rows[0] ? toTemplate(rows[0]) : undefined;
-  // A template with an unmapped variable cannot be filled in, so it is not used.
-  return t && t.variables.every((v) => v !== "") && t.variables.length === variableCount(t.body) ? t : undefined;
+  return rows[0] ? toTemplate(rows[0]) : undefined;
+}
+
+// Why a mapped template cannot be sent yet, or null if it can.
+export function unusableReason(t: WaTemplate): string | null {
+  if (t.status !== "APPROVED") return `its Meta status is ${t.status.toLowerCase().replace("_", " ")}, not approved`;
+  if (t.variables.length !== variableCount(t.body) || t.variables.some((v) => v === "")) return "a variable has nothing mapped to it";
+  return null;
 }
 
 // Events of this audience that another switched-on template already handles.
@@ -274,4 +281,28 @@ export function sampleText(t: Pick<WaTemplate, "body" | "variables">): string {
 
 export function sampleParams(t: Pick<WaTemplate, "variables">): string[] {
   return t.variables.map((v) => (v ? SOURCE_BY_KEY.get(v)?.example ?? "example" : "example"));
+}
+
+// ---- mapping events to existing templates ---------------------------------------------
+// Chooses which template an event uses for an audience (or none: nothing is sent). Only one
+// switched-on template can hold an event per audience, so the previous holder lets go of it. A template that
+// is switched off is switched on by being chosen.
+export async function mapEvent(event: string, audience: Audience, templateId: number | null): Promise<{ ok: true } | { ok: false; error: string }> {
+  const def = EVENT_BY_KEY.get(event);
+  if (!def || !def.audiences.includes(audience)) return { ok: false, error: "That event is not sent to that audience." };
+
+  const all = await listTemplates();
+  const chosen = templateId === null ? null : all.find((t) => t.id === templateId);
+  if (templateId !== null && !chosen) return { ok: false, error: "That template no longer exists. Refresh the page." };
+  if (chosen && chosen.audience !== audience) return { ok: false, error: `That template is for ${chosen.audience}s.` };
+
+  for (const t of all) {
+    if (t.audience === audience && t.id !== templateId && t.events.includes(event)) {
+      await updateTemplate(t.id, { events: t.events.filter((e) => e !== event) });
+    }
+  }
+  if (chosen) {
+    await updateTemplate(chosen.id, { events: chosen.events.includes(event) ? chosen.events : [...chosen.events, event], enabled: true });
+  }
+  return { ok: true };
 }

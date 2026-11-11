@@ -3,11 +3,12 @@ import Tabs from "@/components/admin/Tabs";
 import ConnectionCard from "@/components/admin/whatsapp/ConnectionCard";
 import MessageLog from "@/components/admin/whatsapp/MessageLog";
 import TemplatesPanel from "@/components/admin/whatsapp/TemplatesPanel";
+import CoverageGrid, { type CoverageRow } from "@/components/admin/whatsapp/CoverageGrid";
 import TemplateStatusPill from "@/components/admin/whatsapp/TemplateStatusPill";
 import { SITE_URL } from "@/lib/site-config";
 import { whatsappConfigStatus } from "@/lib/whatsapp";
 import { recentMessages, type MessageRow } from "@/lib/whatsapp-log";
-import { AUDIENCE_LABELS, AUDIENCES, EVENTS } from "@/lib/whatsapp-events";
+import { AUDIENCE_LABELS, EVENTS } from "@/lib/whatsapp-events";
 import { listTemplates, type WaTemplate } from "@/lib/whatsapp-templates";
 
 export const dynamic = "force-dynamic";
@@ -27,69 +28,22 @@ export default async function AdminWhatsappPage() {
   const sendReady = config.tokenSet && config.phoneNumberIdSet;
   const metaReady = config.tokenSet && config.businessAccountIdSet;
 
-  // Which template handles each event for each audience (an approved, switched-on one), else the generic update.
+  // Which template handles each event for each audience (a switched-on one); none means nothing is sent.
   const live = (event: string, audience: "patient" | "doctor") => templates.find((t) => t.enabled && t.audience === audience && t.events.includes(event));
 
+  const coverageRows: CoverageRow[] = EVENTS.map((ev) => {
+    const cell = (a: "patient" | "doctor") => {
+      const t = live(ev.key, a);
+      return t ? { id: t.id, status: t.status } : null;
+    };
+    return { key: ev.key, cells: { patient: cell("patient"), doctor: cell("doctor") } };
+  });
   const coverage = (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-gray-600">
-        What gets sent for each change. An event whose template is not approved yet, or has none, uses the generic update template ({config.patientTemplate} / {config.doctorTemplate}).
+        Choose which existing template is sent for each change, for patients and for doctors. A change with no template mapped sends no WhatsApp message (you are told on Orders when that happens), and neither does one whose template is not approved yet. New templates are written on the Templates tab.
       </p>
-      <div className="flex flex-col gap-2 rounded-lg border bg-white p-4">
-        <h3 className="text-sm font-semibold text-gray-900">Generic update templates</h3>
-        <p className="text-xs text-gray-500">The fallback for any event without a template of its own. Create each in Templates, with the exact name below, and send it to Meta.</p>
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {([["patient", config.patientTemplate], ["doctor", config.doctorTemplate]] as const).map(([a, name]) => {
-            const t = templates.find((x) => x.name === name);
-            return (
-              <li key={a} className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="w-14 text-xs text-gray-500">{AUDIENCE_LABELS[a]}</span>
-                <span className="font-mono text-xs text-gray-800">{name}</span>
-                {t ? <TemplateStatusPill status={t.status} /> : <span className="text-xs text-red-700">Not created</span>}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-      <div className="overflow-x-auto rounded-lg border bg-white">
-        <table className="w-full min-w-[40rem] text-left text-sm">
-          <thead className="border-b bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-            <tr>
-              <th className="px-3 py-2 font-semibold">Event</th>
-              {AUDIENCES.map((a) => (
-                <th key={a} className="px-3 py-2 font-semibold">{AUDIENCE_LABELS[a]}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {EVENTS.map((ev) => (
-              <tr key={ev.key}>
-                <td className="px-3 py-2.5">
-                  <span className="font-medium text-gray-900">{ev.label}</span>
-                  <span className="block text-xs text-gray-500">{ev.group}</span>
-                </td>
-                {AUDIENCES.map((a) => {
-                  if (!ev.audiences.includes(a)) return <td key={a} className="px-3 py-2.5 text-xs text-gray-300">Not sent</td>;
-                  const t = live(ev.key, a);
-                  return (
-                    <td key={a} className="px-3 py-2.5">
-                      {t ? (
-                        <span className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-xs text-gray-800">{t.name}</span>
-                          <TemplateStatusPill status={t.status} />
-                          {t.status !== "APPROVED" && <span className="text-[11px] text-gray-500">generic used until approved</span>}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-500">Generic update template</span>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <CoverageGrid rows={coverageRows} templates={templates} />
     </div>
   );
 
@@ -100,7 +54,7 @@ export default async function AdminWhatsappPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">WhatsApp</h1>
         <p className="text-sm text-gray-500">
-          Templates, what is sent for each change, and every message that went out. Patients and prescribing doctors are messaged when a visit, payment or report status changes on{" "}
+          Templates, which template is sent for each status change, and every message that went out. Patients and prescribing doctors are messaged when a visit, payment or report status changes on{" "}
           <a href="/admin/orders" className="text-brand hover:underline">Orders</a>.
         </p>
       </div>
@@ -116,7 +70,7 @@ export default async function AdminWhatsappPage() {
         label="WhatsApp"
         tabs={[
           { id: "templates", label: `Templates (${templates.length})`, content: <TemplatesPanel templates={templates} metaReady={metaReady} /> },
-          { id: "coverage", label: "What is sent", content: coverage },
+          { id: "coverage", label: "Template - Status Mapping", content: coverage },
           {
             id: "log",
             label: `Message log (${messages.length})`,

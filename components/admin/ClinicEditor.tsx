@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { buttonClass, inputClass, labelClass, quietButtonClass, sendForm, sendJson } from "./api";
 import type { Clinic } from "@/lib/clinics";
+import { useToast } from "./Toaster";
 
 // The clinic's own details: name, address, logo, who collects the patient's payment, and whether
 // its referral links show the clinic-branded site.
@@ -12,15 +13,14 @@ export default function ClinicEditor({ clinic, logoUrl }: { clinic: Clinic; logo
   const [address, setAddress] = useState(clinic.address);
   const [collector, setCollector] = useState(clinic.paymentCollector);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setMessage(null);
     const result = await sendJson(`/api/admin/clinics/${clinic.id}`, "PATCH", { name, address, paymentCollector: collector });
-    setMessage(result.ok ? { ok: true, text: "Saved." } : { ok: false, text: result.error });
+    toast(result.ok ? { kind: "success", title: "Clinic saved" } : { kind: "error", title: "Couldn't save the clinic", message: result.error });
     setBusy(false);
     if (result.ok) router.refresh();
   }
@@ -28,11 +28,10 @@ export default function ClinicEditor({ clinic, logoUrl }: { clinic: Clinic; logo
   async function upload(file: File | undefined) {
     if (!file) return;
     setBusy(true);
-    setMessage(null);
     const form = new FormData();
     form.append("file", file);
     const result = await sendForm(`/api/admin/clinics/${clinic.id}/logo`, form);
-    setMessage(result.ok ? { ok: true, text: "Logo updated." } : { ok: false, text: result.error });
+    toast(result.ok ? { kind: "success", title: "Logo updated" } : { kind: "error", title: "Couldn't upload the logo", message: result.error });
     setBusy(false);
     if (fileRef.current) fileRef.current.value = "";
     if (result.ok) router.refresh();
@@ -42,22 +41,20 @@ export default function ClinicEditor({ clinic, logoUrl }: { clinic: Clinic; logo
 
   async function deleteClinic() {
     setBusy(true);
-    setMessage(null);
     const result = await sendJson(`/api/admin/clinics/${clinic.id}`, "DELETE");
     if (result.ok) {
       router.push("/admin/doctors");
       return;
     }
-    setMessage({ ok: false, text: result.error });
+    toast({ kind: "error", title: "Couldn't delete the clinic", message: result.error });
     setConfirmDelete(false);
     setBusy(false);
   }
 
   async function removeLogo() {
     setBusy(true);
-    setMessage(null);
     const result = await sendJson(`/api/admin/clinics/${clinic.id}/logo`, "DELETE");
-    setMessage(result.ok ? { ok: true, text: "Logo removed." } : { ok: false, text: result.error });
+    toast(result.ok ? { kind: "success", title: "Logo removed" } : { kind: "error", title: "Couldn't remove the logo", message: result.error });
     setBusy(false);
     if (result.ok) router.refresh();
   }
@@ -127,11 +124,6 @@ export default function ClinicEditor({ clinic, logoUrl }: { clinic: Clinic; logo
             Delete {clinic.name}? Only possible when it has no doctors.
             <button type="button" onClick={deleteClinic} disabled={busy} className="rounded bg-red-600 px-2 py-1 font-semibold text-white">Confirm</button>
             <button type="button" onClick={() => setConfirmDelete(false)} className="rounded border px-2 py-1">Cancel</button>
-          </span>
-        )}
-        {message && (
-          <span role={message.ok ? "status" : "alert"} className={`text-sm ${message.ok ? "text-green-700" : "text-red-700"}`}>
-            {message.text}
           </span>
         )}
       </div>

@@ -1,5 +1,6 @@
 // The audit trail of a visit: what changed on an order and when. WhatsApp sends have their own table
-// (order_notifications); auditTrail() merges both into one list, newest first.
+// (order_notifications); a message that was NOT sent (no template mapped) is noted here as a whatsapp
+// event. auditTrail() merges both into one list, newest first.
 import { getDb } from "./db";
 import { listNotifications } from "./orders";
 
@@ -17,7 +18,7 @@ export type AuditRow = {
 };
 
 // Best effort: an audit entry that cannot be written must never fail the change it describes.
-export async function logEvent(orderId: string, kind: Exclude<AuditKind, "whatsapp">, summary: string, memberName?: string): Promise<void> {
+export async function logEvent(orderId: string, kind: AuditKind, summary: string, memberName?: string): Promise<void> {
   try {
     const db = await getDb();
     await db.query("INSERT INTO order_events (order_id, kind, member_name, summary) VALUES ($1, $2, $3, $4)", [orderId, kind, memberName ?? null, summary.slice(0, 400)]);
@@ -34,7 +35,7 @@ export async function auditTrail(orderId: string): Promise<AuditRow[]> {
   );
   const messages = (await listNotifications([orderId])).get(orderId) ?? [];
   const rows: AuditRow[] = [
-    ...events.map((e) => ({ at: new Date(e.created_at).toISOString(), kind: e.kind as AuditKind, subject: e.member_name || "Visit", detail: e.summary })),
+    ...events.map((e) => ({ at: new Date(e.created_at).toISOString(), kind: e.kind as AuditKind, subject: e.member_name || "Visit", detail: e.summary, ...(e.kind === "whatsapp" ? { ok: false } : {}) })),
     ...messages.map((n) => ({
       at: n.createdAt,
       kind: "whatsapp" as const,
