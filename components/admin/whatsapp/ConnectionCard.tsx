@@ -1,21 +1,23 @@
 "use client";
 import { useState } from "react";
 import { buttonClass, sendJson } from "../api";
+import { useToast } from "../Toaster";
 
 type Config = { tokenSet: boolean; phoneNumberIdSet: boolean; businessAccountIdSet: boolean; verifyTokenSet: boolean; appSecretSet: boolean };
-type Check = { ok: true; phone: { display_phone_number?: string; verified_name?: string; quality_rating?: string } } | { ok: false; error: string };
 
 // What is configured, whether Meta accepts it, and what to enter in Meta's dashboard for the webhook.
 export default function ConnectionCard({ config, webhookUrl }: { config: Config; webhookUrl: string }) {
   const [busy, setBusy] = useState(false);
-  const [check, setCheck] = useState<Check | null>(null);
+  const { toast } = useToast();
 
   async function test() {
     setBusy(true);
-    setCheck(null);
-    const res = await sendJson<{ ok: boolean; phone?: Check extends { ok: true; phone: infer P } ? P : never; error?: string }>("/api/admin/whatsapp/connection", "POST", {});
-    if (!res.ok) setCheck({ ok: false, error: res.error });
-    else setCheck(res.data.ok ? { ok: true, phone: res.data.phone ?? {} } : { ok: false, error: res.data.error ?? "Meta did not accept the connection." });
+    const res = await sendJson<{ ok: boolean; phone?: { display_phone_number?: string; verified_name?: string; quality_rating?: string }; error?: string }>("/api/admin/whatsapp/connection", "POST", {});
+    if (!res.ok) toast({ kind: "error", title: "Connection check failed", message: res.error });
+    else if (res.data.ok) {
+      const p = res.data.phone ?? {};
+      toast({ kind: "success", title: "Connected to WhatsApp", message: `${p.verified_name ?? "Your number"} (${p.display_phone_number ?? "number"})${p.quality_rating ? ` - quality ${p.quality_rating.toLowerCase()}` : ""}.` });
+    } else toast({ kind: "error", title: "Meta did not accept the connection", message: res.data.error ?? "Check the settings above." });
     setBusy(false);
   }
 
@@ -60,12 +62,6 @@ export default function ConnectionCard({ config, webhookUrl }: { config: Config;
         <div>
           <button type="button" onClick={test} disabled={busy} className={buttonClass}>{busy ? "Checking..." : "Test connection"}</button>
         </div>
-        {check && check.ok && (
-          <p role="status" className="text-sm text-green-700">
-            Connected: {check.phone.verified_name ?? "your number"} ({check.phone.display_phone_number ?? "number"}){check.phone.quality_rating ? ` - quality ${check.phone.quality_rating.toLowerCase()}` : ""}.
-          </p>
-        )}
-        {check && !check.ok && <p role="alert" className="text-sm text-red-700">{check.error}</p>}
       </div>
 
       <div className="flex flex-col gap-2 rounded-lg border bg-white p-4 text-sm text-gray-700">

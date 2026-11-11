@@ -6,9 +6,10 @@
 //  - A doctor is messaged ONLY if the patient chose them as "Prescribed by" for a member from the
 //    registered-doctors list at booking (the member's doctor_id), on the WhatsApp number the doctor
 //    gave at /for-doctors. A typed-in name, or no doctor, means no doctor message.
-//  - Which template carries a message: the APPROVED, switched-on template bound to the event on
-//    /admin/whatsapp, or - when there is none - the generic template from the environment
-//    (see docs/whatsapp-setup.md).
+//  - Which template carries a message: the switched-on template mapped to the event on
+//    /admin/whatsapp ("Template - Status Mapping"). There is NO fallback: an event with no template mapped
+//    for that audience, or whose template is not approved / fully mapped yet, sends nothing, and the
+//    outcome says why so the admin can be told.
 //  - No double sends: the caller only gets here when a status really changed (see
 //    setOrderStatus & co.), and every message is reserved in order_notifications under a unique
 //    (order, number, event) key before it is sent.
@@ -29,13 +30,16 @@ import {
   type PaymentStatus,
   type ReportStatus,
 } from "./order-status";
-import { DOCTOR_TEMPLATE, PATIENT_TEMPLATE, sendTemplate, toWhatsappNumber, type DeliveryResult } from "./whatsapp";
-import { findTemplateFor, resolveParams, type TemplateContext } from "./whatsapp-templates";
+import { sendTemplate, toWhatsappNumber, type DeliveryResult } from "./whatsapp";
+import { logEvent } from "./order-events";
+import { findMappedTemplate, resolveParams, unusableReason, type TemplateContext } from "./whatsapp-templates";
 import type { Audience } from "./whatsapp-events";
 import type { OrderMember } from "./order-admin";
 import type { Booking } from "./types";
 
-export type NotificationOutcome = DeliveryResult & { recipient: string; to: string; skipped?: boolean };
+// `skipped`: already sent for this change. `notSent`: nothing was sent because no usable template is mapped
+// ("unmapped": none; "unusable": one is mapped but not approved / not fully set up).
+export type NotificationOutcome = DeliveryResult & { recipient: string; to: string; skipped?: boolean; notSent?: "unmapped" | "unusable" };
 
 type Message = {
   recipient: string;
@@ -43,8 +47,6 @@ type Message = {
   audience: Audience;
   // What the message is about, as an events key ("visit.completed"); picks the template.
   event: string;
-  // The generic template's parameters, used when no template is bound to the event.
-  fallback: string[];
   // Values a bound template can fill its variables with.
   ctx: Partial<TemplateContext>;
 };
@@ -82,12 +84,11 @@ function patientMessages(members: OrderMember[], booking: Booking, event: string
       to,
       audience: "patient",
       event,
-      fallback: [firstName(name), booking.id, line],
       ctx: { ...base, recipient_name: firstName(name), patient_names: name },
     });
   }
   // Checkout may hold a number we cannot message (not an Indian mobile): say so rather than skip silently.
-  if (out.length === 0) out.push({ recipient: `Patient: ${booking.patient.name}`, to: contact ?? "", audience: "patient", event, fallback: [], ctx: {} });
+  if (out.length === 0) out.push({ recipient: `Patient: ${booking.patient.name}`, to: contact ?? "", audience: "patient", event, ctx: {} });
   return out;
 }
 
@@ -109,16 +110,30 @@ async function doctorMessages(members: OrderMember[], booking: Booking, event: s
       to,
       audience: "doctor",
       event,
-      fallback: [doctor.name, names.join(", "), booking.id, line],
       ctx: { ...base, recipient_name: doctor.name, patient_names: names.join(", ") },
     });
   }
   return out;
 }
 
-// Reserve each message under its event key, then send it. Never throws: a WhatsApp problem must
-// not undo a change that is already saved.
-async function deliver(orderId: string, eventKey: string, label: string, messages: Message[]): Promise<NotificationOutcome[]> {
+const AUDIENCE_NOUN: Record<Audience, string> = { patient: "patients", doctor: "doctors" };
+
+// Sends one audience's messages with the template mapped to the event, or sends nothing and says why. Each
+// message is reserved under its event key first, so a retry can never send twice. Never throws: a WhatsApp
+// problem must not undo a change that is already saved.
+async function deliverTo(orderId: string, eventKey: string, label: string, audience: Audience, messages: Message[]): Promise<NotificationOutcome[]> {
+  const noun = AUDIENCE_NOUN[audience];
+  const mapped = await findMappedTemplate(messages[0].event, audience).catch(() => undefined);
+  const problem = mapped ? unusableReason(mapped) : null;
+
+  if (!mapped || problem) {
+    const detail = !mapped
+      ? `No template is mapped to "${label}" for ${noun}, so no message was sent.`
+      : `The template "${mapped.name}" cannot be sent yet (${problem}), so no message was sent to ${noun}.`;
+    await logEvent(orderId, "whatsapp", detail, audience === "patient" ? "Patients" : "Doctors");
+    return [{ ok: false, notSent: mapped ? "unusable" : "unmapped", detail, recipient: audience === "patient" ? "Patients" : "Doctors", to: "" }];
+  }
+
   return Promise.all(
     messages.map(async (m): Promise<NotificationOutcome> => {
       let claimed: number | null;
@@ -132,20 +147,21 @@ async function deliver(orderId: string, eventKey: string, label: string, message
       // Already sent (or being sent) for this event: send nothing.
       if (claimed === null) return { ok: true, skipped: true, detail: "Already sent for this change.", recipient: m.recipient, to: m.to };
 
-      // The template bound to this event, else the generic one.
-      const bound = await findTemplateFor(m.event, m.audience).catch(() => undefined);
-      const template = bound?.name ?? (m.audience === "doctor" ? DOCTOR_TEMPLATE : PATIENT_TEMPLATE);
-      const params = bound ? resolveParams(bound, m.ctx) : m.fallback;
-      const result: DeliveryResult =
-        !bound && params.length === 0
-          ? { ok: false, detail: "Not a valid Indian mobile number, so nothing was sent." }
-          : await sendTemplate(m.to, template, params, bound ? { language: bound.language } : {});
-      await finishNotification(claimed, result.ok, result.detail, { template, messageId: result.messageId }).catch((err) =>
+      const result: DeliveryResult = m.to
+        ? await sendTemplate(m.to, mapped.name, resolveParams(mapped, m.ctx), { language: mapped.language })
+        : { ok: false, detail: "Not a valid Indian mobile number, so nothing was sent." };
+      await finishNotification(claimed, result.ok, result.detail, { template: mapped.name, messageId: result.messageId }).catch((err) =>
         console.error(`[whatsapp] Could not record the message for ${orderId}:`, err)
       );
       return { ...result, recipient: m.recipient, to: m.to };
     })
   );
+}
+
+async function deliver(orderId: string, eventKey: string, label: string, messages: Message[]): Promise<NotificationOutcome[]> {
+  const audiences = (["patient", "doctor"] as Audience[]).filter((a) => messages.some((m) => m.audience === a));
+  const results = await Promise.all(audiences.map((a) => deliverTo(orderId, eventKey, label, a, messages.filter((m) => m.audience === a))));
+  return results.flat();
 }
 
 // ---- the three kinds of event -----------------------------------------------------

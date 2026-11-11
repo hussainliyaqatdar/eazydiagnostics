@@ -112,7 +112,7 @@ export function renderExample(body: string, variables: (VariableSource | "")[]):
 export type TemplateErrors = Partial<Record<keyof TemplateInput | "form", string>>;
 
 // Everything that can be checked without asking Meta. (A template with no events is fine: it can be the
-// generic update template, which is picked by name rather than by event.)
+// template that is not mapped to any status yet.)
 export function validateTemplate(t: TemplateInput, _submitting: boolean): TemplateErrors {
   const e: TemplateErrors = {};
   if (!/^[a-z][a-z0-9_]*$/.test(t.name) || t.name.length > LIMITS.name) e.name = "Use lowercase letters, numbers and underscores only, starting with a letter (e.g. visit_update_patient).";

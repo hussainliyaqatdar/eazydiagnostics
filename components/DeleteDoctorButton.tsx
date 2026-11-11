@@ -1,17 +1,17 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/admin/Toaster";
 
 // "Delete" asks for a Confirm / Cancel before anything is removed.
 export default function DeleteDoctorButton({ id, name }: { id: string; name: string }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const { toast } = useToast();
 
   async function remove() {
     setBusy(true);
-    setError("");
     try {
       const res = await fetch("/api/admin/doctors", {
         method: "DELETE",
@@ -19,13 +19,14 @@ export default function DeleteDoctorButton({ id, name }: { id: string; name: str
         body: JSON.stringify({ id }),
       });
       if (res.ok) {
+        toast({ kind: "success", title: "Doctor deleted", message: name });
         router.refresh();
         return;
       }
       const data = await res.json().catch(() => ({}));
-      setError(data.error || "Couldn't delete. Please try again.");
+      toast({ kind: "error", title: "Couldn't delete the doctor", message: data.error || "Please try again." });
     } catch {
-      setError("Couldn't reach the server. Please try again.");
+      toast({ kind: "error", title: "Couldn't delete the doctor", message: "Couldn't reach the server. Please try again." });
     }
     setBusy(false);
   }
@@ -60,7 +61,6 @@ export default function DeleteDoctorButton({ id, name }: { id: string; name: str
           type="button"
           onClick={() => {
             setConfirming(false);
-            setError("");
           }}
           disabled={busy}
           className="rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-60"
@@ -68,7 +68,6 @@ export default function DeleteDoctorButton({ id, name }: { id: string; name: str
           Cancel
         </button>
       </div>
-      {error && <p role="alert" className="text-xs text-red-700">{error}</p>}
     </div>
   );
 }

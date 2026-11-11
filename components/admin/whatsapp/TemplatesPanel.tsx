@@ -1,14 +1,13 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "../Modal";
 import { buttonClass, inputClass, quietButtonClass, sendJson } from "../api";
+import { useToast } from "../Toaster";
 import TemplateForm from "./TemplateForm";
 import TemplateStatusPill from "./TemplateStatusPill";
 import type { WaTemplate } from "@/lib/whatsapp-templates";
 import { AUDIENCE_LABELS, eventLabel } from "@/lib/whatsapp-events";
-
-type Note = { ok: boolean; text: string } | null;
 
 // The templates: write one, send it to Meta, switch it on or off, test it on a phone, delete it, and
 // pull the latest review results from Meta.
@@ -18,20 +17,12 @@ export default function TemplatesPanel({ templates, metaReady }: { templates: Wa
   const [testing, setTesting] = useState<WaTemplate | null>(null);
   const [deleting, setDeleting] = useState<WaTemplate | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [note, setNote] = useState<Note>(null);
-
-  // Events already handled by a switched-on template, so the form can show them as taken.
-  const taken = useMemo(() => {
-    const out: Record<string, string> = {};
-    for (const t of templates) if (t.enabled) for (const e of t.events) out[`${t.audience}:${e}`] = t.name;
-    return out;
-  }, [templates]);
+  const { toast } = useToast();
 
   async function run(key: string, fn: () => Promise<{ ok: boolean; text: string }>) {
     setBusy(key);
-    setNote(null);
     const result = await fn();
-    setNote(result);
+    toast(result.ok ? { kind: "success", title: result.text } : { kind: "error", title: "That didn't work", message: result.text });
     setBusy(null);
     router.refresh();
   }
@@ -69,7 +60,7 @@ export default function TemplatesPanel({ templates, metaReady }: { templates: Wa
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="max-w-xl text-sm text-gray-600">
-          WhatsApp only lets us start a conversation with a template Meta has approved. Write one, submit it, and once it is approved it is used for the events you pick.
+          WhatsApp only lets us start a conversation with a template Meta has approved. Write one and submit it, then map it to a status on the Template - Status Mapping tab. A status with no template mapped sends nothing.
         </p>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={sync} disabled={busy !== null || !metaReady} title={metaReady ? "" : "Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_BUSINESS_ACCOUNT_ID first"} className={quietButtonClass}>
@@ -78,12 +69,6 @@ export default function TemplatesPanel({ templates, metaReady }: { templates: Wa
           <button type="button" onClick={() => setForm({ template: null })} className={buttonClass}>+ New template</button>
         </div>
       </div>
-
-      {note && (
-        <p role={note.ok ? "status" : "alert"} className={`rounded-lg border px-3 py-2 text-sm ${note.ok ? "border-green-200 bg-green-50 text-green-800" : "border-red-200 bg-red-50 text-red-700"}`}>
-          {note.text}
-        </p>
-      )}
 
       {templates.length === 0 ? (
         <p className="rounded-lg border bg-white px-4 py-8 text-center text-sm text-gray-500">No templates yet. Create one, or sync to bring in the ones already at Meta.</p>
@@ -94,7 +79,7 @@ export default function TemplatesPanel({ templates, metaReady }: { templates: Wa
               <tr>
                 <th className="px-3 py-2 font-semibold">Template</th>
                 <th className="px-3 py-2 font-semibold">Sent to</th>
-                <th className="px-3 py-2 font-semibold">Used when</th>
+                <th className="px-3 py-2 font-semibold">Mapped to</th>
                 <th className="px-3 py-2 font-semibold">Status</th>
                 <th className="px-3 py-2 font-semibold">On</th>
                 <th className="px-3 py-2 font-semibold">Actions</th>
@@ -113,7 +98,7 @@ export default function TemplatesPanel({ templates, metaReady }: { templates: Wa
                     <td className="px-3 py-3 text-gray-700">{AUDIENCE_LABELS[t.audience]}s</td>
                     <td className="px-3 py-3">
                       {t.events.length === 0 ? (
-                        <span className="text-xs text-gray-400">Not used for any event</span>
+                        <span className="text-xs text-gray-400">Not mapped to any status</span>
                       ) : (
                         <span className="flex max-w-[16rem] flex-wrap gap-1">
                           {t.events.map((e) => (
@@ -161,12 +146,12 @@ export default function TemplatesPanel({ templates, metaReady }: { templates: Wa
         </div>
       )}
 
-      {form && <TemplateForm template={form.template} taken={taken} onClose={() => setForm(null)} onSaved={() => router.refresh()} />}
+      {form && <TemplateForm template={form.template} templates={templates} onClose={() => setForm(null)} onSaved={() => router.refresh()} />}
       {testing && <TestSend template={testing} onClose={() => setTesting(null)} />}
       {deleting && (
         <Modal title={`Delete ${deleting.name}?`} onClose={() => setDeleting(null)}>
           <p className="text-sm text-gray-700">
-            {deleting.metaId ? "This also deletes it from Meta, so it can no longer be sent." : "This draft has not been sent to Meta."} Events that used it go back to the generic update template.
+            {deleting.metaId ? "This also deletes it from Meta, so it can no longer be sent." : "This draft has not been sent to Meta."} Statuses mapped to it will send nothing until another template is mapped.
           </p>
           <div className="mt-4 flex gap-2">
             <button type="button" onClick={() => remove(deleting)} disabled={busy !== null} className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60">
@@ -184,14 +169,13 @@ export default function TemplatesPanel({ templates, metaReady }: { templates: Wa
 function TestSend({ template, onClose }: { template: WaTemplate; onClose: () => void }) {
   const [to, setTo] = useState("");
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const { toast } = useToast();
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setResult(null);
     const res = await sendJson<{ to: string }>(`/api/admin/whatsapp/templates/${template.id}/test`, "POST", { to });
-    setResult(res.ok ? { ok: true, text: `Sent to +${res.data.to}.` } : { ok: false, text: res.error });
+    toast(res.ok ? { kind: "success", title: "Test message sent", message: `${template.name} went to +${res.data.to}.` } : { kind: "error", title: "Couldn't send the test", message: res.error });
     setBusy(false);
   }
 
@@ -203,7 +187,6 @@ function TestSend({ template, onClose }: { template: WaTemplate; onClose: () => 
           <input value={to} onChange={(e) => setTo(e.target.value)} inputMode="tel" placeholder="98450 12345" className={inputClass} autoFocus />
         </label>
         <p className="text-xs text-gray-500">The message is filled with sample values (for example &ldquo;Priya&rdquo; and &ldquo;BK-M3X9K2&rdquo;). It goes to a real phone, so use your own number.</p>
-        {result && <p role={result.ok ? "status" : "alert"} className={`text-sm ${result.ok ? "text-green-700" : "text-red-700"}`}>{result.text}</p>}
         <div className="flex gap-2">
           <button type="submit" disabled={busy || to.replace(/\D/g, "").length < 10} className={buttonClass}>{busy ? "Sending..." : "Send test"}</button>
           <button type="button" onClick={onClose} className={quietButtonClass}>Close</button>

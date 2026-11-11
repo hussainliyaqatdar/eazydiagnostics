@@ -2,7 +2,8 @@
 
 The site WhatsApps patients and prescribing doctors when something changes on an order in the admin portal. It uses
 Meta's WhatsApp Cloud API (the official WhatsApp Business API). Templates are written, submitted to Meta and managed
-from **`/admin/whatsapp`**; delivery status comes back from Meta's webhook.
+from **`/admin/whatsapp`**; delivery status comes back from Meta's webhook. Admin results (status changed, message sent or not,
+saved, errors) appear as toast notifications that stay for 10 seconds.
 
 ## How it fits together
 
@@ -14,10 +15,12 @@ admin changes a status ──> notification flow ──> picks the template for 
 ```
 
 - **Events.** `visit.<status>`, `payment.paid|refunded`, `report.partial|full` (see `lib/whatsapp-events.ts`).
-- **Templates.** Each template belongs to an audience (patients or doctors) and is bound to one or more events. When an
-  event fires, the flow uses the template bound to it **if it is Approved and switched on**. Otherwise it falls back to the
-  generic update template (`order_status_patient` / `order_status_doctor`, below), so a message is never lost just because a
-  custom template is still in review.
+- **Templates and mapping.** A template is written on the Templates tab (wording, variables, audience) and sent to Meta. Which
+  status uses it is chosen separately on the **Template - Status Mapping** tab: for each event, one template for patients and one
+  for doctors. The same event can therefore have a patient template and a doctor template.
+- **No mapping, no message.** There is no fallback template. If an event has no template mapped for an audience, or its template is not
+  approved by Meta yet (or has a variable with nothing mapped), nothing is sent to that audience. The admin is told straight away: a
+  toast on `/admin/orders` says which audience was not messaged and why, and the order's audit log records it.
 - **Variables.** A template's `{{1}}`, `{{2}}`... are each mapped to a value: the recipient's first name, the patient name(s),
   the booking id, the status name or ready-made sentence, collection date and slot, the amount, the report type and link, our
   contact number, or the business name.
@@ -77,43 +80,29 @@ Change who hears about what in `NOTIFY_VISIT` in `lib/order-status.ts`, and the 
    Without the webhook everything still works; the log just stays at "Sent" and templates need **Sync with Meta**.
 7. Open `/admin/whatsapp` -> **Connection** and press **Test connection**.
 
-### The two generic update templates
+### Writing templates
 
-WhatsApp only lets a business start a conversation with an approved template. These two are the fallback for every event, with
-the last variable carrying the sentence. Create each in `/admin/whatsapp` -> Templates (or in Meta's dashboard, then **Sync with
-Meta**), category **Utility**, language **English**, and submit it. No events need to be ticked: they are picked by name.
+WhatsApp only lets a business start a conversation with an approved template. Create each in `/admin/whatsapp` -> Templates (or in
+Meta's dashboard, then **Sync with Meta**), category **Utility**, and submit it. A new template can start from an existing one (the
+"Start from an existing template" picker copies its wording and variables).
 
-> **Meta does not allow a variable at the very start or end of a template**, so the closing words below are required. (An earlier
-> version of this document ended each template with the variable, which Meta rejects.)
+> **Meta does not allow a variable at the very start or end of a template**, so end the text with a few fixed words, for example:
+> `Hello {{1}}, an update on your Eazy Diagnostics home collection (booking {{2}}): {{3}} Thank you for choosing Eazy Diagnostics.`
 
-`order_status_patient`
-
-```
-Hello {{1}}, an update on your Eazy Diagnostics home collection (booking {{2}}): {{3}} Thank you for choosing Eazy Diagnostics.
-```
-
-Variables: 1 = recipient's first name, 2 = booking id, 3 = ready-made sentence about the change.
-
-`order_status_doctor`
-
-```
-Hello {{1}}, an update from Eazy Diagnostics on your patient {{2}} (booking {{3}}): {{4}} Thank you for partnering with Eazy Diagnostics.
-```
-
-Variables: 1 = recipient's first name (the doctor), 2 = patient name(s), 3 = booking id, 4 = ready-made sentence.
-
-If you name them differently, set `WHATSAPP_PATIENT_TEMPLATE` / `WHATSAPP_DOCTOR_TEMPLATE` (and `WHATSAPP_TEMPLATE_LANGUAGE`).
-Keep the number and order of variables the same, or change `lib/order-notifications.ts` to match.
+Each `{{n}}` is mapped to a value in the form: the recipient's first name, patient name(s), booking id, status name or ready-made
+sentence, collection date and slot, the amount, the report type and link, our contact number, or the business name.
 
 ## Using `/admin/whatsapp`
 
 - **Templates:** `+ New template` opens a form with the wording (insert variables from a menu), what fills each variable, the
-  audience, the events it is used for, and a live preview. *Save and submit to Meta* sends it for review (usually minutes to a day);
+  audience, and a live preview. The form does not choose events: that is done on the mapping tab. *Save and submit to Meta* sends it for review (usually minutes to a day);
   its status then follows Meta's (In review -> Approved / Rejected, with the reason). From the table you can edit, switch a template
   on or off, send a test of an approved one to your own phone, resubmit a rejected one, or delete it (also from Meta).
-  Rewording an approved template sends it back for review; until it is approved again the generic template is used.
-  One event can have only one switched-on template per audience.
-- **What is sent:** which template each event uses for patients and doctors, and the state of the two generic templates.
+  Rewording an approved template sends it back for review; until it is approved again nothing is sent for the statuses mapped to it.
+  Switching a template off has the same effect.
+- **Template - Status Mapping:** choose, from the existing templates, which one each event uses for patients and for doctors. Leave it on
+  "Not mapped" and that audience gets nothing for that status. Templates cannot be created here. Choosing a template switches it on and
+  takes the event off the one that had it (one template per event per audience).
 - **Message log:** every message about an order, with template, recipient and Sent / Delivered / Read / Failed, filterable and paged.
 - **Connection:** which settings are present, a connection test, and what to enter in Meta's webhook setup.
 - **Sync with Meta** pulls every template's status, brings in templates that exist only at Meta (switched off and unmapped, so they
@@ -131,7 +120,7 @@ Keep the number and order of variables the same, or change `lib/order-notificati
   produced it. After changing a clinic's logo or a doctor's details, press **Rebuild header**.
 - A failed message (template not approved yet / name mismatch, expired token, a number not on WhatsApp) is shown in red with the
   reason. It is not re-sent automatically: fix the cause, then set another status and back, or message the patient by hand.
-- With no token configured, changes are still saved and the log says nothing was sent.
+- With no token configured, or no template mapped, changes are still saved and the toast and audit log say nothing was sent.
 
 ## Consent
 
