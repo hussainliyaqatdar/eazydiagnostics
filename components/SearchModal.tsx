@@ -7,6 +7,7 @@ import { useUI } from "@/lib/ui-context";
 import AddToCartButton from "./AddToCartButton";
 import MemberSwitcher from "./MemberSwitcher";
 import PackageContents from "./PackageContents";
+import NoResultsSupport from "./NoResultsSupport";
 import type { TestItem } from "@/lib/types";
 
 const RESULT_LIMIT = 30; // cap on the default (not searching) package list
@@ -160,7 +161,8 @@ export default function SearchModal() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 min-h-0">
-          {rows.length === 0 && (
+          {rows.length === 0 && searching && counts.tests + counts.packages === 0 && <NoResultsSupport query={query} compact />}
+          {rows.length === 0 && !(searching && counts.tests + counts.packages === 0) && (
             <p className="text-sm text-gray-500 py-8 text-center">
               {searching
                 ? `No ${tab} match "${query}". Try a shorter or more general term.`

@@ -61,7 +61,7 @@ export default async function Home() {
         </div>
         <div className="grid md:grid-cols-3 gap-4">
           {popularPackages.map((p) => (
-            <PackageCard key={p.slug} pkg={p} />
+            <PackageCard key={p.slug} pkg={p} showContents />
           ))}
         </div>
       </section>
@@ -77,7 +77,7 @@ export default async function Home() {
         </p>
         <div className="grid md:grid-cols-3 gap-4">
           {pregnancyPackages.map((p) => (
-            <PackageCard key={p.slug} pkg={p} />
+            <PackageCard key={p.slug} pkg={p} showContents />
           ))}
         </div>
 

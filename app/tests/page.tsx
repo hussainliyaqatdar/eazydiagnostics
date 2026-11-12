@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import NoResultsSupport from "@/components/NoResultsSupport";
 import TestCard from "@/components/TestCard";
 import SectionSearch from "@/components/SectionSearch";
 import { search, getTestsOrderedByPrescribingFrequency } from "@/lib/catalog";
@@ -44,7 +45,7 @@ export default function TestsPage({ searchParams }: { searchParams: { page?: str
       </Suspense>
 
       {matched.length === 0 ? (
-        <p className="text-gray-500">No tests match "{q}". Try a shorter term, or call us and our team will help you find the right test.</p>
+        q ? <NoResultsSupport query={q} /> : <p className="text-gray-500">No tests are listed yet.</p>
       ) : (
         <div className="grid md:grid-cols-3 gap-4">
           {pageTests.map((t) => (
