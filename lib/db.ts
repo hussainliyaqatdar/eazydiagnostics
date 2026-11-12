@@ -164,6 +164,21 @@ CREATE TABLE IF NOT EXISTS whatsapp_templates (
   UNIQUE (name, language)
 );
 
+-- Images uploaded on /admin/whatsapp to use as a template's header (e.g. a payment QR code). Stored here
+-- because the host has no persistent disk. token makes the public URL WhatsApp fetches unguessable.
+CREATE TABLE IF NOT EXISTS whatsapp_media (
+  id           bigserial PRIMARY KEY,
+  name         text NOT NULL,
+  content_type text NOT NULL,
+  data         bytea NOT NULL,
+  size         integer NOT NULL,
+  token        text NOT NULL UNIQUE,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+-- A template's header image: which library image is sent with it ("IMAGE" format = it has an image header).
+ALTER TABLE whatsapp_templates ADD COLUMN IF NOT EXISTS header_format text;
+ALTER TABLE whatsapp_templates ADD COLUMN IF NOT EXISTS header_media_id bigint REFERENCES whatsapp_media(id) ON DELETE SET NULL;
+
 -- The audit trail of an order: every status change, report upload and removal (WhatsApp sends are
 -- in order_notifications and merged in when it is shown).
 CREATE TABLE IF NOT EXISTS order_events (

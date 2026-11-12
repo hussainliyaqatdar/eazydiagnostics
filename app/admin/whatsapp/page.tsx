@@ -8,6 +8,8 @@ import TemplateStatusPill from "@/components/admin/whatsapp/TemplateStatusPill";
 import { SITE_URL } from "@/lib/site-config";
 import { whatsappConfigStatus } from "@/lib/whatsapp";
 import { recentMessages, type MessageRow } from "@/lib/whatsapp-log";
+import { listMedia, type MediaItem } from "@/lib/whatsapp-media";
+import ImageLibrary from "@/components/admin/whatsapp/ImageLibrary";
 import { AUDIENCE_LABELS, EVENTS } from "@/lib/whatsapp-events";
 import { listTemplates, type WaTemplate } from "@/lib/whatsapp-templates";
 
@@ -17,9 +19,10 @@ export const metadata: Metadata = { title: "WhatsApp", robots: { index: false, f
 export default async function AdminWhatsappPage() {
   let templates: WaTemplate[] = [];
   let messages: MessageRow[] = [];
+  let media: MediaItem[] = [];
   let loadError = "";
   try {
-    [templates, messages] = await Promise.all([listTemplates(), recentMessages()]);
+    [templates, messages, media] = await Promise.all([listTemplates(), recentMessages(), listMedia()]);
   } catch (err) {
     console.error("Admin: WhatsApp data could not be loaded:", err);
     loadError = `Couldn't load WhatsApp data: ${err instanceof Error ? err.message : "unknown error"}`;
@@ -69,8 +72,9 @@ export default async function AdminWhatsappPage() {
       <Tabs
         label="WhatsApp"
         tabs={[
-          { id: "templates", label: `Templates (${templates.length})`, content: <TemplatesPanel templates={templates} metaReady={metaReady} /> },
+          { id: "templates", label: `Templates (${templates.length})`, content: <TemplatesPanel templates={templates} media={media} metaReady={metaReady} /> },
           { id: "coverage", label: "Template - Status Mapping", content: coverage },
+          { id: "images", label: `Images (${media.length})`, content: <ImageLibrary media={media} /> },
           {
             id: "log",
             label: `Message log (${messages.length})`,

@@ -16,6 +16,7 @@ export const EVENTS: EventDef[] = [
   { key: "visit.partially_complete", label: "Partially complete", group: "Visit status", audiences: ["patient", "doctor"] },
   { key: "visit.completed", label: "Completed", group: "Visit status", audiences: ["patient", "doctor"] },
   { key: "visit.cancelled", label: "Cancelled", group: "Visit status", audiences: ["patient", "doctor"] },
+  { key: "payment.request", label: "Payment requested", group: "Payment", audiences: ["patient"] },
   { key: "payment.paid", label: "Payment received", group: "Payment", audiences: ["patient"] },
   { key: "payment.refunded", label: "Payment refunded", group: "Payment", audiences: ["patient"] },
   { key: "report.partial", label: "Partial report ready", group: "Report", audiences: ["patient", "doctor"] },

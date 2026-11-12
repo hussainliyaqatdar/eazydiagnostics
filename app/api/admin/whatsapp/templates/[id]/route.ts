@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { firstError, readTemplateInput, validateTemplate } from "@/lib/whatsapp-input";
 import { bindingConflicts, deleteTemplate, getTemplate, submitTemplate, updateTemplate } from "@/lib/whatsapp-templates";
 import { eventLabel } from "@/lib/whatsapp-events";
+import { getMediaToken } from "@/lib/whatsapp-media";
 
 function idOf(raw: string): number | null {
   const n = Number(raw);
@@ -26,7 +27,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // Changing who a template is sent to clears its status mappings: those were made for the old audience.
   const audienceChanged = merged.audience !== current.audience;
   if (audienceChanged) merged.events = [];
-  const wording = merged.body.trim() !== current.body || merged.footer.trim() !== current.footer || merged.category !== current.category;
+  // The header image: absent = unchanged; a number = that library image; null = no image.
+  let headerMediaId = current.headerMediaId;
+  if ("headerMediaId" in body) {
+    headerMediaId = typeof body.headerMediaId === "number" && Number.isInteger(body.headerMediaId) ? body.headerMediaId : null;
+    if (headerMediaId !== null && !(await getMediaToken(headerMediaId))) return NextResponse.json({ error: "That header image is no longer in the library." }, { status: 400 });
+  }
+  const headerChanged = headerMediaId !== current.headerMediaId;
+  const wording = headerChanged || merged.body.trim() !== current.body || merged.footer.trim() !== current.footer || merged.category !== current.category;
   const enabled = typeof body.enabled === "boolean" ? body.enabled : current.enabled;
   const resubmit = wording && !!current.metaId;
 
@@ -50,6 +58,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       footer: merged.footer,
       variables: merged.variables,
       enabled,
+      ...(headerChanged ? { headerMediaId } : {}),
     });
     let submitError: string | undefined;
     if ((resubmit || body.submit === true) && template) {

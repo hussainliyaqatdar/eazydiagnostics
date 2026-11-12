@@ -71,6 +71,7 @@ Change who hears about what in `NOTIFY_VISIT` in `lib/order-status.ts`, and the 
    | `WHATSAPP_ACCESS_TOKEN` | the permanent token |
    | `WHATSAPP_PHONE_NUMBER_ID` | the number messages go out from |
    | `WHATSAPP_BUSINESS_ACCOUNT_ID` | needed to create, sync and delete templates |
+   | `WHATSAPP_APP_ID` | the Meta app's id (App settings -> Basic); needed to attach an image to a template |
    | `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | a secret string you choose (step 6) |
    | `WHATSAPP_APP_SECRET` | the app's secret (App settings -> Basic); webhook calls are rejected in production without it |
    | `SITE_URL` | the public address, used to build report links |
@@ -92,10 +93,33 @@ Meta's dashboard, then **Sync with Meta**), category **Utility**, and submit it.
 Each `{{n}}` is mapped to a value in the form: the recipient's first name, patient name(s), booking id, status name or ready-made
 sentence, collection date and slot, the amount, the report type and link, our contact number, or the business name.
 
+## Payment requests (with the payment QR code)
+
+For orders where **Eazy Diagnostics** collects payment, the patient can be sent a "please pay" message with the payment QR code as an image.
+
+1. **Upload the QR image** on `/admin/whatsapp` -> **Images** (JPEG or PNG, up to 5 MB). It is stored in the database; WhatsApp fetches it from a public
+   link (`/api/whatsapp/media/<random token>`) when a message goes out. Requires `SITE_URL` to be the public address.
+2. **Create a template** with that image as its **Header image** (the form has a picker, and can upload a new image too). Because the QR code is
+   static, put the amount and the UPI ID in the text, for example:
+   `Hello {{1}}, we have collected your samples for booking {{2}}. The amount due is {{3}}. Scan the QR code above with any UPI app to pay, or pay to UPI ID <your UPI ID>. Thank you for choosing Eazy Diagnostics.`
+   Variables: 1 = recipient's first name, 2 = booking id, 3 = amount. Submit it to Meta; Meta reviews it together with the image, and changing the image
+   later sends it back for review. Needs `WHATSAPP_APP_ID`.
+3. **Map it** on **Template - Status Mapping** to the **Payment requested** event (patients only).
+
+When it is sent:
+- **Automatically**, when a visit's status changes to **Samples collected**, if Eazy Diagnostics collects payment for the order and payment is still **Pending**.
+  This happens once per order (it is not repeated if the status goes round again).
+- **By hand**, with **Request payment** next to the payment status on the order page, while payment is Pending. Use it for reminders: resending is allowed,
+  except twice within 30 seconds.
+- **Never** when the clinic collects payment, when payment is already Paid or Refunded, or when the visit is Cancelled.
+- With no template mapped for Payment requested, nothing is sent and the admin is told (toast and audit log), like any other unmapped event.
+
+Reconciliation is manual: when the money arrives, mark the order **Paid** (which sends the "payment received" message if one is mapped).
+
 ## Using `/admin/whatsapp`
 
 - **Templates:** `+ New template` opens a form with the wording (insert variables from a menu), what fills each variable, the
-  audience, and a live preview. The form does not choose events: that is done on the mapping tab. *Save and submit to Meta* sends it for review (usually minutes to a day);
+  audience, an optional header image, and a live preview. The form does not choose events: that is done on the mapping tab. *Save and submit to Meta* sends it for review (usually minutes to a day);
   its status then follows Meta's (In review -> Approved / Rejected, with the reason). From the table you can edit, switch a template
   on or off, send a test of an approved one to your own phone, resubmit a rejected one, or delete it (also from Meta).
   Rewording an approved template sends it back for review; until it is approved again nothing is sent for the statuses mapped to it.
@@ -103,6 +127,7 @@ sentence, collection date and slot, the amount, the report type and link, our co
 - **Template - Status Mapping:** choose, from the existing templates, which one each event uses for patients and for doctors. Leave it on
   "Not mapped" and that audience gets nothing for that status. Templates cannot be created here. Choosing a template switches it on and
   takes the event off the one that had it (one template per event per audience).
+- **Images:** the image library for template headers (upload, see which templates use each, delete unused ones).
 - **Message log:** every message about an order, with template, recipient and Sent / Delivered / Read / Failed, filterable and paged.
 - **Connection:** which settings are present, a connection test, and what to enter in Meta's webhook setup.
 - **Who a template is for.** Meta does not record this, so a template brought in by Sync is set to Doctors if its name plainly says so (for example `order_confirmed_doctor`) and to Patients otherwise. "Sent to" can be changed at any time when editing a template (this removes any status mappings it had), and a draft can be saved before every variable is mapped; all variables must be mapped before it is sent to Meta. A template only appears in a column of the mapping tab if it is for that audience.

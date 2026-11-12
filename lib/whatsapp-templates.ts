@@ -13,7 +13,8 @@ import {
   type TemplateInput,
   type VariableSource,
 } from "./whatsapp-events";
-import { metaCreateTemplate, metaDeleteTemplate, metaListTemplates, metaUpdateTemplate, type MetaTemplate } from "./whatsapp";
+import { metaCreateTemplate, metaDeleteTemplate, metaListTemplates, metaUpdateTemplate, metaUploadSample, type MetaTemplate } from "./whatsapp";
+import { getMediaBytes, getMediaToken, mediaUrl } from "./whatsapp-media";
 
 export type WaTemplate = {
   id: number;
@@ -24,6 +25,9 @@ export type WaTemplate = {
   events: string[];
   body: string;
   footer: string;
+  // "IMAGE" when the template has an image header; headerMediaId is the library image sent with it (null until chosen).
+  headerFormat: string | null;
+  headerMediaId: number | null;
   // variables[i] fills {{i+1}}; "" for one that has not been mapped (e.g. a template imported from Meta).
   variables: (VariableSource | "")[];
   metaId: string | null;
@@ -44,6 +48,8 @@ type Row = {
   events: string[];
   body: string;
   footer: string | null;
+  header_format: string | null;
+  header_media_id: number | string | null;
   variables: string[];
   meta_id: string | null;
   status: string;
@@ -66,6 +72,8 @@ function toTemplate(r: Row): WaTemplate {
     events: r.events ?? [],
     body: r.body,
     footer: r.footer ?? "",
+    headerFormat: r.header_format,
+    headerMediaId: r.header_media_id === null || r.header_media_id === undefined ? null : Number(r.header_media_id),
     variables: (r.variables ?? []).map((v) => (isVariableSource(v) ? v : "")),
     metaId: r.meta_id,
     status: r.status,
@@ -77,7 +85,7 @@ function toTemplate(r: Row): WaTemplate {
   };
 }
 
-const COLUMNS = "id, name, language, category, audience, events, body, footer, variables, meta_id, status, rejected_reason, enabled, created_at, updated_at, synced_at";
+const COLUMNS = "id, name, language, category, audience, events, body, footer, header_format, header_media_id, variables, meta_id, status, rejected_reason, enabled, created_at, updated_at, synced_at";
 
 export async function listTemplates(): Promise<WaTemplate[]> {
   const db = await getDb();
@@ -107,6 +115,7 @@ export async function findMappedTemplate(event: string, audience: Audience): Pro
 export function unusableReason(t: WaTemplate): string | null {
   if (t.status !== "APPROVED") return `its Meta status is ${t.status.toLowerCase().replace("_", " ")}, not approved`;
   if (t.variables.length !== variableCount(t.body) || t.variables.some((v) => v === "")) return "a variable has nothing mapped to it";
+  if (t.headerFormat === "IMAGE" && !t.headerMediaId) return "it needs a header image";
   return null;
 }
 
@@ -122,17 +131,18 @@ export async function bindingConflicts(audience: Audience, events: string[], exc
   return out;
 }
 
-export async function createTemplate(input: TemplateInput): Promise<WaTemplate> {
+export async function createTemplate(input: TemplateInput & { headerMediaId?: number | null }): Promise<WaTemplate> {
   const db = await getDb();
   const rows = await db.query<Row>(
-    `INSERT INTO whatsapp_templates (name, language, category, audience, events, body, footer, variables)
-     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8::jsonb) RETURNING ${COLUMNS}`,
-    [input.name, input.language, input.category, input.audience, JSON.stringify(input.events), input.body.trim(), input.footer.trim() || null, JSON.stringify(input.variables)]
+    `INSERT INTO whatsapp_templates (name, language, category, audience, events, body, footer, variables, header_format, header_media_id)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8::jsonb, $9, $10) RETURNING ${COLUMNS}`,
+    [input.name, input.language, input.category, input.audience, JSON.stringify(input.events), input.body.trim(), input.footer.trim() || null, JSON.stringify(input.variables), input.headerMediaId ? "IMAGE" : null, input.headerMediaId ?? null]
   );
   return toTemplate(rows[0]);
 }
 
-export type TemplatePatch = Partial<Omit<TemplateInput, "name" | "language">> & { enabled?: boolean };
+// headerMediaId: a library image to use as the header, or null to remove the image header.
+export type TemplatePatch = Partial<Omit<TemplateInput, "name" | "language">> & { enabled?: boolean; headerMediaId?: number | null };
 
 export async function updateTemplate(id: number, patch: TemplatePatch): Promise<WaTemplate | undefined> {
   const sets: string[] = [];
@@ -148,6 +158,10 @@ export async function updateTemplate(id: number, patch: TemplatePatch): Promise<
   if (patch.footer !== undefined) add("footer", patch.footer.trim() || null);
   if (patch.variables !== undefined) add("variables", JSON.stringify(patch.variables), "::jsonb");
   if (patch.enabled !== undefined) add("enabled", patch.enabled);
+  if (patch.headerMediaId !== undefined) {
+    add("header_media_id", patch.headerMediaId);
+    add("header_format", patch.headerMediaId ? "IMAGE" : null);
+  }
   if (sets.length === 0) return getTemplate(id);
   const db = await getDb();
   const rows = await db.query<Row>(`UPDATE whatsapp_templates SET ${sets.join(", ")}, updated_at = now() WHERE id = $1 RETURNING ${COLUMNS}`, values);
@@ -162,9 +176,10 @@ async function setMeta(id: number, f: { metaId?: string | null; status: string; 
   );
 }
 
-// What Meta needs: the body with example values for each variable (so it can judge the template).
-function submission(t: WaTemplate) {
-  return {
+// What Meta needs: the body with example values for each variable (so it can judge the template), and for a
+// template with an image header the sample image, uploaded to Meta first.
+async function submission(t: WaTemplate): Promise<{ ok: true; value: Parameters<typeof metaCreateTemplate>[0] } | { ok: false; error: string }> {
+  const value: Parameters<typeof metaCreateTemplate>[0] = {
     name: t.name,
     language: t.language,
     category: t.category,
@@ -172,6 +187,15 @@ function submission(t: WaTemplate) {
     footer: t.footer || undefined,
     examples: t.variables.map((v) => (v ? SOURCE_BY_KEY.get(v)?.example ?? "example" : "example")),
   };
+  if (t.headerFormat === "IMAGE") {
+    if (!t.headerMediaId) return { ok: false, error: "This template has an image header but no image chosen. Pick one in Edit." };
+    const media = await getMediaBytes(t.headerMediaId);
+    if (!media) return { ok: false, error: "The header image is no longer in the library. Pick another." };
+    const up = await metaUploadSample(media.data, media.contentType, media.name);
+    if (!up.ok) return up;
+    value.headerHandle = up.data;
+  }
+  return { ok: true, value };
 }
 
 export type ActionResult<T = undefined> = { ok: true; template: WaTemplate; data?: T } | { ok: false; error: string };
@@ -183,12 +207,15 @@ export async function submitTemplate(id: number): Promise<ActionResult> {
   if (!t) return { ok: false, error: "That template no longer exists." };
   if (t.variables.some((v) => v === "")) return { ok: false, error: "Choose what fills every variable first." };
 
+  const sub = await submission(t);
+  if (!sub.ok) return { ok: false, error: sub.error };
+
   if (t.metaId) {
-    const res = await metaUpdateTemplate(t.metaId, submission(t));
+    const res = await metaUpdateTemplate(t.metaId, sub.value);
     if (!res.ok) return { ok: false, error: res.error };
     await setMeta(id, { status: "PENDING", reason: null });
   } else {
-    const res = await metaCreateTemplate(submission(t));
+    const res = await metaCreateTemplate(sub.value);
     if (!res.ok) return { ok: false, error: res.error };
     await setMeta(id, { metaId: res.data.id, status: normaliseStatus(res.data.status) || "PENDING", reason: null });
   }
@@ -259,11 +286,13 @@ export async function syncTemplates(): Promise<{ ok: true; updated: number; impo
     const body = bodyOf(m);
     if (!body) continue;
     const footer = m.components?.find((c) => c.type === "FOOTER")?.text ?? null;
+    // A template that has an image header at Meta needs an image chosen here before it can be sent.
+    const header = m.components?.find((c) => c.type === "HEADER" && c.format === "IMAGE") ? "IMAGE" : null;
     await db.query(
-      `INSERT INTO whatsapp_templates (name, language, category, audience, events, body, footer, variables, meta_id, status, rejected_reason, enabled, synced_at)
-       VALUES ($1, $2, $3, $10, '[]'::jsonb, $4, $5, $6::jsonb, $7, $8, $9, false, now())
+      `INSERT INTO whatsapp_templates (name, language, category, audience, events, body, footer, variables, meta_id, status, rejected_reason, enabled, synced_at, header_format)
+       VALUES ($1, $2, $3, $10, '[]'::jsonb, $4, $5, $6::jsonb, $7, $8, $9, false, now(), $11)
        ON CONFLICT (name, language) DO NOTHING`,
-      [m.name, m.language, m.category === "MARKETING" ? "MARKETING" : "UTILITY", body, footer, JSON.stringify(Array(variableCount(body)).fill("")), m.id, normaliseStatus(m.status), m.rejected_reason && m.rejected_reason !== "NONE" ? m.rejected_reason : null, guessAudience(m.name)]
+      [m.name, m.language, m.category === "MARKETING" ? "MARKETING" : "UTILITY", body, footer, JSON.stringify(Array(variableCount(body)).fill("")), m.id, normaliseStatus(m.status), m.rejected_reason && m.rejected_reason !== "NONE" ? m.rejected_reason : null, guessAudience(m.name), header]
     );
     imported++;
   }
@@ -318,4 +347,11 @@ export async function mapEvent(event: string, audience: Audience, templateId: nu
     await updateTemplate(chosen.id, { events: chosen.events.includes(event) ? chosen.events : [...chosen.events, event], enabled: true });
   }
   return { ok: true };
+}
+
+// The public link WhatsApp fetches the header image from, or undefined for a template without one.
+export async function headerImageUrlFor(t: Pick<WaTemplate, "headerFormat" | "headerMediaId">): Promise<string | undefined> {
+  if (t.headerFormat !== "IMAGE" || !t.headerMediaId) return undefined;
+  const token = await getMediaToken(t.headerMediaId);
+  return token ? mediaUrl(token) : undefined;
 }

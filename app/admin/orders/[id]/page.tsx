@@ -5,7 +5,7 @@ import MemberReport from "@/components/admin/MemberReport";
 import Tabs from "@/components/admin/Tabs";
 import { ReportPill } from "@/components/admin/StatusPill";
 import OrderControls from "@/components/admin/OrderControls";
-import { amountDue } from "@/lib/booking-totals";
+import { amountDue, paidAtClinic } from "@/lib/booking-totals";
 import { getClinic } from "@/lib/clinics";
 import { getDoctor, type Doctor } from "@/lib/doctors";
 import { getBooking } from "@/lib/orders";
@@ -13,6 +13,7 @@ import { auditTrail } from "@/lib/order-events";
 import AuditLog from "@/components/admin/AuditLog";
 import { listMembers } from "@/lib/order-admin";
 import { readableDate } from "@/lib/order-status";
+import { paymentRequestBlocker } from "@/lib/payment-request";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Order", robots: { index: false, follow: false } };
@@ -42,7 +43,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
     })
   );
 
-  const collectedBy = collector === "clinic" ? "The clinic (front desk)" : collector === "eazy" ? "Eazy Diagnostics" : "Eazy Diagnostics (no clinic involved)";
+  const collectedBy = paidAtClinic(booking) ? "The clinic (front desk)" : collector === "eazy" ? "Eazy Diagnostics" : "Eazy Diagnostics (no clinic involved)";
   const address = [booking.patient.addressLine, booking.patient.locality, booking.patient.city].filter(Boolean).join(", ") + (booking.patient.pincode ? ` - ${booking.patient.pincode}` : "");
   const summary: { label: string; value: React.ReactNode; wide?: boolean }[] = [
     { label: "Collected by", value: collectedBy },
@@ -69,7 +70,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
             </span>
             <span className={`text-4xl font-extrabold leading-none tracking-tight ${booking.paymentStatus === "pending" ? "text-gray-900" : "text-gray-500"}`}>{rs(amountDue(booking))}</span>
           </div>
-          <OrderControls id={booking.id} status={booking.status ?? "booked"} paymentStatus={booking.paymentStatus} />
+          <OrderControls id={booking.id} status={booking.status ?? "booked"} paymentStatus={booking.paymentStatus} canRequestPayment={!paymentRequestBlocker(booking)} />
         </div>
         <dl className="grid gap-x-8 gap-y-3 border-t pt-4 text-sm sm:grid-cols-2">
           {summary.map((f) => (

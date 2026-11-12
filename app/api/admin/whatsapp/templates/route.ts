@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { firstError, readTemplateInput, validateTemplate } from "@/lib/whatsapp-input";
 import { bindingConflicts, createTemplate, submitTemplate } from "@/lib/whatsapp-templates";
 import { eventLabel } from "@/lib/whatsapp-events";
+import { getMediaToken } from "@/lib/whatsapp-media";
 
 // Admin-only (see middleware.ts): write a new template, and optionally send it to Meta for approval.
 export async function POST(req: NextRequest) {
@@ -22,7 +23,10 @@ export async function POST(req: NextRequest) {
     if (clash.length > 0) {
       return NextResponse.json({ error: `${eventLabel(clash[0].event)} already uses the template "${clash[0].template}". Remove it from that template first.` }, { status: 409 });
     }
-    let template = await createTemplate(input);
+    // An optional library image as the header.
+    const headerMediaId = typeof body.headerMediaId === "number" && Number.isInteger(body.headerMediaId) ? body.headerMediaId : null;
+    if (headerMediaId !== null && !(await getMediaToken(headerMediaId))) return NextResponse.json({ error: "That header image is no longer in the library." }, { status: 400 });
+    let template = await createTemplate({ ...input, headerMediaId });
     let submitError: string | undefined;
     if (submit) {
       const res = await submitTemplate(template.id);

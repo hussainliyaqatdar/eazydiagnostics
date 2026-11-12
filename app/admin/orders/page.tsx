@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import OrderControls from "@/components/admin/OrderControls";
-import { amountDue } from "@/lib/booking-totals";
+import { amountDue, paidAtClinic } from "@/lib/booking-totals";
 import { listBookings } from "@/lib/orders";
 import { listMembers } from "@/lib/order-admin";
 import { readableDate } from "@/lib/order-status";
@@ -85,7 +85,7 @@ export default async function AdminOrdersPage() {
                     <td className="whitespace-nowrap px-3 py-3">
                       <span className="block text-lg font-extrabold leading-tight text-gray-900">Rs. {amountDue(o).toLocaleString("en-IN")}</span>
                       <span className="block text-[11px] text-gray-500">
-                        {o.paymentStatus === "paid" ? "paid" : o.paymentStatus === "refunded" ? "refunded" : "to collect"} &middot; {o.paymentCollector === "clinic" ? "at clinic" : "by Eazy"}
+                        {o.paymentStatus === "paid" ? "paid" : o.paymentStatus === "refunded" ? "refunded" : "to collect"} &middot; {paidAtClinic(o) ? "at clinic" : "by Eazy"}
                       </span>
                     </td>
                     <td className="px-3 py-3">

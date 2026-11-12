@@ -123,6 +123,12 @@ export function doctorLine(status: OrderStatus, c: StatusContext): string {
   }
 }
 
+// The sentence for a payment request ("please pay"): sent when samples are collected for an order Eazy
+// Diagnostics collects payment for, and when an admin presses Request payment.
+export function paymentRequestLine(amount: number): string {
+  return `The amount due is Rs. ${amount.toLocaleString("en-IN")}. Please pay by scanning the QR code or using the UPI ID shown.`;
+}
+
 export function paymentLine(status: PaymentStatus, amount: number): string | null {
   const rs = `Rs. ${amount.toLocaleString("en-IN")}`;
   switch (status) {

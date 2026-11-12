@@ -2,7 +2,8 @@
 import { useMemo, useRef, useState } from "react";
 import Modal from "../Modal";
 import { useToast } from "../Toaster";
-import { buttonClass, inputClass, labelClass, quietButtonClass, sendJson } from "../api";
+import { buttonClass, inputClass, labelClass, quietButtonClass, sendForm, sendJson } from "../api";
+import type { MediaItem } from "@/lib/whatsapp-media";
 import type { WaTemplate } from "@/lib/whatsapp-templates";
 import {
   AUDIENCES,
@@ -24,6 +25,8 @@ type Props = {
   template: WaTemplate | null;
   // Every template, so a new one can start from an existing one as a reference.
   templates: WaTemplate[];
+  // The image library, for the header image.
+  media: MediaItem[];
   onClose: () => void;
   onSaved: () => void;
 };
@@ -31,7 +34,7 @@ type Props = {
 // Write or edit a template: its wording with {{variables}}, what fills each variable, and who receives it.
 // Which status events use it is chosen on the "Template - Status Mapping" tab, not here. A live preview
 // shows it as the recipient would read it.
-export default function TemplateForm({ template, templates, onClose, onSaved }: Props) {
+export default function TemplateForm({ template, templates, media, onClose, onSaved }: Props) {
   const editing = !!template;
   const start = template;
   const [name, setName] = useState(start?.name ?? "");
@@ -46,6 +49,11 @@ export default function TemplateForm({ template, templates, onClose, onSaved }: 
   const [touched, setTouched] = useState(false);
   // The existing template this one was started from, if any.
   const [reference, setReference] = useState<number | null>(null);
+  // The header image: a library image (e.g. a payment QR code) shown above the message, or none.
+  const [headerId, setHeaderId] = useState<number | null>(template?.headerMediaId ?? null);
+  const [library, setLibrary] = useState<MediaItem[]>(media);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   // Wording is locked while Meta is reviewing it.
@@ -56,6 +64,22 @@ export default function TemplateForm({ template, templates, onClose, onSaved }: 
 
   const errors = validateTemplate({ name, language, category, audience, events: [], body, footer, variables: sources as VariableSource[] }, true);
   const draftErrors = validateTemplate({ name, language, category, audience, events: [], body, footer, variables: sources as VariableSource[] }, false);
+
+  async function uploadImage(file: File | undefined) {
+    if (!file) return;
+    setUploading(true);
+    const form = new FormData();
+    form.append("file", file);
+    const res = await sendForm<{ media: MediaItem }>("/api/admin/whatsapp/media", form);
+    if (!res.ok) toast({ kind: "error", title: "Couldn't upload the image", message: res.error });
+    else {
+      setLibrary((cur) => [res.data.media, ...cur]);
+      setHeaderId(res.data.media.id);
+      toast({ kind: "success", title: "Image uploaded", message: `${res.data.media.name} is now this template's header image.` });
+    }
+    if (fileRef.current) fileRef.current.value = "";
+    setUploading(false);
+  }
 
   function insertVariable(source: VariableSource) {
     const next = count + 1;
@@ -83,6 +107,7 @@ export default function TemplateForm({ template, templates, onClose, onSaved }: 
     setVars(ref.variables);
     setCategory(ref.category);
     setLanguage(ref.language);
+    setHeaderId(ref.headerMediaId);
     // A name is suggested only when none has been typed: "<base>_<audience>".
     if (!name.trim()) {
       const base = `${ref.name.replace(/_(patient|doctor)s?$/, "")}_${audience}`;
@@ -98,7 +123,7 @@ export default function TemplateForm({ template, templates, onClose, onSaved }: 
     if (Object.values(errs).some(Boolean)) return;
     setBusy(true);
     // Events are not sent: a new template starts unmapped, and an edit leaves its mapping as it is.
-    const payload = { name, language, category, audience, body, footer, variables: sources, submit };
+    const payload = { name, language, category, audience, body, footer, variables: sources, headerMediaId: headerId, submit };
     const res = editing
       ? await sendJson<{ submitError?: string }>(`/api/admin/whatsapp/templates/${template!.id}`, "PATCH", payload)
       : await sendJson<{ submitError?: string }>("/api/admin/whatsapp/templates", "POST", payload);
@@ -125,7 +150,8 @@ export default function TemplateForm({ template, templates, onClose, onSaved }: 
 
   const show = (msg?: string) => (touched && msg ? <span role="alert" className="text-xs font-normal text-red-600">{msg}</span> : null);
   const preview = renderExample(body, sources) || "Your message will appear here.";
-  const wordingChanged = editing && (body.trim() !== template!.body || footer.trim() !== template!.footer || category !== template!.category);
+  const headerChanged = editing && headerId !== template!.headerMediaId;
+  const wordingChanged = editing && (body.trim() !== template!.body || footer.trim() !== template!.footer || category !== template!.category || headerChanged);
 
   return (
     <Modal title={editing ? `Edit ${template!.name}` : "New WhatsApp template"} onClose={onClose} wide>
@@ -247,15 +273,44 @@ export default function TemplateForm({ template, templates, onClose, onSaved }: 
             {show(errors.footer)}
           </label>
 
+          <div className="flex flex-col gap-2 rounded-md border p-3">
+            <span className="text-xs font-medium text-gray-600">Header image (optional)</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                aria-label="Header image"
+                value={headerId ?? ""}
+                onChange={(e) => setHeaderId(e.target.value ? Number(e.target.value) : null)}
+                disabled={locked}
+                className={`${inputClass} min-w-0 flex-1`}
+              >
+                <option value="">No image</option>
+                {library.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+              <input ref={fileRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={(e) => uploadImage(e.target.files?.[0])} aria-label="Upload a header image" />
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={locked || uploading} className={quietButtonClass}>
+                {uploading ? "Uploading..." : "Upload new image"}
+              </button>
+            </div>
+            <span className="text-[11px] text-gray-500">
+              Sent above the message, for example a payment QR code. JPEG or PNG, up to 5 MB. Meta reviews the template with this image, so changing it sends the template back for review.
+            </span>
+          </div>
+
         </div>
 
         {/* Live preview, as the recipient would see it. */}
         <aside aria-label="Preview" className="flex flex-col gap-2">
           <span className="text-xs font-medium text-gray-600">Preview</span>
           <div className="rounded-xl bg-[#e7ddd0] p-3">
-            <div className="rounded-lg rounded-tl-none bg-white p-3 text-sm text-gray-900 shadow-sm">
-              <p className="whitespace-pre-wrap break-words">{preview}</p>
-              {footer && <p className="mt-2 text-xs text-gray-500">{footer}</p>}
+            <div className="rounded-lg rounded-tl-none bg-white p-1.5 text-sm text-gray-900 shadow-sm">
+              {headerId && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={`/api/admin/whatsapp/media/${headerId}`} alt="Header" className="mb-1.5 max-h-64 w-full rounded-md object-contain bg-gray-50" />
+              )}
+              <p className="whitespace-pre-wrap break-words px-1.5 pb-1">{preview}</p>
+              {footer && <p className="mt-1 px-1.5 pb-1 text-xs text-gray-500">{footer}</p>}
             </div>
           </div>
           <p className="text-[11px] text-gray-500">Variables are shown with sample values.</p>
