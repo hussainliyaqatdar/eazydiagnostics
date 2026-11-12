@@ -116,7 +116,7 @@ sentence, collection date and slot, the amount, the report type and link, our co
   **Upload report** - saving a file never sends a message; only **Change status -> Update & notify** does. The saved file is
   shown in a preview pane on click so you can check the header before you notify. If the member's prescribing doctor is registered,
   the PDF is re-saved with that doctor's clinic header (clinic name, logo and address on the left; the doctor's name and
-  qualifications on the right) - the lab's own content is not touched. With no registered doctor the report is kept exactly as the lab
+  qualifications on the right; long addresses and qualifications wrap onto further lines, and there is no rule underneath so the logo can be larger). In the lab's "CODE/NAME & ADDRESS" box the lab's partner name, address and phone number are removed from the page and the clinic's name and address are printed in their place (a very long address is shortened in the middle). Everything else the lab printed is left alone. With no registered doctor the report is kept exactly as the lab
   produced it. After changing a clinic's logo or a doctor's details, press **Rebuild header**.
 - A failed message (template not approved yet / name mismatch, expired token, a number not on WhatsApp) is shown in red with the
   reason. It is not re-sent automatically: fix the cause, then set another status and back, or message the patient by hand.

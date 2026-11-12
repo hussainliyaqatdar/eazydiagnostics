@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import NoResultsSupport from "@/components/NoResultsSupport";
 import PackageCard from "@/components/PackageCard";
 import SectionSearch from "@/components/SectionSearch";
 import { allPackages, getPackageCategories, search } from "@/lib/catalog";
@@ -52,11 +53,11 @@ export default function PackagesPage({ searchParams }: { searchParams: { categor
       </div>
 
       {packages.length === 0 ? (
-        <p className="text-gray-500">No packages found{q ? ` matching "${q}"` : " in this category"}.</p>
+        q ? <NoResultsSupport query={q} /> : <p className="text-gray-500">No packages found in this category.</p>
       ) : (
         <div className="grid md:grid-cols-3 gap-4">
           {packages.map((p) => (
-            <PackageCard key={p.slug} pkg={p} />
+            <PackageCard key={p.slug} pkg={p} showContents />
           ))}
         </div>
       )}

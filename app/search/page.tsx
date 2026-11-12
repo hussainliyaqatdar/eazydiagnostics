@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import SearchBar from "@/components/SearchBar";
 import TestCard from "@/components/TestCard";
+import NoResultsSupport from "@/components/NoResultsSupport";
 import PackageCard from "@/components/PackageCard";
 import { search, allPackages } from "@/lib/catalog";
 import type { SearchResult } from "@/lib/catalog";
@@ -42,13 +43,8 @@ export default function SearchPage({ searchParams }: Props) {
         <SearchBar />
       </div>
 
-      {results.length === 0 && (
-        <p className="text-gray-500">
-          {category
-            ? `No packages are currently tagged "${category}".`
-            : `No exact matches for "${q}". Try a shorter or more general term, or call us and our team will help you find the right test.`}
-        </p>
-      )}
+      {results.length === 0 && category && <p className="text-gray-500">{`No packages are currently tagged "${category}".`}</p>}
+      {results.length === 0 && !category && q && <NoResultsSupport query={q} />}
 
       <div className="grid md:grid-cols-3 gap-4">
         {results.map((r) =>
