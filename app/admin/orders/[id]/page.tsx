@@ -124,6 +124,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
                       filename={m.reportFilename}
                       updatedAt={m.reportUpdatedAt}
                       doctorLabel={doctor ? (clinic?.name ?? doctor.clinic) : null}
+                      refDoctor={doctor ? doctor.name : m.referralName?.trim() || null}
                       notifyTo={`${m.name} on ${own ? m.whatsapp : booking.patient.whatsapp}${own ? "" : " (the visit's number)"}`}
                     />
                   </div>

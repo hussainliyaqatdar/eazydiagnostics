@@ -6,7 +6,7 @@ import { randomBytes } from "crypto";
 import { getDb } from "./db";
 import { getClinic, getClinicLogo } from "./clinics";
 import { getDoctor } from "./doctors";
-import { brandReport, ReportError, type ReportHeader } from "./report-branding";
+import { brandReport, ReportError, setRefDoctorOnly, type ReportHeader } from "./report-branding";
 import { isReportStatus, type ReportStatus } from "./order-status";
 import type { BookingLineItem } from "./types";
 
@@ -109,8 +109,8 @@ export async function setReportStatus(memberId: number, status: ReportStatus): P
 }
 
 // The header for a member's report: the prescribing doctor's clinic (name, address, logo) and
-// the doctor's own name and qualifications. null when the member has no registered doctor,
-// in which case the report is kept exactly as the lab produced it.
+// the doctor's own name and qualifications. null when the member has no registered doctor (a typed-in
+// doctor still sets the REF. DOCTOR field, but there is no clinic header).
 export async function reportHeaderFor(member: OrderMember): Promise<ReportHeader | null> {
   if (!member.doctorId) return null;
   const doctor = await getDoctor(member.doctorId);
@@ -126,7 +126,17 @@ export async function reportHeaderFor(member: OrderMember): Promise<ReportHeader
   };
 }
 
-export type SavedReport = { branded: boolean; clinicName?: string };
+// The doctor named in the member's "Prescribed by": the registered doctor's name, else the name typed at checkout.
+// This is what goes in the report's REF. DOCTOR field. null when the order names nobody.
+export async function prescribedByName(member: OrderMember): Promise<string | null> {
+  if (member.doctorId) {
+    const doctor = await getDoctor(member.doctorId).catch(() => undefined);
+    if (doctor?.name) return doctor.name;
+  }
+  return member.referralName?.trim() || null;
+}
+
+export type SavedReport = { branded: boolean; clinicName?: string; refDoctor?: string };
 
 // Stores the uploaded PDF as this member's one current report (replacing any earlier one) and,
 // when they have a registered prescribing doctor, a copy with their clinic's header on it. The
@@ -136,7 +146,15 @@ export async function saveMemberReport(memberId: number, file: Buffer, filename:
   if (!member) throw new ReportError("That member no longer exists.");
 
   const header = await reportHeaderFor(member);
-  const branded = header ? Buffer.from(await brandReport(file, header)) : null;
+  const refDoctor = await prescribedByName(member);
+  // With a registered doctor: their clinic's header, and REF. DOCTOR set to them. With only a typed-in name:
+  // REF. DOCTOR set to that name, nothing else changed. With nobody named: the lab's file as it is.
+  let branded: Buffer | null = null;
+  if (header) branded = Buffer.from(await brandReport(file, header, refDoctor));
+  else if (refDoctor) {
+    const edited = await setRefDoctorOnly(file, refDoctor);
+    branded = edited ? Buffer.from(edited) : null;
+  }
 
   const db = await getDb();
   const token = member.reportToken ?? randomBytes(16).toString("hex");
@@ -146,7 +164,7 @@ export async function saveMemberReport(memberId: number, file: Buffer, filename:
       WHERE id = $1`,
     [memberId, file, branded, filename.slice(0, 120), token]
   );
-  return { branded: !!branded, clinicName: header?.clinicName };
+  return { branded: !!branded, clinicName: header?.clinicName, refDoctor: refDoctor ?? undefined };
 }
 
 // Rebuilds the branded copy from the stored original, after the clinic's logo or the doctor's

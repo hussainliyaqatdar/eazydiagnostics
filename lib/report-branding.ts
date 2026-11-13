@@ -8,9 +8,9 @@
 // The old lines are removed from the page's content (and covered with white as a second safeguard). (A report that carries a
 // digital signature will no longer verify once re-saved this way; a password-protected one
 // cannot be read and is refused.)
-import { PDFArray, PDFDocument, PDFName, StandardFonts, decodePDFRawStream, rgb, type PDFFont, type PDFPage, type PDFRawStream } from "pdf-lib";
+import { PDFArray, PDFDict, PDFDocument, PDFName, StandardFonts, decodePDFRawStream, rgb, type PDFFont, type PDFPage, type PDFRawStream } from "pdf-lib";
 import { HEADER_ZONE, measureTop, type TopLayout } from "./report-layout";
-import { findLabBlocks, type LabBlock } from "./report-lab-block";
+import { findLabBlocks, findRefDoctors, type LabBlock, type RefDoctorField } from "./report-lab-block";
 
 export type ReportHeader = {
   clinicName: string;
@@ -109,16 +109,37 @@ function applyLabBlock(sheet: PDFPage, block: LabBlock, header: ReportHeader, fo
   }
 }
 
-// Removes the text blocks that start at the given positions from a page's content, so the lab's old partner
-// name / address / phone are not just hidden but gone from the file (they cannot be selected, copied or
-// searched). Each printed line of these reports is its own "BT ... ET" text block starting with an absolute
-// position; a block is dropped only when that position matches a line found by findLabBlocks. Returns how many
-// were removed; on anything unexpected the page is left as it was.
+// Drops the "BT ... ET" text blocks whose absolute start position is one of `targets`. Each printed line of these
+// reports is its own text block starting with an absolute position, so a block is removed only when its position
+// matches a line found by findLabBlocks / findRefDoctors. Returns the new content and how many were removed.
+function dropTextBlocks(text: string, targets: { x: number; y: number }[]): { text: string; removed: number } {
+  let removed = 0;
+  const next = text.replace(/\bBT\b[\s\S]*?\bET\b/g, (blockText) => {
+    const td = blockText.match(/(-?[\d.]+)\s+(-?[\d.]+)\s+Td/);
+    const tm = blockText.match(/(?:-?[\d.]+\s+){4}(-?[\d.]+)\s+(-?[\d.]+)\s+Tm/);
+    const at = td ? [Number(td[1]), Number(td[2])] : tm ? [Number(tm[1]), Number(tm[2])] : null;
+    if (!at || !/\bT[jJ]\b/.test(blockText)) return blockText;
+    // A block may begin with a space glyph, so it can start a few points left of where its visible text begins.
+    if (!targets.some((t) => Math.abs(t.y - at[1]) < 0.6 && t.x - at[0] > -0.6 && t.x - at[0] < 4.5)) return blockText;
+    removed++;
+    return "";
+  });
+  return { text: next, removed };
+}
+
+const decodeStream = (stream: PDFRawStream) => Buffer.from(decodePDFRawStream(stream).decode()).toString("latin1");
+
+// Removes the text at the given positions from a page itself, so the lab's old text is not just hidden but gone
+// from the file (it cannot be selected, copied or searched). Looks in the page's own content and in the form
+// objects (XObjects) it draws, since some PDFs - including ones this app has already branded - keep the page's
+// text there. Returns how many text blocks were removed; on anything unexpected the page is left as it was.
 function removeTextAt(doc: PDFDocument, page: PDFPage, targets: { x: number; y: number }[]): number {
   try {
+    let removed = 0;
+
+    // 1. The page's own content.
     const contents = page.node.Contents();
     const refs: unknown[] = contents instanceof PDFArray ? contents.asArray() : contents ? [contents] : [];
-    let removed = 0;
     const kept: unknown[] = [];
     for (const ref of refs) {
       const stream = doc.context.lookup(ref as never) as PDFRawStream | undefined;
@@ -126,20 +147,31 @@ function removeTextAt(doc: PDFDocument, page: PDFPage, targets: { x: number; y: 
         kept.push(ref);
         continue;
       }
-      const text = Buffer.from(decodePDFRawStream(stream).decode()).toString("latin1");
-      const next = text.replace(/\bBT\b[\s\S]*?\bET\b/g, (blockText) => {
-        const td = blockText.match(/(-?[\d.]+)\s+(-?[\d.]+)\s+Td/);
-        const tm = blockText.match(/(?:-?[\d.]+\s+){4}(-?[\d.]+)\s+(-?[\d.]+)\s+Tm/);
-        const at = td ? [Number(td[1]), Number(td[2])] : tm ? [Number(tm[1]), Number(tm[2])] : null;
-        if (!at || !/\bT[jJ]\b/.test(blockText)) return blockText;
-        if (!targets.some((t) => Math.abs(t.x - at[0]) < 0.6 && Math.abs(t.y - at[1]) < 0.6)) return blockText;
-        removed++;
-        return "";
-      });
-      if (next === text) kept.push(ref);
-      else kept.push(doc.context.register(doc.context.flateStream(Buffer.from(next, "latin1"))));
+      const result = dropTextBlocks(decodeStream(stream), targets);
+      removed += result.removed;
+      kept.push(result.removed > 0 ? doc.context.register(doc.context.flateStream(Buffer.from(result.text, "latin1"))) : ref);
     }
-    if (removed > 0) page.node.set(PDFName_Contents, doc.context.obj(kept as never));
+    if (kept.some((k, i) => k !== refs[i])) page.node.set(PDFName_Contents, doc.context.obj(kept as never));
+
+    // 2. Form objects the page draws (one level deep).
+    const xobjects = page.node.Resources()?.lookupMaybe(PDFName.of("XObject"), PDFDict);
+    if (xobjects) {
+      for (const [key, value] of xobjects.entries()) {
+        const form = doc.context.lookup(value as never) as PDFRawStream | undefined;
+        if (!form || !("contents" in form) || (form.dict.get(PDFName.of("Subtype")) as PDFName | undefined)?.asString() !== "/Form") continue;
+        const result = dropTextBlocks(decodeStream(form), targets);
+        if (result.removed === 0) continue;
+        removed += result.removed;
+        // Same form (bounding box, resources, matrix), new content.
+        const entries: Record<string, never> = {};
+        for (const [k, v] of form.dict.entries()) {
+          const name = k.asString();
+          if (name === "/Length" || name === "/Filter" || name === "/DecodeParms") continue;
+          entries[name.slice(1)] = v as never;
+        }
+        xobjects.set(key, doc.context.register(doc.context.flateStream(Buffer.from(result.text, "latin1"), entries)));
+      }
+    }
     return removed;
   } catch (err) {
     console.error("Lab text could not be removed from the report page:", err);
@@ -149,9 +181,38 @@ function removeTextAt(doc: PDFDocument, page: PDFPage, targets: { x: number; y: 
 
 const PDFName_Contents = PDFName.of("Contents");
 
+// Prints the prescribing doctor's name where the lab printed "REF. DOCTOR :"'s value, after covering the old one.
+function applyRefDoctor(page: PDFPage, field: RefDoctorField, name: string, font: PDFFont) {
+  if (field.cover) page.drawRectangle({ x: field.cover.x, y: field.cover.y, width: field.cover.width, height: field.cover.height, color: WHITE, borderWidth: 0 });
+  page.drawText(fit(name.toUpperCase(), font, field.size, field.maxWidth), { x: field.x, y: field.y, size: field.size, font, color: BLACK });
+}
+
+// Sets only the REF. DOCTOR field of a report (for a prescribing doctor with no registered clinic, so there is
+// no header to add). The pages are otherwise untouched. Returns null when the report has no such field.
+export async function setRefDoctorOnly(original: Uint8Array, refDoctor: string): Promise<Uint8Array | null> {
+  if (!looksLikePdf(original)) throw new ReportError("That file is not a PDF.");
+  const fields = await findRefDoctors(original);
+  if (!fields.some(Boolean)) return null;
+  let doc: PDFDocument;
+  try {
+    doc = await PDFDocument.load(original);
+  } catch {
+    throw new ReportError("That PDF could not be read (it may be password-protected or damaged).");
+  }
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  doc.getPages().forEach((page, i) => {
+    const field = fields[i];
+    if (!field) return;
+    removeTextAt(doc, page, field.remove);
+    applyRefDoctor(page, field, refDoctor, font);
+  });
+  return doc.save();
+}
+
 export class ReportError extends Error {}
 
-export async function brandReport(original: Uint8Array, header: ReportHeader): Promise<Uint8Array> {
+// `refDoctor`: the doctor named in the order's "Prescribed by", printed in the report's REF. DOCTOR field.
+export async function brandReport(original: Uint8Array, header: ReportHeader, refDoctor?: string | null): Promise<Uint8Array> {
   if (!looksLikePdf(original)) throw new ReportError("That file is not a PDF.");
 
   let source: PDFDocument;
@@ -169,13 +230,15 @@ export async function brandReport(original: Uint8Array, header: ReportHeader): P
   const layouts: (TopLayout | undefined)[] = await measureTop(original);
   // The lab's name / address block on each page, to be replaced with the clinic's.
   const blocks = await findLabBlocks(original);
+  const refs = refDoctor ? await findRefDoctors(original) : [];
 
   const pages = source.getPages();
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
     const { width, height } = page.getSize();
     // The lab's partner name / address / phone lines are removed from the page itself, then the clinic's printed in their place.
-    if (blocks[i]) removeTextAt(source, page, blocks[i]!.lines);
+    const gone = [...(blocks[i]?.lines ?? []), ...(refDoctor && refs[i] ? refs[i]!.remove : [])];
+    if (gone.length) removeTextAt(source, page, gone);
     const embedded = await out.embedPage(page);
 
     // Room at the top: print the header there and keep the page size (working around anything already in
@@ -186,6 +249,7 @@ export async function brandReport(original: Uint8Array, header: ReportHeader): P
     const sheet = out.addPage([width, inPlace ? height : height + BAND]);
     sheet.drawPage(embedded, { x: 0, y: 0, width, height });
     if (blocks[i]) applyLabBlock(sheet, blocks[i]!, header, regular);
+    if (refDoctor && refs[i]) applyRefDoctor(sheet, refs[i]!, refDoctor, regular);
 
     if (inPlace) drawHeader(sheet, { top: height - IN_PLACE_TOP, regionH: IN_PLACE_H, spans: gaps, header, logo, bold, regular, compact: true });
     else drawHeader(sheet, { top: height + BAND, regionH: BAND, spans: [[MARGIN, width - MARGIN]], header, logo, bold, regular, compact: false });

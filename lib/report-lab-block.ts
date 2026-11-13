@@ -24,27 +24,91 @@ type Item = { str: string; x: number; y: number; w: number; h: number };
 
 const PHONE = /^\+?\d[\d\s-]{8,}$/;
 
+// Where the lab prints the "REF. DOCTOR :" value on a page, so it can be replaced with the doctor named in the
+// order's "Prescribed by".
+export type RefDoctorField = {
+  // Start of the value (or, if the lab left it empty, just after the label), and its baseline: PDF points, y upward.
+  x: number;
+  y: number;
+  size: number;
+  // The width available before the page margin.
+  maxWidth: number;
+  cover: { x: number; y: number; width: number; height: number } | null;
+  // Where each old value item starts, so its text can be removed from the page, not just covered.
+  remove: { x: number; y: number }[];
+};
+
+type PageText = { items: Item[]; width: number };
+
+async function readPages(file: Uint8Array): Promise<PageText[]> {
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(file), useSystemFonts: true, verbosity: 0 }).promise;
+  const pages: PageText[] = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    const page = await doc.getPage(n);
+    const text = await page.getTextContent();
+    const items: Item[] = [];
+    for (const it of text.items) {
+      if (!("str" in it) || !it.str.trim()) continue;
+      items.push({ str: it.str.trim(), x: it.transform[4], y: it.transform[5], w: it.width || 0, h: it.height || 8 });
+    }
+    pages.push({ items, width: page.view[2] });
+  }
+  return pages;
+}
+
 // One entry per page: the block, or null when the page does not have one.
 export async function findLabBlocks(file: Uint8Array): Promise<(LabBlock | null)[]> {
   try {
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const doc = await pdfjs.getDocument({ data: new Uint8Array(file), useSystemFonts: true, verbosity: 0 }).promise;
-    const result: (LabBlock | null)[] = [];
-    for (let n = 1; n <= doc.numPages; n++) {
-      const page = await doc.getPage(n);
-      const text = await page.getTextContent();
-      const items: Item[] = [];
-      for (const it of text.items) {
-        if (!("str" in it) || !it.str.trim()) continue;
-        items.push({ str: it.str.trim(), x: it.transform[4], y: it.transform[5], w: it.width || 0, h: it.height || 8 });
-      }
-      result.push(blockOf(items));
-    }
-    return result;
+    return (await readPages(file)).map((p) => blockOf(p.items));
   } catch (err) {
     console.error("Report lab block could not be located:", err);
     return [];
   }
+}
+
+// One entry per page: the REF. DOCTOR field, or null when the page does not have one.
+export async function findRefDoctors(file: Uint8Array): Promise<(RefDoctorField | null)[]> {
+  try {
+    return (await readPages(file)).map((p) => refOf(p.items, p.width));
+  } catch (err) {
+    console.error("Report REF. DOCTOR field could not be located:", err);
+    return [];
+  }
+}
+
+function refOf(items: Item[], pageWidth: number): RefDoctorField | null {
+  const label = items.find((i) => /^REF\.?\s*DOCTOR\b/i.test(i.str));
+  if (!label) return null;
+  const labelEnd = label.x + label.w;
+  // What is printed after the label on its row: an optional ":" then the doctor's name.
+  const row = items
+    .filter((i) => i !== label && Math.abs(i.y - label.y) < 3.5 && i.x >= labelEnd - 2)
+    .sort((a, b) => a.x - b.x);
+  const values: Item[] = [];
+  let edge = labelEnd;
+  for (const it of row) {
+    if (it.str === ":") {
+      edge = it.x + it.w;
+      continue;
+    }
+    if (it.x - edge > 30) break; // a different column
+    values.push(it);
+    edge = it.x + it.w;
+  }
+  const first = values[0];
+  const x = first ? first.x : labelEnd + 5;
+  const y = first ? first.y : label.y;
+  const size = Math.max(6, Math.min(10, Math.round((first ? first.h : label.h) * 2) / 2));
+  const right = Math.max(...values.map((v) => v.x + v.w), x);
+  return {
+    x,
+    y,
+    size,
+    maxWidth: Math.max(60, pageWidth - 30 - x),
+    cover: values.length ? { x: x - 1.5, y: y - 2.5, width: right - x + 3, height: size + 4.5 } : null,
+    remove: values.map((v) => ({ x: v.x, y: v.y })),
+  };
 }
 
 function blockOf(items: Item[]): LabBlock | null {
