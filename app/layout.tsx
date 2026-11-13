@@ -77,8 +77,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // The one coupon we advertise publicly; other codes stay server-side.
-  const featuredCoupon = getFeaturedCoupon();
+  // The one coupon we advertise publicly; other codes stay server-side. Not advertised on a doctor's own
+  // link (the site a doctor's patients see): doctors' patients get no coupon, only the plain site's customers do.
+  const featuredCoupon = getRef() ? null : getFeaturedCoupon();
   const { brand, payAtClinic } = await getReferral();
   const orgJsonLd = brand
     ? {
