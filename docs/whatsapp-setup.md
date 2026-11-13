@@ -32,7 +32,8 @@ admin changes a status ──> notification flow ──> picks the template for 
 | Change (on `/admin/orders`) | Patient | Prescribing doctor |
 |---|---|---|
 | Visit status -> Visit scheduled / Samples collected / Reached lab / Partially complete / Completed / Cancelled | yes | yes |
-| Visit status -> Booked (the starting state) | - | - |
+| **Order placed** (the **Visit booked** event, sent once when the customer books) | yes | yes |
+| Visit status set back to Booked in the admin (a correction) | - | - |
 | Payment -> Paid / Refunded | yes | - |
 | Payment -> Pending (a correction) | - | - |
 | A member's report -> Partial report / Full report | that member | that member's doctor |

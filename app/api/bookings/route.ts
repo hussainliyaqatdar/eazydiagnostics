@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { allTests, allPackages } from "@/lib/catalog";
 import { getSlotsForDate } from "@/lib/slots";
 import { saveBooking } from "@/lib/orders";
+import { listMembers } from "@/lib/order-admin";
+import { notifyVisitBooked } from "@/lib/order-notifications";
 import { sendOwnerNotification } from "@/lib/email";
 import { BOOKING_PHONE } from "@/lib/site-config";
 import { findCoupon } from "@/lib/coupon-config";
@@ -217,6 +219,12 @@ export async function POST(req: NextRequest) {
   // The owner email is what starts fulfillment. A failed email must not fail an
   // order that is already saved (deliver() logs the reason).
   await sendOwnerNotification(booking).catch((err) => console.error(`[email] Owner notification for ${booking.id} failed:`, err));
+
+  // "Visit booked" on WhatsApp, if a template is mapped to it. Not waited for: the customer's confirmation must not
+  // depend on WhatsApp, and a failure here is recorded in the order's log rather than shown to them.
+  void listMembers([booking.id])
+    .then((byOrder) => notifyVisitBooked(booking, byOrder.get(booking.id) ?? []))
+    .catch((err) => console.error(`[whatsapp] Visit booked message for ${booking.id} failed:`, err));
 
   return NextResponse.json({ id: booking.id });
 }

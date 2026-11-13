@@ -172,6 +172,17 @@ async function deliver(orderId: string, eventKey: string, label: string, message
 
 export async function notifyVisitStatus(booking: Booking, members: OrderMember[], status: OrderStatus, changedAt: string): Promise<NotificationOutcome[]> {
   if (!NOTIFY_VISIT[status]) return [];
+  return sendVisitStatus(booking, members, status, `visit:${status}:${changedAt}`);
+}
+
+// "Visit booked": sent once, when the order is placed. (Moving an order back to Booked in the admin is a
+// correction, not news, so that never sends it - see NOTIFY_VISIT.) Like every event, it only goes out if a
+// template is mapped to it for that audience; otherwise the admin sees a note in the order's audit log.
+export async function notifyVisitBooked(booking: Booking, members: OrderMember[]): Promise<NotificationOutcome[]> {
+  return sendVisitStatus(booking, members, "booked", "visit:booked:created");
+}
+
+async function sendVisitStatus(booking: Booking, members: OrderMember[], status: OrderStatus, eventKey: string): Promise<NotificationOutcome[]> {
   const sc = { date: booking.date, slot: booking.slot, contactPhone: BOOKING_PHONE };
   const event = `visit.${status}`;
   const toPatient = patientLine(status, sc);
@@ -180,7 +191,7 @@ export async function notifyVisitStatus(booking: Booking, members: OrderMember[]
     ...patientMessages(members, booking, event, baseContext(booking, { label: STATUS_LABELS[status], line: toPatient }), toPatient),
     ...(await doctorMessages(members, booking, event, baseContext(booking, { label: STATUS_LABELS[status], line: toDoctor }), toDoctor).catch(() => [] as Message[])),
   ];
-  return deliver(booking.id, `visit:${status}:${changedAt}`, STATUS_LABELS[status], messages);
+  return deliver(booking.id, eventKey, STATUS_LABELS[status] === "Booked" ? "Visit booked" : STATUS_LABELS[status], messages);
 }
 
 export async function notifyPayment(booking: Booking, members: OrderMember[], status: PaymentStatus, amount: number, changedAt: string): Promise<NotificationOutcome[]> {
