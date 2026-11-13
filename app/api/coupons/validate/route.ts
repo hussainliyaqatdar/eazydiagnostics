@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findCoupon } from "@/lib/coupon-config";
 import { rateLimit } from "@/lib/rate-limit";
+import { getRef } from "@/lib/brand-server";
 
 // Checks that a code exists and is active, and returns its rule so the cart can
 // preview the discount as items change. It does NOT decide what an order is
@@ -14,6 +15,9 @@ export async function POST(req: NextRequest) {
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } }
     );
   }
+
+  // No coupons through a doctor's link.
+  if (getRef()) return NextResponse.json({ valid: false, message: "Coupons aren't available on this site." });
 
   let code: unknown;
   try {

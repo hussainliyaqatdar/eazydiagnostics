@@ -6,6 +6,7 @@ import { listMembers } from "@/lib/order-admin";
 import { notifyVisitBooked } from "@/lib/order-notifications";
 import { sendOwnerNotification } from "@/lib/email";
 import { BOOKING_PHONE } from "@/lib/site-config";
+import { getRef } from "@/lib/brand-server";
 import { findCoupon } from "@/lib/coupon-config";
 import { blockedByPackage, computeDiscount } from "@/lib/coupon-rules";
 import { collectionChargeFor, MAX_MEMBERS } from "@/lib/booking-totals";
@@ -156,6 +157,10 @@ export async function POST(req: NextRequest) {
   let appliedCode: string | undefined;
   let couponDiscount = 0;
   if (couponCode) {
+    // Booked through a doctor's link: no coupons (the site doesn't offer one, so a code here is a stale or hand-made request).
+    if (getRef()) {
+      return NextResponse.json({ error: "Coupons aren't available on this site. Please remove the coupon and try again." }, { status: 400 });
+    }
     // The consultation-offer packages are priced with no room for a coupon.
     if (cart.some((line) => line.offer)) {
       return NextResponse.json({ error: "Coupons can't be used with this offer. Please remove the coupon and try again." }, { status: 400 });
