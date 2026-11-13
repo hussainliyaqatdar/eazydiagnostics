@@ -211,6 +211,19 @@ export async function deleteTemplate(id: number): Promise<{ ok: true } | { ok: f
 
 const normaliseStatus = (s: string | undefined) => (s ? s.toUpperCase() : "");
 
+// Who a template is for, judged from its name (Meta does not record this): "order_confirmed_doctor" is for doctors,
+// anything else for patients. Only a starting point - the audience can be changed when editing the template.
+export function guessAudience(name: string): Audience {
+  return explicitAudience(name) ?? "patient";
+}
+
+// The audience a name plainly says ("..._doctor", "..._patient"), or null when it says nothing.
+function explicitAudience(name: string): Audience | null {
+  if (/(^|[_\-\s])(doctors?|dr|physicians?)([_\-\s]|$)/i.test(name)) return "doctor";
+  if (/(^|[_\-\s])(patients?|customers?)([_\-\s]|$)/i.test(name)) return "patient";
+  return null;
+}
+
 function bodyOf(m: MetaTemplate) {
   return m.components?.find((c) => c.type === "BODY")?.text ?? "";
 }
@@ -248,9 +261,9 @@ export async function syncTemplates(): Promise<{ ok: true; updated: number; impo
     const footer = m.components?.find((c) => c.type === "FOOTER")?.text ?? null;
     await db.query(
       `INSERT INTO whatsapp_templates (name, language, category, audience, events, body, footer, variables, meta_id, status, rejected_reason, enabled, synced_at)
-       VALUES ($1, $2, $3, 'patient', '[]'::jsonb, $4, $5, $6::jsonb, $7, $8, $9, false, now())
+       VALUES ($1, $2, $3, $10, '[]'::jsonb, $4, $5, $6::jsonb, $7, $8, $9, false, now())
        ON CONFLICT (name, language) DO NOTHING`,
-      [m.name, m.language, m.category === "MARKETING" ? "MARKETING" : "UTILITY", body, footer, JSON.stringify(Array(variableCount(body)).fill("")), m.id, normaliseStatus(m.status), m.rejected_reason && m.rejected_reason !== "NONE" ? m.rejected_reason : null]
+      [m.name, m.language, m.category === "MARKETING" ? "MARKETING" : "UTILITY", body, footer, JSON.stringify(Array(variableCount(body)).fill("")), m.id, normaliseStatus(m.status), m.rejected_reason && m.rejected_reason !== "NONE" ? m.rejected_reason : null, guessAudience(m.name)]
     );
     imported++;
   }

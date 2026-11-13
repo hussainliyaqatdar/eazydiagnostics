@@ -32,8 +32,16 @@ export default function CoverageGrid({ rows, templates }: { rows: CoverageRow[];
     router.refresh();
   }
 
+  // An audience with no template at all cannot be mapped: say why, and where to fix it.
+  const empty = AUDIENCES.filter((a) => !templates.some((t) => t.audience === a));
+
   return (
     <div className="flex flex-col gap-2">
+      {empty.map((a) => (
+        <p key={a} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          No templates are set up for {AUDIENCE_LABELS[a].toLowerCase()}s yet, so there is nothing to choose in their column. On the Templates tab, create one with &ldquo;Sent to&rdquo; set to {AUDIENCE_LABELS[a]}s, or open an existing template, change &ldquo;Sent to&rdquo; to {AUDIENCE_LABELS[a]}s and save.
+        </p>
+      ))}
       <div className="overflow-x-auto rounded-lg border bg-white">
         <table className="w-full min-w-[44rem] text-left text-sm">
           <thead className="border-b bg-gray-50 text-xs uppercase tracking-wide text-gray-500">

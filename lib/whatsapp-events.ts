@@ -113,7 +113,7 @@ export type TemplateErrors = Partial<Record<keyof TemplateInput | "form", string
 
 // Everything that can be checked without asking Meta. (A template with no events is fine: it can be the
 // template that is not mapped to any status yet.)
-export function validateTemplate(t: TemplateInput, _submitting: boolean): TemplateErrors {
+export function validateTemplate(t: TemplateInput, submitting: boolean): TemplateErrors {
   const e: TemplateErrors = {};
   if (!/^[a-z][a-z0-9_]*$/.test(t.name) || t.name.length > LIMITS.name) e.name = "Use lowercase letters, numbers and underscores only, starting with a letter (e.g. visit_update_patient).";
   if (!LANGUAGES.some((l) => l.code === t.language)) e.language = "Choose a language.";
@@ -137,7 +137,8 @@ export function validateTemplate(t: TemplateInput, _submitting: boolean): Templa
   if (t.footer && /\{\{/.test(t.footer)) e.footer = "The footer cannot hold variables.";
 
   const needed = variableCount(body);
-  if (t.variables.length !== needed || t.variables.some((v) => !isVariableSource(v))) e.variables = needed === 0 ? undefined : "Choose what fills each variable.";
+  // A draft may leave the variables unmapped (a template brought in from Meta starts that way); sending it to Meta needs them all.
+  if (submitting && (t.variables.length !== needed || t.variables.some((v) => !isVariableSource(v)))) e.variables = needed === 0 ? undefined : "Choose what fills each variable.";
 
   for (const ev of t.events) {
     const def = EVENT_BY_KEY.get(ev);
