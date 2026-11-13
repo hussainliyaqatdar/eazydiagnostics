@@ -7,7 +7,7 @@ import { statusToast, type Outcome } from "./outcomes";
 import { ReportPill } from "./StatusPill";
 import { useToast } from "./Toaster";
 
-type Result = { uploaded: boolean; branded?: boolean; clinicName?: string; changed: boolean; notifications: Outcome[] };
+type Result = { uploaded: boolean; branded?: boolean; clinicName?: string; refDoctor?: string; changed: boolean; notifications: Outcome[] };
 
 // A member's report. Its status (No report yet -> Partial -> Full) is a read-only pill; "Change status"
 // is the only thing that WhatsApps anyone (the member and their prescribing doctor, with the report
@@ -21,6 +21,7 @@ export default function MemberReport({
   branded,
   filename,
   doctorLabel,
+  refDoctor,
   updatedAt,
   notifyTo,
 }: {
@@ -32,6 +33,8 @@ export default function MemberReport({
   filename: string | null;
   // The registered doctor whose clinic header goes on the report, or null.
   doctorLabel: string | null;
+  // The doctor in the order's "Prescribed by": printed in the report's REF. DOCTOR field.
+  refDoctor: string | null;
   updatedAt: string | null;
   // Who a status change is WhatsApped to, e.g. "Meera on 98765 00001 (the visit's number)".
   notifyTo: string;
@@ -56,8 +59,10 @@ export default function MemberReport({
     else {
       const d = res.data;
       if (kind === "status") toast(statusToast("Report status", REPORT_LABELS[next], d.changed, d.notifications ?? []));
-      else if (kind === "rebuild") toast({ kind: "success", title: "Report header rebuilt", message: d.branded ? `Now with ${d.clinicName}'s details. No message sent.` : "No clinic header applies. No message sent." });
-      else toast({ kind: "success", title: "Report saved", message: `${d.branded ? `With ${d.clinicName}'s header.` : "No clinic header."} No message sent.` });
+      else {
+        const parts = [d.clinicName ? `With ${d.clinicName}'s header.` : "No clinic header.", d.refDoctor ? `REF. DOCTOR set to ${d.refDoctor}.` : "", "No message sent."].filter(Boolean).join(" ");
+        toast({ kind: "success", title: kind === "rebuild" ? "Report rebuilt" : "Report saved", message: parts });
+      }
       after?.();
       router.refresh();
     }
@@ -143,7 +148,8 @@ export default function MemberReport({
       </div>
 
       <p className="text-xs text-gray-500">
-        {doctorLabel ? `The header shows ${doctorLabel} (name, logo and address) and the doctor's name and qualifications.` : "No registered prescribing doctor, so the report is kept as the lab produced it (no clinic header)."}
+        {doctorLabel ? `The header shows ${doctorLabel} (name, logo and address) and the doctor's name and qualifications.` : "No registered prescribing doctor, so there is no clinic header."}
+        {refDoctor ? ` The report's REF. DOCTOR field is set to ${refDoctor.toUpperCase()}.` : " No doctor is named in Prescribed by, so REF. DOCTOR stays as the lab printed it."}
       </p>
 
       {/* The stored report: shown only when asked for. */}
@@ -151,13 +157,13 @@ export default function MemberReport({
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border bg-gray-50 px-3 py-2 text-xs">
             <span className="font-medium text-gray-800">{filename || "report.pdf"}</span>
-            <span className="text-gray-500">{branded ? "with the clinic header" : "no clinic header"}</span>
+            <span className="text-gray-500">{branded ? "with the clinic header" : refDoctor ? "REF. DOCTOR updated" : "no clinic header"}</span>
             <span className="ml-auto flex flex-wrap items-center gap-3">
               <button type="button" onClick={() => setPreview((v) => !v)} aria-expanded={preview} className="rounded-md border border-brand bg-white px-2.5 py-1 font-semibold text-brand hover:bg-brand-light">
                 {preview ? "Hide preview" : "Preview report"}
               </button>
               <a href={`${fileUrl}${showOriginal ? "?original=1" : ""}`} target="_blank" rel="noopener noreferrer" className="font-medium text-brand hover:underline">Open in new tab</a>
-              <button type="button" onClick={rebuild} disabled={busy || !doctorLabel} className="font-medium text-brand hover:underline disabled:text-gray-400 disabled:no-underline">Rebuild header</button>
+              <button type="button" onClick={rebuild} disabled={busy || (!doctorLabel && !refDoctor)} className="font-medium text-brand hover:underline disabled:text-gray-400 disabled:no-underline">Rebuild header</button>
               <button type="button" onClick={remove} disabled={busy} className="font-medium text-red-600 hover:underline">Remove</button>
             </span>
           </div>

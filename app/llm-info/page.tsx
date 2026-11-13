@@ -232,7 +232,7 @@ export default function LlmInfoPage() {
       <ol className="list-decimal space-y-1 pl-6">
         <li>Choose tests or a package on the website, or book by phone or WhatsApp on {BOOKING_PHONE}.</li>
         <li>Pick a collection date and a 30-minute time window.</li>
-        <li>The phlebotomist arrives within 60 minutes of the start of the chosen window.</li>
+        <li>The phlebotomist arrives within the start and end time of the chosen window.</li>
         <li>Pay after the sample is collected.</li>
         <li>Receive the report on WhatsApp.</li>
       </ol>

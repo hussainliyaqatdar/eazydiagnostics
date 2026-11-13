@@ -171,12 +171,15 @@ export default function TemplateForm({ template, templates, onClose, onSaved }: 
             </label>
             <label className={labelClass}>
               Sent to
-              <select value={audience} onChange={(e) => setAudience(e.target.value as Audience)} disabled={editing} className={inputClass}>
+              <select value={audience} onChange={(e) => setAudience(e.target.value as Audience)} className={inputClass}>
                 {AUDIENCES.map((a) => (
                   <option key={a} value={a}>{AUDIENCE_LABELS[a]}s</option>
                 ))}
               </select>
-              <span className="font-normal text-gray-400">Patients and doctors each get their own template for an event.</span>
+              <span className="font-normal text-gray-400">
+                Patients and doctors each get their own template for an event.
+                {editing && audience !== template!.audience && template!.events.length > 0 && " Changing this removes the template's status mappings."}
+              </span>
             </label>
           </div>
 

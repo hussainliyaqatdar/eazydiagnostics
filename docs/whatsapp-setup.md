@@ -105,6 +105,7 @@ sentence, collection date and slot, the amount, the report type and link, our co
   takes the event off the one that had it (one template per event per audience).
 - **Message log:** every message about an order, with template, recipient and Sent / Delivered / Read / Failed, filterable and paged.
 - **Connection:** which settings are present, a connection test, and what to enter in Meta's webhook setup.
+- **Who a template is for.** Meta does not record this, so a template brought in by Sync is set to Doctors if its name plainly says so (for example `order_confirmed_doctor`) and to Patients otherwise. "Sent to" can be changed at any time when editing a template (this removes any status mappings it had), and a draft can be saved before every variable is mapped; all variables must be mapped before it is sent to Meta. A template only appears in a column of the mapping tab if it is for that audience.
 - **Sync with Meta** pulls every template's status, brings in templates that exist only at Meta (switched off and unmapped, so they
   are not used until you set their events and variables), and flags ones Meta no longer has.
 
@@ -116,7 +117,7 @@ sentence, collection date and slot, the amount, the report type and link, our co
   **Upload report** - saving a file never sends a message; only **Change status -> Update & notify** does. The saved file is
   shown in a preview pane on click so you can check the header before you notify. If the member's prescribing doctor is registered,
   the PDF is re-saved with that doctor's clinic header (clinic name, logo and address on the left; the doctor's name and
-  qualifications on the right; long addresses and qualifications wrap onto further lines, and there is no rule underneath so the logo can be larger). In the lab's "CODE/NAME & ADDRESS" box the lab's partner name, address and phone number are removed from the page and the clinic's name and address are printed in their place (a very long address is shortened in the middle). Everything else the lab printed is left alone. With no registered doctor the report is kept exactly as the lab
+  qualifications on the right; long addresses and qualifications wrap onto further lines, and there is no rule underneath so the logo can be larger). In the lab's "CODE/NAME & ADDRESS" box the lab's partner name, address and phone number are removed from the page and the clinic's name and address are printed in their place (a very long address is shortened in the middle). The report's **REF. DOCTOR** field is set to the doctor named in the order's **Prescribed by** for that member: the registered doctor's name, or - when the patient typed a name that is not a registered doctor - that name (then nothing else on the report changes, and no clinic header is added). If no doctor is named, REF. DOCTOR stays as the lab printed it. Everything else the lab printed is left alone. With no registered doctor the report is kept exactly as the lab
   produced it. After changing a clinic's logo or a doctor's details, press **Rebuild header**.
 - A failed message (template not approved yet / name mismatch, expired token, a number not on WhatsApp) is shown in red with the
   reason. It is not re-sent automatically: fix the cause, then set another status and back, or message the patient by hand.

@@ -40,6 +40,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string;
 
   let branded: boolean | undefined;
   let clinicName: string | undefined;
+  let refDoctor: string | undefined;
   try {
     if (hasFile) {
       const upload = await readUpload(form, "file", MAX_REPORT_BYTES, ["application/pdf"]);
@@ -48,12 +49,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string;
       const saved = await saveMemberReport(ctx.memberId, upload.buffer, upload.name);
       branded = saved.branded;
       clinicName = saved.clinicName;
-      await logEvent(ctx.booking.id, "report-file", `Report file saved (${upload.name})${saved.branded ? ` with ${saved.clinicName}'s header` : " without a clinic header"}`, ctx.member.name);
+      refDoctor = saved.refDoctor;
+      await logEvent(ctx.booking.id, "report-file", `Report file saved (${upload.name})${saved.clinicName ? ` with ${saved.clinicName}'s header` : " without a clinic header"}${saved.refDoctor ? `; REF. DOCTOR set to ${saved.refDoctor}` : ""}`, ctx.member.name);
     } else if (form.get("rebrand") === "1") {
       const saved = await rebrandMemberReport(ctx.memberId);
       branded = saved.branded;
       clinicName = saved.clinicName;
-      await logEvent(ctx.booking.id, "report-file", `Report header rebuilt${saved.branded ? ` with ${saved.clinicName}'s details` : ""}`, ctx.member.name);
+      refDoctor = saved.refDoctor;
+      await logEvent(ctx.booking.id, "report-file", `Report header rebuilt${saved.clinicName ? ` with ${saved.clinicName}'s details` : ""}${saved.refDoctor ? `; REF. DOCTOR set to ${saved.refDoctor}` : ""}`, ctx.member.name);
     }
   } catch (err) {
     if (err instanceof ReportError) return NextResponse.json({ error: err.message }, { status: 400 });
@@ -78,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string;
       return NextResponse.json({ error: "The file was saved but the status could not be changed. Please try again." }, { status: 502 });
     }
   }
-  return NextResponse.json({ ok: true, uploaded: hasFile, branded, clinicName, changed, notifications });
+  return NextResponse.json({ ok: true, uploaded: hasFile, branded, clinicName, refDoctor, changed, notifications });
 }
 
 // Admin-only: remove the member's report (back to "No report yet"; no message is sent).

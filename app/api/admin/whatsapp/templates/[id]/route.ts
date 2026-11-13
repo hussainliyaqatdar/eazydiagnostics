@@ -23,6 +23,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   // Merge what was sent over what is stored, then check the whole thing.
   const merged = readTemplateInput({ ...current, ...body, name: current.name, language: current.language });
+  // Changing who a template is sent to clears its status mappings: those were made for the old audience.
+  const audienceChanged = merged.audience !== current.audience;
+  if (audienceChanged) merged.events = [];
   const wording = merged.body.trim() !== current.body || merged.footer.trim() !== current.footer || merged.category !== current.category;
   const enabled = typeof body.enabled === "boolean" ? body.enabled : current.enabled;
   const resubmit = wording && !!current.metaId;
@@ -30,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (wording && current.status === "PENDING") {
     return NextResponse.json({ error: "This template is being reviewed by Meta. Wait for the result before changing its wording." }, { status: 409 });
   }
-  const errors = validateTemplate(merged, resubmit || current.status !== "DRAFT");
+  const errors = validateTemplate(merged, resubmit || body.submit === true);
   const problem = firstError(errors);
   if (problem) return NextResponse.json({ error: problem, errors }, { status: 400 });
 
