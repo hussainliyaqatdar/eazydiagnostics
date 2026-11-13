@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ORDER_STATUSES, PAYMENT_LABELS, PAYMENT_STATUSES, STATUS_LABELS, type OrderStatus, type PaymentStatus } from "@/lib/order-status";
 import { sendJson } from "./api";
-import { statusToast, type Outcome } from "./outcomes";
+import { requestToast, statusToast, type Outcome } from "./outcomes";
 import { PaymentPill, VisitPill } from "./StatusPill";
 import { useToast } from "./Toaster";
 
@@ -13,7 +13,7 @@ type Kind = "status" | "payment";
 // for one of them. Saving a changed value updates it and WhatsApps the patient (and the prescribing
 // doctors) with the template mapped to that status - or, if none is mapped, sends nothing. Either way the
 // result is shown as a toast. Picking the value it already has changes nothing and sends nothing.
-export default function OrderControls({ id, status, paymentStatus }: { id: string; status: OrderStatus; paymentStatus: PaymentStatus; compact?: boolean }) {
+export default function OrderControls({ id, status, paymentStatus, canRequestPayment = false }: { id: string; status: OrderStatus; paymentStatus: PaymentStatus; compact?: boolean; canRequestPayment?: boolean }) {
   const router = useRouter();
   const { toast } = useToast();
   const [editing, setEditing] = useState<Kind | null>(null);
@@ -37,6 +37,16 @@ export default function OrderControls({ id, status, paymentStatus }: { id: strin
     setBusy(false);
   }
 
+  // Sends the patient the payment request (with the QR code) again. Only offered while payment is pending on an
+  // order Eazy Diagnostics collects payment for; resending is deliberate, so it is allowed.
+  async function requestPayment() {
+    setBusy(true);
+    const result = await sendJson<{ notifications: Outcome[] }>(`/api/admin/orders/${id}/payment-request`, "POST", {});
+    toast(result.ok ? requestToast(result.data.notifications ?? []) : { kind: "error", title: "Payment request not sent", message: result.error });
+    if (result.ok) router.refresh();
+    setBusy(false);
+  }
+
   function open(kind: Kind) {
     setNextStatus(status);
     setNextPayment(paymentStatus);
@@ -55,6 +65,11 @@ export default function OrderControls({ id, status, paymentStatus }: { id: strin
         {editing !== kind && (
           <button type="button" onClick={() => open(kind)} disabled={busy} className={linkClass} aria-label={`Change ${label.toLowerCase()} of order ${id}`}>
             Change
+          </button>
+        )}
+        {kind === "payment" && canRequestPayment && editing !== "payment" && (
+          <button type="button" onClick={requestPayment} disabled={busy} className="rounded-md border border-brand px-2 py-0.5 text-xs font-semibold text-brand transition hover:bg-brand-light disabled:opacity-60">
+            {busy ? "Sending..." : "Request payment"}
           </button>
         )}
       </div>

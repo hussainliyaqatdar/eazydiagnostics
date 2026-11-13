@@ -15,6 +15,8 @@ const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 export const TEMPLATE_LANGUAGE = process.env.WHATSAPP_TEMPLATE_LANGUAGE || "en";
 // Needed to create / list / delete templates (the WhatsApp Business Account the number belongs to).
 const WABA_ID = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+// The Meta app's id: needed to upload the sample image a template with an image header is reviewed with.
+const APP_ID = process.env.WHATSAPP_APP_ID;
 // Webhook: the token Meta is told to echo back when subscribing, and the app secret its calls are signed with.
 export const WEBHOOK_VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
 export const APP_SECRET = process.env.WHATSAPP_APP_SECRET;
@@ -26,6 +28,7 @@ export function whatsappConfigStatus() {
     tokenSet: !!ACCESS_TOKEN,
     phoneNumberIdSet: !!PHONE_NUMBER_ID,
     businessAccountIdSet: !!WABA_ID,
+    appIdSet: !!APP_ID,
     verifyTokenSet: !!WEBHOOK_VERIFY_TOKEN,
     appSecretSet: !!APP_SECRET,
     language: TEMPLATE_LANGUAGE,
@@ -53,7 +56,7 @@ function cleanParam(value: string): string {
 // Sends one template message and reports what happened. Retries once on a network
 // error or a 5xx; a 4xx (bad token, unapproved template, number not on WhatsApp)
 // will not fix itself, so its reason is returned as-is for the admin to see.
-export async function sendTemplate(to: string, template: string, params: string[], opts: { language?: string } = {}): Promise<DeliveryResult> {
+export async function sendTemplate(to: string, template: string, params: string[], opts: { language?: string; headerImageUrl?: string } = {}): Promise<DeliveryResult> {
   if (!whatsappConfigured()) {
     const detail = "WhatsApp is not set up (WHATSAPP_ACCESS_TOKEN / WHATSAPP_PHONE_NUMBER_ID missing), so nothing was sent.";
     if (process.env.NODE_ENV === "production") console.error(`[whatsapp] ${detail} (${template} to ${to})`);
@@ -68,8 +71,16 @@ export async function sendTemplate(to: string, template: string, params: string[
     template: {
       name: template,
       language: { code: opts.language || TEMPLATE_LANGUAGE },
-      // A template with no variables takes no components.
-      ...(params.length > 0 ? { components: [{ type: "body", parameters: params.map((text) => ({ type: "text", text: cleanParam(text) })) }] } : {}),
+      // A template with no variables and no image takes no components. An image header is sent by link: WhatsApp
+      // fetches it when the message goes out.
+      ...(params.length > 0 || opts.headerImageUrl
+        ? {
+            components: [
+              ...(opts.headerImageUrl ? [{ type: "header", parameters: [{ type: "image", image: { link: opts.headerImageUrl } }] }] : []),
+              ...(params.length > 0 ? [{ type: "body", parameters: params.map((text) => ({ type: "text", text: cleanParam(text) })) }] : []),
+            ],
+          }
+        : {}),
     },
   };
 
@@ -149,7 +160,7 @@ export type MetaTemplate = {
   status: string;
   category?: string;
   rejected_reason?: string;
-  components?: { type: string; text?: string }[];
+  components?: { type: string; text?: string; format?: string }[];
 };
 
 export async function metaListTemplates(): Promise<GraphResult<MetaTemplate[]>> {
@@ -168,10 +179,11 @@ export async function metaListTemplates(): Promise<GraphResult<MetaTemplate[]>> 
   return { ok: true, data: all };
 }
 
-type TemplateSubmission = { name: string; language: string; category: string; body: string; footer?: string; examples: string[] };
+type TemplateSubmission = { name: string; language: string; category: string; body: string; footer?: string; examples: string[]; headerHandle?: string };
 
 function components(t: TemplateSubmission) {
   return [
+    ...(t.headerHandle ? [{ type: "HEADER", format: "IMAGE", example: { header_handle: [t.headerHandle] } }] : []),
     { type: "BODY", text: t.body, ...(t.examples.length > 0 ? { example: { body_text: [t.examples] } } : {}) },
     ...(t.footer ? [{ type: "FOOTER", text: t.footer }] : []),
   ];
@@ -193,4 +205,30 @@ export async function metaDeleteTemplate(name: string): Promise<GraphResult<{ su
   const missing = needWaba();
   if (missing) return missing;
   return graph("DELETE", `${WABA_ID}/message_templates?name=${encodeURIComponent(name)}`);
+}
+
+// Uploads the image a template with an image header is reviewed with (Meta's resumable upload) and returns the
+// handle to put in the template. Needs WHATSAPP_APP_ID. The image sent to patients can differ; this is the sample.
+export async function metaUploadSample(bytes: Buffer, contentType: string, fileName: string): Promise<GraphResult<string>> {
+  if (!APP_ID) return { ok: false, error: "WHATSAPP_APP_ID is not set (needed to attach an image to a template)." };
+  if (!ACCESS_TOKEN) return { ok: false, error: "WHATSAPP_ACCESS_TOKEN is not set." };
+  const safeName = fileName.replace(/[^\w.\-]/g, "_").slice(0, 80) || "image";
+  try {
+    // 1. Open an upload session for a file of this size and type.
+    const session = await graph<{ id?: string }>("POST", `${APP_ID}/uploads?file_name=${encodeURIComponent(safeName)}&file_length=${bytes.length}&file_type=${encodeURIComponent(contentType)}`);
+    if (!session.ok) return session;
+    if (!session.data.id) return { ok: false, error: "Meta did not open an upload session." };
+    // 2. Send the bytes. (This call authenticates with "OAuth", not "Bearer".)
+    const res = await fetch(`${API_BASE}/${API_VERSION}/${session.data.id}`, {
+      method: "POST",
+      headers: { Authorization: `OAuth ${ACCESS_TOKEN}`, file_offset: "0", "Content-Type": "application/octet-stream" },
+      body: new Uint8Array(bytes),
+      signal: AbortSignal.timeout(30_000),
+    });
+    const json = (await res.json().catch(() => null)) as { h?: string; error?: { message?: string } } | null;
+    if (!res.ok || !json?.h) return { ok: false, error: `${json?.error?.message ?? `Meta rejected the image (HTTP ${res.status}).`}`.slice(0, 400) };
+    return { ok: true, data: json.h };
+  } catch (err) {
+    return { ok: false, error: `Could not reach WhatsApp: ${err instanceof Error ? err.message : String(err)}` };
+  }
 }

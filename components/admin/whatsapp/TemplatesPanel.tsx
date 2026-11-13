@@ -7,11 +7,12 @@ import { useToast } from "../Toaster";
 import TemplateForm from "./TemplateForm";
 import TemplateStatusPill from "./TemplateStatusPill";
 import type { WaTemplate } from "@/lib/whatsapp-templates";
+import type { MediaItem } from "@/lib/whatsapp-media";
 import { AUDIENCE_LABELS, eventLabel } from "@/lib/whatsapp-events";
 
 // The templates: write one, send it to Meta, switch it on or off, test it on a phone, delete it, and
 // pull the latest review results from Meta.
-export default function TemplatesPanel({ templates, metaReady }: { templates: WaTemplate[]; metaReady: boolean }) {
+export default function TemplatesPanel({ templates, media, metaReady }: { templates: WaTemplate[]; media: MediaItem[]; metaReady: boolean }) {
   const router = useRouter();
   const [form, setForm] = useState<{ template: WaTemplate | null } | null>(null);
   const [testing, setTesting] = useState<WaTemplate | null>(null);
@@ -92,7 +93,7 @@ export default function TemplatesPanel({ templates, metaReady }: { templates: Wa
                   <tr key={t.id} className="align-top">
                     <td className="px-3 py-3">
                       <span className="block font-mono text-[13px] font-medium text-gray-900">{t.name}</span>
-                      <span className="block text-xs text-gray-500">{t.language} &middot; {t.category.toLowerCase()}</span>
+                      <span className="block text-xs text-gray-500">{t.language} &middot; {t.category.toLowerCase()}{t.headerFormat === "IMAGE" ? " · image header" : ""}</span>
                       <span className="mt-1 block max-w-xs text-xs text-gray-600">{t.body.length > 110 ? `${t.body.slice(0, 110)}...` : t.body}</span>
                     </td>
                     <td className="px-3 py-3 text-gray-700">{AUDIENCE_LABELS[t.audience]}s</td>
@@ -146,7 +147,7 @@ export default function TemplatesPanel({ templates, metaReady }: { templates: Wa
         </div>
       )}
 
-      {form && <TemplateForm template={form.template} templates={templates} onClose={() => setForm(null)} onSaved={() => router.refresh()} />}
+      {form && <TemplateForm template={form.template} templates={templates} media={media} onClose={() => setForm(null)} onSaved={() => router.refresh()} />}
       {testing && <TestSend template={testing} onClose={() => setTesting(null)} />}
       {deleting && (
         <Modal title={`Delete ${deleting.name}?`} onClose={() => setDeleting(null)}>

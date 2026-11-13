@@ -20,6 +20,7 @@ import {
   doctorLine,
   NOTIFY_VISIT,
   paymentLine,
+  paymentRequestLine,
   patientLine,
   readableDate,
   reportLine,
@@ -32,14 +33,14 @@ import {
 } from "./order-status";
 import { sendTemplate, toWhatsappNumber, type DeliveryResult } from "./whatsapp";
 import { logEvent } from "./order-events";
-import { findMappedTemplate, resolveParams, unusableReason, type TemplateContext } from "./whatsapp-templates";
+import { findMappedTemplate, headerImageUrlFor, resolveParams, unusableReason, type TemplateContext } from "./whatsapp-templates";
 import type { Audience } from "./whatsapp-events";
 import type { OrderMember } from "./order-admin";
 import type { Booking } from "./types";
 
 // `skipped`: already sent for this change. `notSent`: nothing was sent because no usable template is mapped
 // ("unmapped": none; "unusable": one is mapped but not approved / not fully set up).
-export type NotificationOutcome = DeliveryResult & { recipient: string; to: string; skipped?: boolean; notSent?: "unmapped" | "unusable" };
+export type NotificationOutcome = DeliveryResult & { recipient: string; to: string; skipped?: boolean; notSent?: "unmapped" | "unusable"; what?: string };
 
 type Message = {
   recipient: string;
@@ -131,9 +132,11 @@ async function deliverTo(orderId: string, eventKey: string, label: string, audie
       ? `No template is mapped to "${label}" for ${noun}, so no message was sent.`
       : `The template "${mapped.name}" cannot be sent yet (${problem}), so no message was sent to ${noun}.`;
     await logEvent(orderId, "whatsapp", detail, audience === "patient" ? "Patients" : "Doctors");
-    return [{ ok: false, notSent: mapped ? "unusable" : "unmapped", detail, recipient: audience === "patient" ? "Patients" : "Doctors", to: "" }];
+    return [{ ok: false, notSent: mapped ? "unusable" : "unmapped", detail, recipient: audience === "patient" ? "Patients" : "Doctors", to: "", what: label }];
   }
 
+  // A template with an image header sends its image by link.
+  const headerImageUrl = await headerImageUrlFor(mapped);
   return Promise.all(
     messages.map(async (m): Promise<NotificationOutcome> => {
       let claimed: number | null;
@@ -148,12 +151,12 @@ async function deliverTo(orderId: string, eventKey: string, label: string, audie
       if (claimed === null) return { ok: true, skipped: true, detail: "Already sent for this change.", recipient: m.recipient, to: m.to };
 
       const result: DeliveryResult = m.to
-        ? await sendTemplate(m.to, mapped.name, resolveParams(mapped, m.ctx), { language: mapped.language })
+        ? await sendTemplate(m.to, mapped.name, resolveParams(mapped, m.ctx), { language: mapped.language, headerImageUrl })
         : { ok: false, detail: "Not a valid Indian mobile number, so nothing was sent." };
       await finishNotification(claimed, result.ok, result.detail, { template: mapped.name, messageId: result.messageId }).catch((err) =>
         console.error(`[whatsapp] Could not record the message for ${orderId}:`, err)
       );
-      return { ...result, recipient: m.recipient, to: m.to };
+      return { ...result, recipient: m.recipient, to: m.to, what: label };
     })
   );
 }
@@ -203,4 +206,14 @@ export async function notifyReport(booking: Booking, member: OrderMember, status
     ...(await doctorMessages([member], booking, event, { ...baseContext(booking, { label: REPORT_LABELS[status], line: toDoctor }), ...extra }, toDoctor).catch(() => [] as Message[])),
   ];
   return deliver(booking.id, `report:${member.id}:${status}:${changedAt}`, `${REPORT_LABELS[status]}: ${member.name}`, messages);
+}
+
+// "Please pay": the patient is sent the payment request template (with its QR code image, if the template has
+// one). `eventKey` names the occasion so the same request is never sent twice to the same number: the
+// automatic one uses a fixed key (once per order); each press of Request payment uses its own.
+export async function notifyPaymentRequest(booking: Booking, members: OrderMember[], amount: number, eventKey: string): Promise<NotificationOutcome[]> {
+  const line = paymentRequestLine(amount);
+  const base = { ...baseContext(booking, { label: "Payment requested", line }), amount: `Rs. ${amount.toLocaleString("en-IN")}` };
+  const messages = patientMessages(members, booking, "payment.request", base, line);
+  return deliver(booking.id, eventKey, "Payment requested", messages);
 }

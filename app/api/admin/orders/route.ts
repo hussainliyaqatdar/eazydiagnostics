@@ -3,12 +3,14 @@ import { getBooking, setOrderPaymentStatus, setOrderStatus } from "@/lib/orders"
 import { listMembers } from "@/lib/order-admin";
 import { isOrderStatus, isPaymentStatus, PAYMENT_LABELS, STATUS_LABELS } from "@/lib/order-status";
 import { logEvent } from "@/lib/order-events";
-import { notifyPayment, notifyVisitStatus } from "@/lib/order-notifications";
+import { notifyPayment, notifyPaymentRequest, notifyVisitStatus } from "@/lib/order-notifications";
 import { amountDue } from "@/lib/booking-totals";
+import { paymentRequestBlocker } from "@/lib/payment-request";
 
 // Admin-only (see middleware.ts): change a visit's status or its payment status, and WhatsApp the
 // patient (and the prescribing doctors) about it. PATCH, so a page on another site cannot trigger it
 // with a plain form post. Setting the status a visit is already at changes nothing and sends nothing.
+// Moving a visit to Samples collected also sends the payment request when one is due (see paymentRequestBlocker).
 export async function PATCH(req: NextRequest) {
   let body: Record<string, unknown>;
   try {
@@ -42,6 +44,12 @@ export async function PATCH(req: NextRequest) {
     const notifications = wantsStatus
       ? await notifyVisitStatus(booking, members, status as never, changedAt)
       : await notifyPayment(booking, members, paymentStatus as never, amountDue(booking), changedAt);
+
+    // Samples collected on an order Eazy Diagnostics collects payment for, still unpaid: ask for payment now
+    // ("pay after the sample is collected"). Sent once per order automatically; never for clinic-collected orders.
+    if (wantsStatus && status === "samples_collected" && !paymentRequestBlocker(booking)) {
+      notifications.push(...(await notifyPaymentRequest(booking, members, amountDue(booking), "payment-request:auto")));
+    }
     return NextResponse.json({ ok: true, changed: true, notifications });
   } catch (err) {
     console.error(`Admin: ${id} could not be updated:`, err);

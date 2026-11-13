@@ -56,3 +56,10 @@ export async function applyDelivery(messageId: string, status: string, errorText
   }
   return true;
 }
+
+// When a payment request was last sent for this order (to stop a double click sending it twice).
+export async function lastPaymentRequestAt(orderId: string): Promise<Date | null> {
+  const db = await getDb();
+  const [r] = await db.query<{ at: Date | string | null }>("SELECT max(created_at) AS at FROM order_notifications WHERE order_id = $1 AND status = 'Payment requested'", [orderId]);
+  return r?.at ? new Date(r.at) : null;
+}
