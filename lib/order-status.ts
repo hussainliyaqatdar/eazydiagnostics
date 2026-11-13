@@ -55,8 +55,8 @@ export function isReportStatus(value: unknown): value is ReportStatus {
 export const REPORT_LABELS: Record<ReportStatus, string> = { none: "No report yet", partial: "Partial report", full: "Full report" };
 
 // ---- who is told ----------------------------------------------------------------
-// "booked" is the starting state (the on-screen confirmation already covers it), so it
-// sends nothing. Every other visit status goes to the patient and to the prescribing
+// "booked" is the starting state. Moving an order back to it in the admin is a correction, so that sends
+// nothing; the "Visit booked" message goes out once, when the order is placed (notifyVisitBooked). Every other visit status goes to the patient and to the prescribing
 // doctors (only those a member chose from the registered-doctors list).
 export const NOTIFY_VISIT: Record<OrderStatus, boolean> = {
   booked: false,

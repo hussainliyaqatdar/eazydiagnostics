@@ -10,6 +10,7 @@ export const AUDIENCE_LABELS: Record<Audience, string> = { patient: "Patient", d
 export type EventDef = { key: string; label: string; group: "Visit status" | "Payment" | "Report"; audiences: Audience[] };
 
 export const EVENTS: EventDef[] = [
+  { key: "visit.booked", label: "Visit booked", group: "Visit status", audiences: ["patient", "doctor"] },
   { key: "visit.visit_scheduled", label: "Visit scheduled", group: "Visit status", audiences: ["patient", "doctor"] },
   { key: "visit.samples_collected", label: "Samples collected", group: "Visit status", audiences: ["patient", "doctor"] },
   { key: "visit.reached_lab", label: "Reached lab", group: "Visit status", audiences: ["patient", "doctor"] },
