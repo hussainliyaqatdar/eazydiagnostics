@@ -34,7 +34,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (headerMediaId !== null && !(await getMediaToken(headerMediaId))) return NextResponse.json({ error: "That header image is no longer in the library." }, { status: 400 });
   }
   const headerChanged = headerMediaId !== current.headerMediaId;
-  const wording = headerChanged || merged.body.trim() !== current.body || merged.footer.trim() !== current.footer || merged.category !== current.category;
+  const cleanBtns = (l: { text: string; url: string; variable: string }[]) => JSON.stringify(l.map((b) => [b.text.trim(), b.url.trim(), b.url.includes("{{") ? b.variable : ""]));
+  const buttonsChanged = cleanBtns(merged.buttons) !== cleanBtns(current.buttons);
+  const wording = headerChanged || buttonsChanged || merged.body.trim() !== current.body || merged.footer.trim() !== current.footer || merged.category !== current.category;
   const enabled = typeof body.enabled === "boolean" ? body.enabled : current.enabled;
   const resubmit = wording && !!current.metaId;
 
@@ -57,6 +59,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       body: merged.body,
       footer: merged.footer,
       variables: merged.variables,
+      buttons: merged.buttons,
       enabled,
       ...(headerChanged ? { headerMediaId } : {}),
     });

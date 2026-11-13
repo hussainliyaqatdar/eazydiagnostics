@@ -1,7 +1,19 @@
 // SERVER-ONLY. Reads and checks a template from a request body.
-import { AUDIENCES, CATEGORIES, isVariableSource, validateTemplate, variableCount, type Audience, type TemplateCategory, type TemplateErrors, type TemplateInput, type VariableSource } from "./whatsapp-events";
+import { AUDIENCES, CATEGORIES, isVariableSource, validateTemplate, variableCount, type Audience, type TemplateCategory, type TemplateErrors, type TemplateButton, type TemplateInput, type VariableSource } from "./whatsapp-events";
 
 const text = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
+
+function readButtons(raw: unknown): TemplateButton[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .slice(0, 10)
+    .filter((b): b is Record<string, unknown> => !!b && typeof b === "object")
+    .map((b) => ({
+      text: text(b.text, 200).trim(),
+      url: text(b.url, 2100).trim(),
+      variable: isVariableSource(b.variable) ? (b.variable as VariableSource) : ("" as VariableSource | ""),
+    }));
+}
 
 export function readTemplateInput(body: Record<string, unknown>): TemplateInput {
   const audience = AUDIENCES.includes(body.audience as Audience) ? (body.audience as Audience) : ("patient" as Audience);
@@ -18,6 +30,7 @@ export function readTemplateInput(body: Record<string, unknown>): TemplateInput 
     footer: text(body.footer, 200),
     // One entry per {{n}} in the body; anything not a known source is left empty and reported.
     variables: Array.from({ length: n }, (_, i) => (isVariableSource(given[i]) ? (given[i] as VariableSource) : ("" as VariableSource))),
+    buttons: readButtons(body.buttons),
   };
 }
 

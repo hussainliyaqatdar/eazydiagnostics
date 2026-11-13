@@ -33,7 +33,7 @@ import {
 } from "./order-status";
 import { sendTemplate, toWhatsappNumber, type DeliveryResult } from "./whatsapp";
 import { logEvent } from "./order-events";
-import { findMappedTemplate, headerImageUrlFor, resolveParams, unusableReason, type TemplateContext } from "./whatsapp-templates";
+import { findMappedTemplate, headerImageUrlFor, resolveButtonParams, resolveParams, unusableReason, type TemplateContext } from "./whatsapp-templates";
 import type { Audience } from "./whatsapp-events";
 import type { OrderMember } from "./order-admin";
 import type { Booking } from "./types";
@@ -151,7 +151,7 @@ async function deliverTo(orderId: string, eventKey: string, label: string, audie
       if (claimed === null) return { ok: true, skipped: true, detail: "Already sent for this change.", recipient: m.recipient, to: m.to };
 
       const result: DeliveryResult = m.to
-        ? await sendTemplate(m.to, mapped.name, resolveParams(mapped, m.ctx), { language: mapped.language, headerImageUrl })
+        ? await sendTemplate(m.to, mapped.name, resolveParams(mapped, m.ctx), { language: mapped.language, headerImageUrl, buttonParams: resolveButtonParams(mapped, m.ctx) })
         : { ok: false, detail: "Not a valid Indian mobile number, so nothing was sent." };
       await finishNotification(claimed, result.ok, result.detail, { template: mapped.name, messageId: result.messageId }).catch((err) =>
         console.error(`[whatsapp] Could not record the message for ${orderId}:`, err)
@@ -211,7 +211,7 @@ export async function notifyReport(booking: Booking, member: OrderMember, status
   const toDoctor = reportLine(status, true, link);
   if (!toPatient || !toDoctor) return [];
   const event = `report.${status}`;
-  const extra = { report_type: status === "partial" ? "partial report" : "full report", report_link: link ?? "" };
+  const extra = { report_type: status === "partial" ? "partial report" : "full report", report_link: link ?? "", report_token: link ? token ?? "" : "" };
   const messages = [
     ...patientMessages([member], booking, event, { ...baseContext(booking, { label: REPORT_LABELS[status], line: toPatient }), ...extra }, toPatient),
     ...(await doctorMessages([member], booking, event, { ...baseContext(booking, { label: REPORT_LABELS[status], line: toDoctor }), ...extra }, toDoctor).catch(() => [] as Message[])),

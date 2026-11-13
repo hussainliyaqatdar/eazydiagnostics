@@ -56,13 +56,23 @@ function cleanParam(value: string): string {
 // Sends one template message and reports what happened. Retries once on a network
 // error or a 5xx; a 4xx (bad token, unapproved template, number not on WhatsApp)
 // will not fix itself, so its reason is returned as-is for the admin to see.
-export async function sendTemplate(to: string, template: string, params: string[], opts: { language?: string; headerImageUrl?: string } = {}): Promise<DeliveryResult> {
+export async function sendTemplate(to: string, template: string, params: string[], opts: { language?: string; headerImageUrl?: string; buttonParams?: (string | null)[] } = {}): Promise<DeliveryResult> {
   if (!whatsappConfigured()) {
     const detail = "WhatsApp is not set up (WHATSAPP_ACCESS_TOKEN / WHATSAPP_PHONE_NUMBER_ID missing), so nothing was sent.";
     if (process.env.NODE_ENV === "production") console.error(`[whatsapp] ${detail} (${template} to ${to})`);
     else console.log(`[whatsapp:dev] ${template} to ${to}: ${params.join(" | ")}`);
     return { ok: false, detail };
   }
+
+  // Components: an image header is sent by link (WhatsApp fetches it when the message goes out); the body's variables;
+  // and, for each link button whose address ends in {{1}}, the text that goes on the end of the address.
+  const components: unknown[] = [
+    ...(opts.headerImageUrl ? [{ type: "header", parameters: [{ type: "image", image: { link: opts.headerImageUrl } }] }] : []),
+    ...(params.length > 0 ? [{ type: "body", parameters: params.map((text) => ({ type: "text", text: cleanParam(text) })) }] : []),
+    ...(opts.buttonParams ?? []).flatMap((value, index) =>
+      value === null || value === undefined ? [] : [{ type: "button", sub_type: "url", index: String(index), parameters: [{ type: "text", text: encodeURIComponent(cleanParam(value)) }] }]
+    ),
+  ];
 
   const body = {
     messaging_product: "whatsapp",
@@ -73,14 +83,7 @@ export async function sendTemplate(to: string, template: string, params: string[
       language: { code: opts.language || TEMPLATE_LANGUAGE },
       // A template with no variables and no image takes no components. An image header is sent by link: WhatsApp
       // fetches it when the message goes out.
-      ...(params.length > 0 || opts.headerImageUrl
-        ? {
-            components: [
-              ...(opts.headerImageUrl ? [{ type: "header", parameters: [{ type: "image", image: { link: opts.headerImageUrl } }] }] : []),
-              ...(params.length > 0 ? [{ type: "body", parameters: params.map((text) => ({ type: "text", text: cleanParam(text) })) }] : []),
-            ],
-          }
-        : {}),
+      ...(components.length > 0 ? { components } : {}),
     },
   };
 
@@ -160,7 +163,7 @@ export type MetaTemplate = {
   status: string;
   category?: string;
   rejected_reason?: string;
-  components?: { type: string; text?: string; format?: string }[];
+  components?: { type: string; text?: string; format?: string; buttons?: { type: string; text?: string; url?: string }[] }[];
 };
 
 export async function metaListTemplates(): Promise<GraphResult<MetaTemplate[]>> {
@@ -179,13 +182,17 @@ export async function metaListTemplates(): Promise<GraphResult<MetaTemplate[]>> 
   return { ok: true, data: all };
 }
 
-type TemplateSubmission = { name: string; language: string; category: string; body: string; footer?: string; examples: string[]; headerHandle?: string };
+// buttons: link buttons; `example` is a full sample address, needed by Meta when the address ends in {{1}}.
+type TemplateSubmission = { name: string; language: string; category: string; body: string; footer?: string; examples: string[]; headerHandle?: string; buttons?: { text: string; url: string; example?: string }[] };
 
 function components(t: TemplateSubmission) {
   return [
     ...(t.headerHandle ? [{ type: "HEADER", format: "IMAGE", example: { header_handle: [t.headerHandle] } }] : []),
     { type: "BODY", text: t.body, ...(t.examples.length > 0 ? { example: { body_text: [t.examples] } } : {}) },
     ...(t.footer ? [{ type: "FOOTER", text: t.footer }] : []),
+    ...(t.buttons && t.buttons.length > 0
+      ? [{ type: "BUTTONS", buttons: t.buttons.map((b) => ({ type: "URL", text: b.text, url: b.url, ...(b.example ? { example: [b.example] } : {}) })) }]
+      : []),
   ];
 }
 

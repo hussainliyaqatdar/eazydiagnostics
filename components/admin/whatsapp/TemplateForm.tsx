@@ -9,13 +9,16 @@ import {
   AUDIENCES,
   AUDIENCE_LABELS,
   CATEGORIES,
+  BUTTON_LIMITS,
   LANGUAGES,
   LIMITS,
   VARIABLE_SOURCES,
+  isDynamicUrl,
   renderExample,
   validateTemplate,
   variableCount,
   type Audience,
+  type TemplateButton,
   type TemplateCategory,
   type VariableSource,
 } from "@/lib/whatsapp-events";
@@ -44,6 +47,8 @@ export default function TemplateForm({ template, templates, media, onClose, onSa
   const [body, setBody] = useState(start?.body ?? "");
   const [footer, setFooter] = useState(start?.footer ?? "");
   const [vars, setVars] = useState<(VariableSource | "")[]>(start?.variables ?? []);
+  // Link buttons under the message (up to two).
+  const [buttons, setButtons] = useState<TemplateButton[]>(start?.buttons ?? []);
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
   const [touched, setTouched] = useState(false);
@@ -62,8 +67,10 @@ export default function TemplateForm({ template, templates, media, onClose, onSa
   const count = variableCount(body);
   const sources: (VariableSource | "")[] = useMemo(() => Array.from({ length: count }, (_, i) => vars[i] ?? ""), [count, vars]);
 
-  const errors = validateTemplate({ name, language, category, audience, events: [], body, footer, variables: sources as VariableSource[] }, true);
-  const draftErrors = validateTemplate({ name, language, category, audience, events: [], body, footer, variables: sources as VariableSource[] }, false);
+  const errors = validateTemplate({ name, language, category, audience, events: [], body, footer, variables: sources as VariableSource[], buttons }, true);
+  const draftErrors = validateTemplate({ name, language, category, audience, events: [], body, footer, variables: sources as VariableSource[], buttons }, false);
+
+  const setButton = (i: number, patch: Partial<TemplateButton>) => setButtons((cur) => cur.map((b, j) => (j === i ? { ...b, ...patch } : b)));
 
   async function uploadImage(file: File | undefined) {
     if (!file) return;
@@ -108,6 +115,7 @@ export default function TemplateForm({ template, templates, media, onClose, onSa
     setCategory(ref.category);
     setLanguage(ref.language);
     setHeaderId(ref.headerMediaId);
+    setButtons(ref.buttons);
     // A name is suggested only when none has been typed: "<base>_<audience>".
     if (!name.trim()) {
       const base = `${ref.name.replace(/_(patient|doctor)s?$/, "")}_${audience}`;
@@ -123,7 +131,7 @@ export default function TemplateForm({ template, templates, media, onClose, onSa
     if (Object.values(errs).some(Boolean)) return;
     setBusy(true);
     // Events are not sent: a new template starts unmapped, and an edit leaves its mapping as it is.
-    const payload = { name, language, category, audience, body, footer, variables: sources, headerMediaId: headerId, submit };
+    const payload = { name, language, category, audience, body, footer, variables: sources, buttons, headerMediaId: headerId, submit };
     const res = editing
       ? await sendJson<{ submitError?: string }>(`/api/admin/whatsapp/templates/${template!.id}`, "PATCH", payload)
       : await sendJson<{ submitError?: string }>("/api/admin/whatsapp/templates", "POST", payload);
@@ -151,7 +159,9 @@ export default function TemplateForm({ template, templates, media, onClose, onSa
   const show = (msg?: string) => (touched && msg ? <span role="alert" className="text-xs font-normal text-red-600">{msg}</span> : null);
   const preview = renderExample(body, sources) || "Your message will appear here.";
   const headerChanged = editing && headerId !== template!.headerMediaId;
-  const wordingChanged = editing && (body.trim() !== template!.body || footer.trim() !== template!.footer || category !== template!.category || headerChanged);
+  const norm = (l: TemplateButton[]) => JSON.stringify(l.map((b) => [b.text.trim(), b.url.trim(), isDynamicUrl(b.url) ? b.variable : ""]));
+  const buttonsChanged = editing && norm(buttons) !== norm(template!.buttons);
+  const wordingChanged = editing && (body.trim() !== template!.body || footer.trim() !== template!.footer || category !== template!.category || headerChanged || buttonsChanged);
 
   return (
     <Modal title={editing ? `Edit ${template!.name}` : "New WhatsApp template"} onClose={onClose} wide>
@@ -273,6 +283,50 @@ export default function TemplateForm({ template, templates, media, onClose, onSa
             {show(errors.footer)}
           </label>
 
+          <fieldset className="flex flex-col gap-3 rounded-md border p-3" disabled={locked}>
+            <legend className="px-1 text-xs font-medium text-gray-600">Link buttons (optional)</legend>
+            {buttons.map((b, i) => {
+              const dynamic = isDynamicUrl(b.url);
+              return (
+                <div key={i} className="flex flex-col gap-2 rounded-md bg-gray-50 p-2.5">
+                  <div className="flex items-center justify-between text-xs font-medium text-gray-600">
+                    <span>Button {i + 1}</span>
+                    <button type="button" onClick={() => setButtons((cur) => cur.filter((_, j) => j !== i))} className="font-normal text-gray-500 underline hover:text-red-600">Remove</button>
+                  </div>
+                  <label className={labelClass}>
+                    Text on the button
+                    <input value={b.text} onChange={(e) => setButton(i, { text: e.target.value })} maxLength={BUTTON_LIMITS.text} placeholder="View report" className={inputClass} aria-label={`Button ${i + 1} text`} />
+                  </label>
+                  <label className={labelClass}>
+                    Link
+                    <input value={b.url} onChange={(e) => setButton(i, { url: e.target.value })} placeholder="https://homecarelabs.onrender.com/api/reports/{{1}}" className={`${inputClass} font-mono`} aria-label={`Button ${i + 1} link`} />
+                  </label>
+                  {dynamic && (
+                    <label className={labelClass}>
+                      What fills {"{{1}}"} at the end of the link
+                      <select value={b.variable} onChange={(e) => setButton(i, { variable: e.target.value as VariableSource })} className={inputClass} aria-label={`What fills the end of button ${i + 1}'s link`}>
+                        <option value="">Choose...</option>
+                        {VARIABLE_SOURCES.map((v) => (
+                          <option key={v.key} value={v.key}>{v.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
+              );
+            })}
+            {buttons.length < BUTTON_LIMITS.count && (
+              <button type="button" onClick={() => setButtons((cur) => [...cur, { text: "", url: "", variable: "" }])} className={`${quietButtonClass} self-start`}>
+                + Add a link button
+              </button>
+            )}
+            <span className="text-[11px] text-gray-500">
+              A tap-to-open button under the message. The link must start with https://. To make part of it change with each message (for example a report), end it with {"{{1}}"} and choose what fills it.
+              Up to {BUTTON_LIMITS.count} buttons, {BUTTON_LIMITS.text} characters each. Meta reviews the buttons with the template, so changing them sends it back for review.
+            </span>
+            {show(errors.buttons)}
+          </fieldset>
+
           <div className="flex flex-col gap-2 rounded-md border p-3">
             <span className="text-xs font-medium text-gray-600">Header image (optional)</span>
             <div className="flex flex-wrap items-center gap-2">
@@ -312,6 +366,18 @@ export default function TemplateForm({ template, templates, media, onClose, onSa
               <p className="whitespace-pre-wrap break-words px-1.5 pb-1">{preview}</p>
               {footer && <p className="mt-1 px-1.5 pb-1 text-xs text-gray-500">{footer}</p>}
             </div>
+            {buttons.some((b) => b.text.trim()) && (
+              <div className="mt-1 flex flex-col gap-1">
+                {buttons.filter((b) => b.text.trim()).map((b, i) => (
+                  <div key={i} className="flex items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-medium text-sky-700 shadow-sm">
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+                    </svg>
+                    {b.text}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <p className="text-[11px] text-gray-500">Variables are shown with sample values.</p>
         </aside>

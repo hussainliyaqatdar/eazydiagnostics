@@ -93,7 +93,7 @@ export default function TemplatesPanel({ templates, media, metaReady }: { templa
                   <tr key={t.id} className="align-top">
                     <td className="px-3 py-3">
                       <span className="block font-mono text-[13px] font-medium text-gray-900">{t.name}</span>
-                      <span className="block text-xs text-gray-500">{t.language} &middot; {t.category.toLowerCase()}{t.headerFormat === "IMAGE" ? " · image header" : ""}</span>
+                      <span className="block text-xs text-gray-500">{t.language} &middot; {t.category.toLowerCase()}{t.headerFormat === "IMAGE" ? " · image header" : ""}{t.buttons.length > 0 ? ` · ${t.buttons.length} link button${t.buttons.length > 1 ? "s" : ""}` : ""}</span>
                       <span className="mt-1 block max-w-xs text-xs text-gray-600">{t.body.length > 110 ? `${t.body.slice(0, 110)}...` : t.body}</span>
                     </td>
                     <td className="px-3 py-3 text-gray-700">{AUDIENCE_LABELS[t.audience]}s</td>

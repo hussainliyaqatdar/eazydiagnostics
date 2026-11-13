@@ -40,6 +40,7 @@ export type VariableSource =
   | "amount"
   | "report_type"
   | "report_link"
+  | "report_token"
   | "contact_phone"
   | "business_name";
 
@@ -54,6 +55,7 @@ export const VARIABLE_SOURCES: { key: VariableSource; label: string; example: st
   { key: "amount", label: "Amount (e.g. Rs. 1,130)", example: "Rs. 1,130" },
   { key: "report_type", label: "Report type (partial / full)", example: "full report" },
   { key: "report_link", label: "Report link", example: "https://example.com/api/reports/abc123" },
+  { key: "report_token", label: "Report link code (the last part of the report link, for a button)", example: "abc123" },
   { key: "contact_phone", label: "Our contact number", example: "+91 70197 64500" },
   { key: "business_name", label: "Business name", example: "Eazy Diagnostics" },
 ];
@@ -78,6 +80,12 @@ export const LANGUAGES: { code: string; label: string }[] = [
 // Meta's states, plus DRAFT (written here, not submitted yet).
 export type TemplateStatus = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "PAUSED" | "DISABLED" | "IN_APPEAL" | "FLAGGED";
 
+// A link button under the message (a "call to action"). If the address ends in {{1}}, that part changes with each
+// message and `variable` says what fills it (for example the report link code); otherwise the link is the same for everyone.
+export type TemplateButton = { text: string; url: string; variable: VariableSource | "" };
+export const BUTTON_LIMITS = { count: 2, text: 25, url: 2000 };
+export const isDynamicUrl = (url: string) => url.includes("{{");
+
 export type TemplateInput = {
   name: string;
   language: string;
@@ -88,6 +96,7 @@ export type TemplateInput = {
   footer: string;
   // variables[i] fills {{i+1}}.
   variables: VariableSource[];
+  buttons: TemplateButton[];
 };
 
 export const LIMITS = { body: 1024, footer: 60, name: 60 };
@@ -141,6 +150,23 @@ export function validateTemplate(t: TemplateInput, submitting: boolean): Templat
   const needed = variableCount(body);
   // A draft may leave the variables unmapped (a template brought in from Meta starts that way); sending it to Meta needs them all.
   if (submitting && (t.variables.length !== needed || t.variables.some((v) => !isVariableSource(v)))) e.variables = needed === 0 ? undefined : "Choose what fills each variable.";
+
+  // Link buttons.
+  if (t.buttons.length > BUTTON_LIMITS.count) e.buttons = `At most ${BUTTON_LIMITS.count} link buttons.`;
+  else {
+    for (const [i, b] of t.buttons.entries()) {
+      const n = i + 1;
+      const url = b.url.trim();
+      if (!b.text.trim()) e.buttons = `Button ${n}: write the text on the button.`;
+      else if (b.text.trim().length > BUTTON_LIMITS.text) e.buttons = `Button ${n}: at most ${BUTTON_LIMITS.text} characters of text.`;
+      else if (!/^https:\/\/[^\s{}]+/.test(url.replace(/\{\{1\}\}$/, "")) || url.length > BUTTON_LIMITS.url) e.buttons = `Button ${n}: the link must start with https:// (no spaces).`;
+      else if (isDynamicUrl(url)) {
+        if (!/^[^{}]+\{\{1\}\}$/.test(url)) e.buttons = `Button ${n}: only one {{1}} is allowed, and it must be at the very end of the link.`;
+        else if (submitting && !isVariableSource(b.variable)) e.buttons = `Button ${n}: choose what fills the end of the link.`;
+      }
+      if (e.buttons) break;
+    }
+  }
 
   for (const ev of t.events) {
     const def = EVENT_BY_KEY.get(ev);

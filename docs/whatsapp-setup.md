@@ -94,6 +94,20 @@ Meta's dashboard, then **Sync with Meta**), category **Utility**, and submit it.
 Each `{{n}}` is mapped to a value in the form: the recipient's first name, patient name(s), booking id, status name or ready-made
 sentence, collection date and slot, the amount, the report type and link, our contact number, or the business name.
 
+### Link buttons (calls to action)
+
+A template can carry up to **two link buttons** under the message (for example "View report"). In the template form, under **Link buttons**,
+add the text on the button (up to 25 characters) and the link (it must start with `https://`).
+
+- **A fixed link** (for example the website) is the same for everyone.
+- **A link that changes with each message**: end it with `{{1}}` and choose what fills it. For a report, use
+  `https://<site>/api/reports/{{1}}` and choose **Report link code**, so each patient's button opens their own report. Other choices
+  include the booking id. Only one `{{1}}` is allowed, and only at the very end of the link.
+- Meta reviews the buttons together with the template, so adding or changing one sends an approved template back for review, like rewording it.
+- A template brought in by **Sync with Meta** keeps its link buttons. If one ends in `{{1}}`, choose what fills it before the template is used;
+  until then nothing is sent with it.
+- A message that already contains the report link in its text can still have the button: the button is just a quicker way to open it.
+
 ## Payment requests (with the payment QR code)
 
 For orders where **Eazy Diagnostics** collects payment, the patient can be sent a "please pay" message with the payment QR code as an image.

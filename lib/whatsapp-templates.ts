@@ -7,8 +7,10 @@ import {
   isVariableSource,
   renderExample,
   SOURCE_BY_KEY,
+  isDynamicUrl,
   variableCount,
   type Audience,
+  type TemplateButton,
   type TemplateCategory,
   type TemplateInput,
   type VariableSource,
@@ -30,6 +32,8 @@ export type WaTemplate = {
   headerMediaId: number | null;
   // variables[i] fills {{i+1}}; "" for one that has not been mapped (e.g. a template imported from Meta).
   variables: (VariableSource | "")[];
+  // Link buttons under the message.
+  buttons: TemplateButton[];
   metaId: string | null;
   status: string;
   rejectedReason: string | null;
@@ -51,6 +55,7 @@ type Row = {
   header_format: string | null;
   header_media_id: number | string | null;
   variables: string[];
+  buttons: unknown;
   meta_id: string | null;
   status: string;
   rejected_reason: string | null;
@@ -61,6 +66,14 @@ type Row = {
 };
 
 const iso = (d: Date | string) => new Date(d).toISOString();
+
+function parseButtons(raw: unknown): TemplateButton[] {
+  const list = typeof raw === "string" ? (() => { try { return JSON.parse(raw); } catch { return []; } })() : raw;
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((b): b is Record<string, unknown> => !!b && typeof b === "object")
+    .map((b) => ({ text: String(b.text ?? ""), url: String(b.url ?? ""), variable: isVariableSource(b.variable) ? b.variable : ("" as const) }));
+}
 
 function toTemplate(r: Row): WaTemplate {
   return {
@@ -75,6 +88,7 @@ function toTemplate(r: Row): WaTemplate {
     headerFormat: r.header_format,
     headerMediaId: r.header_media_id === null || r.header_media_id === undefined ? null : Number(r.header_media_id),
     variables: (r.variables ?? []).map((v) => (isVariableSource(v) ? v : "")),
+    buttons: parseButtons(r.buttons),
     metaId: r.meta_id,
     status: r.status,
     rejectedReason: r.rejected_reason,
@@ -85,7 +99,7 @@ function toTemplate(r: Row): WaTemplate {
   };
 }
 
-const COLUMNS = "id, name, language, category, audience, events, body, footer, header_format, header_media_id, variables, meta_id, status, rejected_reason, enabled, created_at, updated_at, synced_at";
+const COLUMNS = "id, name, language, category, audience, events, body, footer, header_format, header_media_id, variables, buttons, meta_id, status, rejected_reason, enabled, created_at, updated_at, synced_at";
 
 export async function listTemplates(): Promise<WaTemplate[]> {
   const db = await getDb();
@@ -116,6 +130,7 @@ export function unusableReason(t: WaTemplate): string | null {
   if (t.status !== "APPROVED") return `its Meta status is ${t.status.toLowerCase().replace("_", " ")}, not approved`;
   if (t.variables.length !== variableCount(t.body) || t.variables.some((v) => v === "")) return "a variable has nothing mapped to it";
   if (t.headerFormat === "IMAGE" && !t.headerMediaId) return "it needs a header image";
+  if (t.buttons.some((b) => isDynamicUrl(b.url) && b.variable === "")) return "a link button has nothing mapped to the end of its link";
   return null;
 }
 
@@ -131,12 +146,14 @@ export async function bindingConflicts(audience: Audience, events: string[], exc
   return out;
 }
 
+const cleanButtons = (list: TemplateButton[]) => list.map((b) => ({ text: b.text.trim(), url: b.url.trim(), variable: isDynamicUrl(b.url) ? b.variable : "" }));
+
 export async function createTemplate(input: TemplateInput & { headerMediaId?: number | null }): Promise<WaTemplate> {
   const db = await getDb();
   const rows = await db.query<Row>(
-    `INSERT INTO whatsapp_templates (name, language, category, audience, events, body, footer, variables, header_format, header_media_id)
-     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8::jsonb, $9, $10) RETURNING ${COLUMNS}`,
-    [input.name, input.language, input.category, input.audience, JSON.stringify(input.events), input.body.trim(), input.footer.trim() || null, JSON.stringify(input.variables), input.headerMediaId ? "IMAGE" : null, input.headerMediaId ?? null]
+    `INSERT INTO whatsapp_templates (name, language, category, audience, events, body, footer, variables, header_format, header_media_id, buttons)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8::jsonb, $9, $10, $11::jsonb) RETURNING ${COLUMNS}`,
+    [input.name, input.language, input.category, input.audience, JSON.stringify(input.events), input.body.trim(), input.footer.trim() || null, JSON.stringify(input.variables), input.headerMediaId ? "IMAGE" : null, input.headerMediaId ?? null, JSON.stringify(cleanButtons(input.buttons))]
   );
   return toTemplate(rows[0]);
 }
@@ -157,6 +174,7 @@ export async function updateTemplate(id: number, patch: TemplatePatch): Promise<
   if (patch.body !== undefined) add("body", patch.body.trim());
   if (patch.footer !== undefined) add("footer", patch.footer.trim() || null);
   if (patch.variables !== undefined) add("variables", JSON.stringify(patch.variables), "::jsonb");
+  if (patch.buttons !== undefined) add("buttons", JSON.stringify(cleanButtons(patch.buttons)), "::jsonb");
   if (patch.enabled !== undefined) add("enabled", patch.enabled);
   if (patch.headerMediaId !== undefined) {
     add("header_media_id", patch.headerMediaId);
@@ -186,6 +204,7 @@ async function submission(t: WaTemplate): Promise<{ ok: true; value: Parameters<
     body: t.body,
     footer: t.footer || undefined,
     examples: t.variables.map((v) => (v ? SOURCE_BY_KEY.get(v)?.example ?? "example" : "example")),
+    buttons: t.buttons.map((b) => ({ text: b.text, url: b.url, ...(isDynamicUrl(b.url) ? { example: b.url.replace(/\{\{1\}\}$/, (b.variable && SOURCE_BY_KEY.get(b.variable)?.example) || "example") } : {}) })),
   };
   if (t.headerFormat === "IMAGE") {
     if (!t.headerMediaId) return { ok: false, error: "This template has an image header but no image chosen. Pick one in Edit." };
@@ -206,6 +225,7 @@ export async function submitTemplate(id: number): Promise<ActionResult> {
   const t = await getTemplate(id);
   if (!t) return { ok: false, error: "That template no longer exists." };
   if (t.variables.some((v) => v === "")) return { ok: false, error: "Choose what fills every variable first." };
+  if (t.buttons.some((b) => isDynamicUrl(b.url) && b.variable === "")) return { ok: false, error: "Choose what fills the end of each link button's address first." };
 
   const sub = await submission(t);
   if (!sub.ok) return { ok: false, error: sub.error };
@@ -288,11 +308,13 @@ export async function syncTemplates(): Promise<{ ok: true; updated: number; impo
     const footer = m.components?.find((c) => c.type === "FOOTER")?.text ?? null;
     // A template that has an image header at Meta needs an image chosen here before it can be sent.
     const header = m.components?.find((c) => c.type === "HEADER" && c.format === "IMAGE") ? "IMAGE" : null;
+    // Link buttons come across too; one whose address ends in {{1}} needs its variable chosen before it can be sent.
+    const buttons = (m.components?.find((c) => c.type === "BUTTONS")?.buttons ?? []).filter((b) => b.type === "URL" && b.url).map((b) => ({ text: b.text ?? "", url: b.url ?? "", variable: "" }));
     await db.query(
-      `INSERT INTO whatsapp_templates (name, language, category, audience, events, body, footer, variables, meta_id, status, rejected_reason, enabled, synced_at, header_format)
-       VALUES ($1, $2, $3, $10, '[]'::jsonb, $4, $5, $6::jsonb, $7, $8, $9, false, now(), $11)
+      `INSERT INTO whatsapp_templates (name, language, category, audience, events, body, footer, variables, meta_id, status, rejected_reason, enabled, synced_at, header_format, buttons)
+       VALUES ($1, $2, $3, $10, '[]'::jsonb, $4, $5, $6::jsonb, $7, $8, $9, false, now(), $11, $12::jsonb)
        ON CONFLICT (name, language) DO NOTHING`,
-      [m.name, m.language, m.category === "MARKETING" ? "MARKETING" : "UTILITY", body, footer, JSON.stringify(Array(variableCount(body)).fill("")), m.id, normaliseStatus(m.status), m.rejected_reason && m.rejected_reason !== "NONE" ? m.rejected_reason : null, guessAudience(m.name), header]
+      [m.name, m.language, m.category === "MARKETING" ? "MARKETING" : "UTILITY", body, footer, JSON.stringify(Array(variableCount(body)).fill("")), m.id, normaliseStatus(m.status), m.rejected_reason && m.rejected_reason !== "NONE" ? m.rejected_reason : null, guessAudience(m.name), header, JSON.stringify(buttons)]
     );
     imported++;
   }
@@ -317,6 +339,15 @@ export function resolveParams(t: Pick<WaTemplate, "variables">, ctx: Partial<Tem
 }
 
 // The template's text with sample values, as a test message or preview would show it.
+// What goes on the end of each link button's address for one message: null for a button whose link never changes.
+export function resolveButtonParams(t: Pick<WaTemplate, "buttons">, ctx: Partial<TemplateContext>): (string | null)[] {
+  return t.buttons.map((b) => (isDynamicUrl(b.url) ? (b.variable ? ctx[b.variable] || "-" : "-") : null));
+}
+
+export function sampleButtonParams(t: Pick<WaTemplate, "buttons">): (string | null)[] {
+  return t.buttons.map((b) => (isDynamicUrl(b.url) ? (b.variable ? SOURCE_BY_KEY.get(b.variable)?.example ?? "example" : "example") : null));
+}
+
 export function sampleText(t: Pick<WaTemplate, "body" | "variables">): string {
   return renderExample(t.body, t.variables);
 }

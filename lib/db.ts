@@ -177,6 +177,8 @@ CREATE TABLE IF NOT EXISTS whatsapp_media (
 );
 -- A template's header image: which library image is sent with it ("IMAGE" format = it has an image header).
 ALTER TABLE whatsapp_templates ADD COLUMN IF NOT EXISTS header_format text;
+-- Link buttons under the message: [{text, url, variable}] (see TemplateButton in lib/whatsapp-events.ts).
+ALTER TABLE whatsapp_templates ADD COLUMN IF NOT EXISTS buttons jsonb NOT NULL DEFAULT '[]';
 ALTER TABLE whatsapp_templates ADD COLUMN IF NOT EXISTS header_media_id bigint REFERENCES whatsapp_media(id) ON DELETE SET NULL;
 
 -- The audit trail of an order: every status change, report upload and removal (WhatsApp sends are
