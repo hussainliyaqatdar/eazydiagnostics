@@ -18,6 +18,8 @@ export type ReportHeader = {
   // PNG bytes (see normalizeLogo in lib/clinics.ts).
   logoPng?: Buffer | null;
   doctorName?: string;
+  // Printed under the name, above the qualifications.
+  doctorSpecialty?: string;
   doctorQualifications?: string;
 };
 
@@ -319,11 +321,42 @@ function drawHeader(
   addr.forEach((line, i) => sheet.drawText(line, { x: textLeft, y: y - nameSize * 0.2 - gap * (i + 1), size: smallSize, font: regular, color: GREY }));
 
   if (header.doctorName) {
+    // Right-aligned block: name, then specialty, then qualifications. Each wraps onto further lines instead of being
+    // cut off; if the three together are taller than the strip, the type is scaled down a little (to 65%), and only
+    // then is the qualifications text shortened in the middle.
     const rightMax = doctorSpan[1] - doctorSpan[0];
-    const name = fit(header.doctorName, bold, docSize, rightMax);
-    const creds = header.doctorQualifications ? wrapMiddleTrim(header.doctorQualifications, regular, smallSize, rightMax, maxLines) : [];
-    y = place(docSize, creds.length);
-    sheet.drawText(name, { x: doctorSpan[1] - bold.widthOfTextAtSize(name, docSize), y, size: docSize, font: bold, color: INK });
-    creds.forEach((line, i) => sheet.drawText(line, { x: doctorSpan[1] - regular.widthOfTextAtSize(line, smallSize), y: y - docSize * 0.2 - gap * (i + 1), size: smallSize, font: regular, color: GREY }));
+    const specialty = header.doctorSpecialty?.trim() ?? "";
+    const quals = header.doctorQualifications?.trim() ?? "";
+    const maxH = regionH - 2;
+    const build = (scale: number, trimLines?: number) => {
+      const nameSz = docSize * scale;
+      const small = smallSize * scale;
+      const gp = small + 1.8 * scale;
+      const nameLines = wrap(header.doctorName!, bold, nameSz, rightMax);
+      const specLines = specialty ? wrap(specialty, regular, small, rightMax) : [];
+      const qualLines = quals ? (trimLines ? wrapMiddleTrim(quals, regular, small, rightMax, trimLines) : wrap(quals, regular, small, rightMax)) : [];
+      const h = nameLines.length * nameSz * 1.15 + (specLines.length + qualLines.length) * gp;
+      return { nameSz, small, gp, nameLines, specLines, qualLines, h };
+    };
+    let layout = build(1);
+    for (let scale = 0.95; layout.h > maxH && scale >= 0.65; scale -= 0.05) layout = build(scale);
+    if (layout.h > maxH) {
+      const fixed = layout.nameLines.length * layout.nameSz * 1.15 + layout.specLines.length * layout.gp;
+      layout = build(0.65, Math.max(1, Math.floor((maxH - fixed) / layout.gp)));
+    }
+    let dy = top - (regionH - Math.min(layout.h, maxH)) / 2 - layout.nameSz * 0.82;
+    for (const line of layout.nameLines) {
+      sheet.drawText(line, { x: doctorSpan[1] - bold.widthOfTextAtSize(line, layout.nameSz), y: dy, size: layout.nameSz, font: bold, color: INK });
+      dy -= layout.nameSz * 1.15;
+    }
+    dy += layout.nameSz * 1.15 - layout.nameSz * 0.2;
+    for (const line of layout.specLines) {
+      dy -= layout.gp;
+      sheet.drawText(line, { x: doctorSpan[1] - regular.widthOfTextAtSize(line, layout.small), y: dy, size: layout.small, font: regular, color: INK });
+    }
+    for (const line of layout.qualLines) {
+      dy -= layout.gp;
+      sheet.drawText(line, { x: doctorSpan[1] - regular.widthOfTextAtSize(line, layout.small), y: dy, size: layout.small, font: regular, color: GREY });
+    }
   }
 }
