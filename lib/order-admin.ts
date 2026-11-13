@@ -122,6 +122,7 @@ export async function reportHeaderFor(member: OrderMember): Promise<ReportHeader
     clinicAddress: clinic.address || undefined,
     logoPng: clinic.hasLogo ? await getClinicLogo(clinic.id) : null,
     doctorName: doctor.name,
+    doctorSpecialty: doctor.specialty,
     doctorQualifications: doctor.degree,
   };
 }
