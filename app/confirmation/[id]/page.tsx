@@ -128,7 +128,7 @@ export default async function ConfirmationPage({ params }: { params: { id: strin
       )}
 
       <p className="text-sm text-gray-600 text-center">
-        Our phlebotomist will arrive within 60 minutes of your slot start time, and your report
+        Our phlebotomist will arrive within your slot start and end time, and your report
         will be sent via WhatsApp to <strong>{booking.patient.whatsapp}</strong>{members ? " (or each member's own number, if given)" : ""} - typically within
         6 hours for routine tests.
       </p>

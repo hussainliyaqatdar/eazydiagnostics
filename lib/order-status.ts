@@ -89,7 +89,7 @@ export function patientLine(status: OrderStatus, c: StatusContext): string {
     case "booked":
       return `We have received your booking for ${readableDate(c.date)}, ${c.slot}.`;
     case "visit_scheduled":
-      return `Your sample collection is scheduled for ${readableDate(c.date)}, ${c.slot}. Our phlebotomist will reach you within 60 minutes of the slot start.`;
+      return `Your sample collection is scheduled for ${readableDate(c.date)}, ${c.slot}. Our phlebotomist will arrive within your slot start and end time.`;
     case "samples_collected":
       return "Your sample has been collected and is on its way to the lab.";
     case "reached_lab":

@@ -70,6 +70,9 @@ export async function POST(req: NextRequest) {
   const availableSlots = await getSlotsForDate(date).catch(() => null);
   if (!availableSlots) return NextResponse.json({ error: `We couldn't check the time slots just now. Please try again, or call us on ${BOOKING_PHONE}.` }, { status: 503 });
   const chosen = availableSlots.find((s) => s.slot === slot);
+  if (chosen?.passed) {
+    return NextResponse.json({ error: "That time has already passed, please pick a later slot" }, { status: 409 });
+  }
   if (!chosen || !chosen.available) {
     return NextResponse.json({ error: "That slot was just booked, please pick another" }, { status: 409 });
   }

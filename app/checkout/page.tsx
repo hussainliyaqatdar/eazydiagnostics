@@ -1,19 +1,17 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, useCartSummary } from "@/lib/cart-context";
 import { useUI } from "@/lib/ui-context";
 import { useBrand } from "@/components/BrandProvider";
 import { PAY_AT_CLINIC } from "@/lib/brand";
 import { describeConsult, hasConsult } from "@/lib/consult-offers";
-import { getUpcomingDates, formatDateLabel } from "@/lib/booking-dates";
+import { getUpcomingDates, formatDateLabel, slotGroup, SLOT_GROUPS } from "@/lib/booking-dates";
 import DoctorPicker from "@/components/DoctorPicker";
 import StepActions from "@/components/StepActions";
 import ReferralCombobox, { type ReferralValue } from "@/components/ReferralCombobox";
 import { REFERRAL_STORAGE_KEY } from "@/lib/referral-storage";
 import { FREE_COLLECTION_MIN } from "@/lib/booking-totals";
-
-const UPCOMING_DATES = getUpcomingDates();
 
 export default function CheckoutPage() {
   const { members: cartMembers, allLines, clear, setConsultDoctor } = useCart();
@@ -77,9 +75,13 @@ export default function CheckoutPage() {
   const [manualLocationError, setManualLocationError] = useState("");
   const [resolvingLink, setResolvingLink] = useState(false);
 
-  const [date, setDate] = useState(UPCOMING_DATES[0]);
-  const [slots, setSlots] = useState<{ slot: string; available: boolean }[]>([]);
+  // The next two weeks, starting today in Indian time (worked out here, not when the file loads, so it is never a day stale).
+  const [dates] = useState(() => getUpcomingDates());
+  const [date, setDate] = useState(dates[0]);
+  const [slots, setSlots] = useState<{ slot: string; available: boolean; passed?: boolean }[]>([]);
   const [slot, setSlot] = useState("");
+  // Whether the visitor chose the date themselves (if not, and today has no time left, we move on to tomorrow).
+  const pickedDate = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   // The payment breakup in the sticky bar starts collapsed (only the amount shows).
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -105,14 +107,35 @@ export default function CheckoutPage() {
       .catch(() => {});
   }, []);
 
+  // Loads the slots for the date, and again every minute: a window that starts while someone is choosing stops being offered,
+  // and a chosen one that has just become unavailable is dropped.
   useEffect(() => {
-    fetch(`/api/slots?date=${date}`)
-      .then((r) => r.json())
-      // An error answer is an object, not a list of slots.
-      .then((data) => setSlots(Array.isArray(data) ? data : []))
-      .catch(() => setSlots([]));
+    let live = true;
+    function load(first: boolean) {
+      fetch(`/api/slots?date=${date}`)
+        .then((r) => r.json())
+        // An error answer is an object, not a list of slots.
+        .then((data) => {
+          if (!live) return;
+          const list: { slot: string; available: boolean; passed?: boolean }[] = Array.isArray(data) ? data : [];
+          setSlots(list);
+          setSlot((cur) => (cur && list.some((x) => x.slot === cur && x.available) ? cur : ""));
+          // Today is over: show the next day instead of an empty list (unless they picked today themselves).
+          if (first && !pickedDate.current && list.length > 0 && !list.some((x) => x.available)) {
+            const next = dates[dates.indexOf(date) + 1];
+            if (next) setDate(next);
+          }
+        })
+        .catch(() => live && setSlots([]));
+    }
     setSlot("");
-  }, [date]);
+    load(true);
+    const timer = setInterval(() => load(false), 60_000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [date, dates]);
 
   function update(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -636,13 +659,16 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
           <h2 className="font-semibold text-gray-900">Choose collection time</h2>
 
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-            {UPCOMING_DATES.map((d) => {
+            {dates.map((d) => {
               const { weekday, day, month } = formatDateLabel(d);
               const active = d === date;
               return (
                 <button
                   key={d}
-                  onClick={() => setDate(d)}
+                  onClick={() => {
+                    pickedDate.current = true;
+                    setDate(d);
+                  }}
                   className={`shrink-0 flex flex-col items-center justify-center w-16 py-2 rounded-lg border text-sm ${
                     active ? "bg-brand text-white border-brand" : "bg-white text-gray-700 hover:border-brand"
                   }`}
@@ -655,21 +681,39 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
             })}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {slots.map((s) => (
-              <button
-                key={s.slot}
-                disabled={!s.available}
-                onClick={() => setSlot(s.slot)}
-                className={`text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-md border ${
-                  !s.available ? "bg-gray-100 text-gray-400 cursor-not-allowed" : slot === s.slot ? "bg-brand text-white border-brand" : "bg-white text-gray-700 hover:border-brand"
-                }`}
-              >
-                {s.slot}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-gray-500">Our phlebotomist arrives within 60 minutes of your slot start time.</p>
+          {/* Slots that have already started are not shown; the rest are grouped by part of the day. */}
+          {(() => {
+            const upcoming = slots.filter((s) => !s.passed);
+            if (slots.length > 0 && upcoming.length === 0) {
+              return <p className="rounded-md bg-gray-50 px-3 py-3 text-sm text-gray-600">No time slots are left on this date. Please choose another day.</p>;
+            }
+            return SLOT_GROUPS.map((g) => {
+              const inGroup = upcoming.filter((s) => slotGroup(s.slot) === g.id);
+              if (inGroup.length === 0) return null;
+              return (
+                <div key={g.id} role="group" aria-label={`${g.label} slots`} className="flex flex-col gap-2">
+                  <h3 className="text-sm font-semibold text-gray-800">
+                    {g.label} <span className="text-xs font-normal text-gray-500">{g.hours}</span>
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {inGroup.map((s) => (
+                      <button
+                        key={s.slot}
+                        disabled={!s.available}
+                        onClick={() => setSlot(s.slot)}
+                        className={`text-xs sm:text-sm px-2 sm:px-3 py-2 rounded-md border ${
+                          !s.available ? "bg-gray-100 text-gray-400 cursor-not-allowed" : slot === s.slot ? "bg-brand text-white border-brand" : "bg-white text-gray-700 hover:border-brand"
+                        }`}
+                      >
+                        {s.slot}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            });
+          })()}
+          <p className="text-xs text-gray-500">Our phlebotomist arrives within your slot start and end time.</p>
         </div>
 
         {needsDoctor && (
