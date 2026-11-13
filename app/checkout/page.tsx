@@ -1,4 +1,5 @@
 "use client";
+import LocationPickerModal from "@/components/LocationPickerModal";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, useCartSummary } from "@/lib/cart-context";
@@ -68,7 +69,9 @@ export default function CheckoutPage() {
   // After a location is captured only "Update location" / "View on map" show; this is
   // true once "Update location" is tapped, to bring back the ways of choosing one.
   const [changingLocation, setChangingLocation] = useState(false);
-  const [locating, setLocating] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // The address Google gave for a pin chosen in the "Search location" dialog (shown under "Location captured").
+  const [pinnedAddress, setPinnedAddress] = useState("");
   const [locationError, setLocationError] = useState("");
   const [showManualLocation, setShowManualLocation] = useState(false);
   const [manualLocationInput, setManualLocationInput] = useState("");
@@ -181,27 +184,15 @@ export default function CheckoutPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function useCurrentLocation() {
-    if (!navigator.geolocation) {
-      setLocationError("Location isn't supported on this browser.");
-      return;
-    }
-    setLocating(true);
+  // The "Search location" dialog confirmed a pin (searched, current location, or moved on the map).
+  function applyPickedLocation(loc: { lat: number; lng: number; address?: string }) {
+    setCoords({ lat: loc.lat, lng: loc.lng });
+    setPinnedAddress(loc.address ?? "");
+    setMapsLink(null);
+    setPickerOpen(false);
     setLocationError("");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setMapsLink(null);
-        setLocating(false);
-        setChangingLocation(false);
-        setShowManualLocation(false);
-      },
-      () => {
-        setLocationError("Couldn't access your location. Please allow location access, or fill the address manually.");
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+    setChangingLocation(false);
+    setShowManualLocation(false);
   }
 
   // Fast, local parse for plain coordinates or an already-expanded Maps URL.
@@ -233,6 +224,7 @@ export default function CheckoutPage() {
     setManualLocationError("");
     const typed = manualLocationInput.trim();
     const done = () => {
+      setPinnedAddress("");
       setLocationError("");
       setChangingLocation(false);
       setShowManualLocation(false);
@@ -295,7 +287,7 @@ export default function CheckoutPage() {
     ];
     if (!requireFilled(checks)) return;
     if (!coords && !mapsLink) {
-      setError("Please share your location: tap \"Use current location\", or choose \"Add Manually\" to paste a Google Maps link.");
+      setError("Please share your location: tap \"Search location\" to find and pin it, or choose \"Add manually\" to paste a Google Maps link.");
       return;
     }
     if (!date || !slot) {
@@ -567,6 +559,7 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
               ) : (
                 <span className="block text-xs text-gray-600">Required - so our phlebotomist can find you.</span>
               )}
+              {captured && !changingLocation && pinnedAddress && <span className="mt-0.5 block text-xs text-gray-600">{pinnedAddress}</span>}
               {locationError && <span className="block text-xs text-red-600">{locationError}</span>}
             </div>
 
@@ -595,11 +588,10 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <button
                     type="button"
-                    onClick={useCurrentLocation}
-                    disabled={locating}
-                    className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:opacity-60 sm:flex-1"
+                    onClick={() => setPickerOpen(true)}
+                    className="rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark sm:flex-1"
                   >
-                    {locating ? "Locating\u2026" : "Use current location"}
+                    Search location
                   </button>
                   <button
                     type="button"
@@ -607,7 +599,7 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
                     aria-expanded={showManualLocation}
                     className="rounded-md border border-brand bg-white px-4 py-2.5 text-sm font-medium text-brand-dark transition hover:bg-brand-light sm:flex-1"
                   >
-                    Add Manually
+                    Add manually
                   </button>
                 </div>
 
@@ -645,6 +637,8 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
               </>
             )}
           </div>
+
+          <LocationPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} onPick={applyPickedLocation} initial={coords} />
 
           <input id="checkout-addressLine" placeholder="House/flat, street, landmark*" value={form.addressLine} onChange={(e) => update("addressLine", e.target.value)} className={fieldClass("checkout-addressLine")} />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
