@@ -1,4 +1,3 @@
-import { allTests } from "./catalog";
 import type { TestItem } from "./types";
 
 // The doctor specialties our specialised tests are grouped under. Each one gets
@@ -96,9 +95,9 @@ export function getSpecialty(slug: string): Specialty | undefined {
 // specialty in its `seo.specialties`, so each test is listed under exactly one
 // group. Cheapest first, de-duplicated by short name so near-identical catalog
 // entries (two "AMH" tests) show once.
-export function getSpecialtyTests(slug: string): TestItem[] {
+export function getSpecialtyTests(tests: TestItem[], slug: string): TestItem[] {
   const seen = new Set<string>();
-  return allTests
+  return tests
     .filter((t) => t.seo?.specialties[0] === slug)
     .sort((a, b) => a.price - b.price)
     .filter((t) => {

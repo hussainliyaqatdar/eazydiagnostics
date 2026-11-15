@@ -11,7 +11,7 @@ import MemberSwitcher from "./MemberSwitcher";
 // (they have their own switchers) and when there is only one member.
 export default function VisitBar() {
   const { members } = useCart();
-  const { total, count } = useCartSummary();
+  const { itemsTotal, count } = useCartSummary();
   const { cartDrawerOpen, searchModalOpen, openCartDrawer } = useUI();
 
   const pathname = usePathname();
@@ -28,7 +28,7 @@ export default function VisitBar() {
           onClick={openCartDrawer}
           className="shrink-0 rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark"
         >
-          Visit &middot; {members.length} members &middot; {count} item{count === 1 ? "" : "s"} &middot; Rs. {total.toLocaleString("en-IN")}
+          Visit &middot; {members.length} members &middot; {count} item{count === 1 ? "" : "s"} &middot; Rs. {itemsTotal.toLocaleString("en-IN")}
         </button>
       </div>
     </div>

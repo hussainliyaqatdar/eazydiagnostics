@@ -1,9 +1,13 @@
 import type { MetadataRoute } from "next";
-import { allTests, allPackages } from "@/lib/catalog";
+import { getStandardCatalog } from "@/lib/catalog-server";
 import { SITE_URL } from "@/lib/site-config";
 import { SPECIALTIES, getSpecialtyTests } from "@/lib/specialties";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// Read from the catalog when asked (not baked in at build time), so a new or deactivated test shows up without a deploy.
+export const dynamic = "force-dynamic";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const catalog = await getStandardCatalog();
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE_URL}/search`, changeFrequency: "weekly", priority: 0.6 },
@@ -11,20 +15,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/tests`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/packages`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/specialised-tests`, changeFrequency: "weekly", priority: 0.9 },
-    ...SPECIALTIES.filter((s) => getSpecialtyTests(s.slug).length > 0).map((s) => ({
+    ...SPECIALTIES.filter((s) => getSpecialtyTests(catalog.tests, s.slug).length > 0).map((s) => ({
       url: `${SITE_URL}/specialised-tests/${s.slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.9,
     })),
   ];
 
-  const packagePages = allPackages.map((p) => ({
+  const packagePages = catalog.standardPackages.map((p) => ({
     url: `${SITE_URL}/packages/${p.slug}`,
     changeFrequency: "weekly" as const,
     priority: 0.9,
   }));
 
-  const testPages = allTests.map((t) => ({
+  const testPages = catalog.tests.map((t) => ({
     url: `${SITE_URL}/tests/${t.slug}`,
     changeFrequency: "weekly" as const,
     // Specialised tests with curated content are the ones we want to rank.

@@ -10,6 +10,8 @@ import CartDrawer from "@/components/CartDrawer";
 import ReferralCapture from "@/components/ReferralCapture";
 import VisitBar from "@/components/VisitBar";
 import { BrandProvider } from "@/components/BrandProvider";
+import { CatalogProvider } from "@/components/CatalogProvider";
+import { loadCatalog, catalogVersion } from "@/lib/catalog-store";
 import { getRef, getReferral } from "@/lib/brand-server";
 import { getFeaturedCoupon } from "@/lib/coupon-config";
 import { BUSINESS_NAME, PARTNER_NAME, SITE_URL, BOOKING_PHONE, SERVICE_AREAS, GMB_RATING, GMB_PROFILE_URL } from "@/lib/site-config";
@@ -81,6 +83,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // link (the site a doctor's patients see): doctors' patients get no coupon, only the plain site's customers do.
   const featuredCoupon = getRef() ? null : getFeaturedCoupon();
   const { brand, payAtClinic } = await getReferral();
+  // The catalog is read from memory (see lib/catalog-store.ts). The browser fetches it once, by this version.
+  const ref = getRef();
+  let catalogVer = 0;
+  let packageCategories: string[] = [];
+  try {
+    const [catalog, v] = await Promise.all([loadCatalog(ref), catalogVersion()]);
+    catalogVer = v;
+    packageCategories = catalog.packageCategories();
+  } catch (err) {
+    console.error("Catalog could not be loaded for the layout:", err);
+  }
   const orgJsonLd = brand
     ? {
         "@context": "https://schema.org",
@@ -128,9 +141,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }}
         />
         <BrandProvider brand={brand} payAtClinic={payAtClinic}>
-        <CartProvider scope={getRef() ?? "direct"}>
+        <CatalogProvider version={catalogVer} refId={ref}>
+        <CartProvider scope={ref ?? "direct"}>
           <UIProvider>
-            <Header featuredCoupon={featuredCoupon} />
+            <Header featuredCoupon={featuredCoupon} packageCategories={packageCategories} />
             <main className="max-w-6xl mx-auto px-4 py-8 min-h-[70vh]">{children}</main>
             <Footer />
             <SearchModal />
@@ -139,6 +153,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <VisitBar />
           </UIProvider>
         </CartProvider>
+        </CatalogProvider>
         </BrandProvider>
       </body>
     </html>

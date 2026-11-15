@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import NoResultsSupport from "@/components/NoResultsSupport";
 import TestCard from "@/components/TestCard";
 import SectionSearch from "@/components/SectionSearch";
-import { search, getTestsOrderedByPrescribingFrequency } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog-server";
 
 export const metadata: Metadata = {
   title: "All Tests",
@@ -13,16 +13,16 @@ export const metadata: Metadata = {
 
 const PAGE_SIZE = 30;
 
-// Tests doctors prescribe most often lead the list (ranked by prescribing
-// frequency), then the rest of the catalog in its existing order.
-const sortedTests = getTestsOrderedByPrescribingFrequency();
-
-export default function TestsPage({ searchParams }: { searchParams: { page?: string; q?: string } }) {
+export default async function TestsPage({ searchParams }: { searchParams: { page?: string; q?: string } }) {
   const q = searchParams.q?.trim() || "";
+  const catalog = await getCatalog();
+  // Tests doctors prescribe most often lead the list (ranked by prescribing frequency), then the rest of the catalog
+  // in its existing order.
+  const sortedTests = catalog.testsOrderedByPrescribingFrequency();
 
   // Search by name or alias (e.g. "FBS", "HbA1c") using the same alias-aware
   // engine as the global search bar, scoped to tests only.
-  const matched = q ? search(q, 200).filter((r) => r.kind === "test").map((r) => r.item) : sortedTests;
+  const matched = q ? catalog.search(q, 200).filter((r) => r.kind === "test").map((r) => r.item) : sortedTests;
 
   const page = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);
   const totalPages = Math.ceil(matched.length / PAGE_SIZE);

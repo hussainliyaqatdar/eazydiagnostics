@@ -24,6 +24,7 @@ type OrderRow = {
   status_updated_at: Date | string | null;
   payment_status: string;
   payment_collector: string | null;
+  lab_id?: string | null;
 };
 
 export async function saveBooking(b: Booking): Promise<void> {
@@ -31,8 +32,8 @@ export async function saveBooking(b: Booking): Promise<void> {
   await db.query(
     `INSERT INTO orders (id, created_at, patient, items, subtotal_mrp, subtotal_price, savings,
                          coupon_code, coupon_discount, collection_date, collection_slot, payment_status,
-                         doctor_id, referral_name, referral_clinic, collection_charge, members, payment_collector)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+                         doctor_id, referral_name, referral_clinic, collection_charge, members, payment_collector, lab_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
     [
       b.id,
       b.createdAt,
@@ -52,6 +53,7 @@ export async function saveBooking(b: Booking): Promise<void> {
       b.collectionCharge ?? null,
       b.members ? JSON.stringify(b.members) : null,
       b.paymentCollector ?? null,
+      b.labId ?? null,
     ]
   );
 
@@ -87,6 +89,7 @@ function toBooking(r: OrderRow): Booking {
     paymentStatus: isPaymentStatus(r.payment_status) ? r.payment_status : "pending",
     ...(r.payment_collector === "clinic" || r.payment_collector === "eazy" ? { paymentCollector: r.payment_collector } : {}),
     status: isOrderStatus(r.status) ? r.status : DEFAULT_ORDER_STATUS,
+    ...(r.lab_id ? { labId: r.lab_id } : {}),
   };
 }
 

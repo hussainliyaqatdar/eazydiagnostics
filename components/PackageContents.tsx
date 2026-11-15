@@ -1,18 +1,21 @@
 "use client";
 import { useState } from "react";
-import { getPackageBySlug } from "@/lib/catalog";
+import { useCatalog } from "./CatalogProvider";
+import type { PackageConstituent } from "@/lib/types";
 
 // How many included tests show before "view all".
 const VISIBLE = 4;
 
 // The tests a package includes, as bullets with the full test name and its alias in brackets (the same
 // wording as "What's included" on the package page). Long lists are cut after a few and expand in place.
-export default function PackageContents({ slug, className = "" }: { slug: string; className?: string }) {
+// Pass `constituents` when the page already has the package (server-rendered lists), or just the `slug` to look it up
+// in the browser's catalog (the search modal).
+export default function PackageContents({ slug, constituents, className = "" }: { slug?: string; constituents?: PackageConstituent[]; className?: string }) {
   const [open, setOpen] = useState(false);
-  const pkg = getPackageBySlug(slug);
-  if (!pkg || pkg.constituents.length === 0) return null;
+  const catalog = useCatalog();
+  const items = constituents ?? (slug ? catalog.getPackage(slug)?.constituents : undefined) ?? [];
+  if (items.length === 0) return null;
 
-  const items = pkg.constituents;
   const shown = open ? items : items.slice(0, VISIBLE);
   const hidden = items.length - VISIBLE;
 

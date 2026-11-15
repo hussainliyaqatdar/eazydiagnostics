@@ -9,6 +9,15 @@ export type Db = {
 };
 
 const SCHEMA = `
+-- An earlier, never-released shape of the catalog tables (keyed by the lab's code). They hold only what is read
+-- from the catalog files, so they are rebuilt in the new shape.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'catalog_tests' AND column_name = 'code') THEN
+    DROP TABLE catalog_tests;
+    DROP TABLE IF EXISTS catalog_packages;
+  END IF;
+END $$;
+
 -- A clinic can have one or more doctors (multi-speciality clinics). Its logo is kept
 -- here as an image (PNG), so there is nothing on disk to lose when the server restarts.
 CREATE TABLE IF NOT EXISTS clinics (
@@ -178,6 +187,92 @@ CREATE TABLE IF NOT EXISTS whatsapp_media (
 -- A template's header image: which library image is sent with it ("IMAGE" format = it has an image header).
 ALTER TABLE whatsapp_templates ADD COLUMN IF NOT EXISTS header_format text;
 ALTER TABLE whatsapp_templates ADD COLUMN IF NOT EXISTS header_media_id bigint REFERENCES whatsapp_media(id) ON DELETE SET NULL;
+
+-- The catalog: every test and package ("panel"), so it can be managed from /admin/catalog.
+--  * internal_id is OURS: unique, permanent, never shown to a lab, and what carts, packages and orders refer to.
+--  * Each partner lab has its own ids for the same things. They live in catalog_lab_ids (internal id <-> that lab's
+--    external id), one row per item per lab, so switching partner labs means adding mappings, not renaming anything.
+--  * Packages with an owner_doctor_id are custom panels, shown only on that doctor's affiliate link.
+-- The site reads the catalog from memory (see lib/catalog-store.ts); catalog_meta's version changes on every edit so
+-- every server picks the change up.
+CREATE SEQUENCE IF NOT EXISTS catalog_test_seq;
+CREATE SEQUENCE IF NOT EXISTS catalog_package_seq;
+CREATE TABLE IF NOT EXISTS labs (
+  id         text PRIMARY KEY,
+  name       text NOT NULL,
+  -- The lab orders are sent to now. Exactly one lab is current (see labs_one_current).
+  is_current boolean NOT NULL DEFAULT false,
+  active     boolean NOT NULL DEFAULT true,
+  notes      text NOT NULL DEFAULT '',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS labs_one_current ON labs (is_current) WHERE is_current;
+INSERT INTO labs (id, name, is_current) VALUES ('srl', 'SRL Diagnostics (Agilus)', true)
+  ON CONFLICT (id) DO NOTHING;
+CREATE TABLE IF NOT EXISTS catalog_tests (
+  internal_id text PRIMARY KEY,
+  slug        text NOT NULL UNIQUE,
+  name        text NOT NULL,
+  lab_name    text NOT NULL DEFAULT '',
+  raw_name    text NOT NULL DEFAULT '',
+  aliases     jsonb NOT NULL DEFAULT '[]',
+  price       integer NOT NULL,
+  mrp         integer,
+  type        text NOT NULL DEFAULT 'Routine',
+  popular     boolean NOT NULL DEFAULT false,
+  curated     boolean NOT NULL DEFAULT false,
+  category    text NOT NULL DEFAULT 'Other',
+  sample_type text NOT NULL DEFAULT '',
+  description text NOT NULL DEFAULT '',
+  eta         text NOT NULL DEFAULT '',
+  faqs        jsonb,
+  seo         jsonb,
+  active      boolean NOT NULL DEFAULT true,
+  sort_order  integer NOT NULL DEFAULT 0,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS catalog_packages (
+  internal_id    text PRIMARY KEY,
+  slug           text NOT NULL UNIQUE,
+  name           text NOT NULL,
+  category       text NOT NULL DEFAULT 'Other',
+  price          integer NOT NULL,
+  mrp            integer,
+  tagline        text NOT NULL DEFAULT '',
+  description    text NOT NULL DEFAULT '',
+  constituents   jsonb NOT NULL DEFAULT '[]',
+  needs_content  boolean NOT NULL DEFAULT false,
+  eta            text NOT NULL DEFAULT '',
+  faqs           jsonb,
+  active         boolean NOT NULL DEFAULT true,
+  sort_order     integer NOT NULL DEFAULT 0,
+  owner_doctor_id text REFERENCES doctors(id) ON DELETE CASCADE,
+  template_slug  text,
+  b2b_price      integer,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  updated_at     timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS catalog_packages_owner_idx ON catalog_packages (owner_doctor_id);
+-- internal id <-> a lab's own id. kind is 'test' or 'package'. cost is what that lab charges us, if known.
+CREATE TABLE IF NOT EXISTS catalog_lab_ids (
+  lab_id      text NOT NULL REFERENCES labs(id) ON DELETE CASCADE,
+  kind        text NOT NULL CHECK (kind IN ('test', 'package')),
+  internal_id text NOT NULL,
+  external_id text NOT NULL,
+  cost        integer,
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (lab_id, kind, internal_id),
+  UNIQUE (lab_id, kind, external_id)
+);
+CREATE TABLE IF NOT EXISTS catalog_meta (
+  id      integer PRIMARY KEY,
+  version bigint NOT NULL DEFAULT 1
+);
+INSERT INTO catalog_meta (id, version) VALUES (1, 1) ON CONFLICT (id) DO NOTHING;
+
+-- Which lab an order was placed for (its lines carry that lab's ids as they were then).
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS lab_id text;
 
 -- The audit trail of an order: every status change, report upload and removal (WhatsApp sends are
 -- in order_notifications and merged in when it is shown).

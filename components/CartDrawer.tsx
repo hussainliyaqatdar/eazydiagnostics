@@ -8,7 +8,6 @@ import PriceTag from "./PriceTag";
 import StepActions from "./StepActions";
 import CouponNudge from "./CouponNudge";
 import type { CouponRule } from "@/lib/coupon-rules";
-import { FREE_COLLECTION_MIN } from "@/lib/booking-totals";
 
 const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
 
@@ -17,6 +16,8 @@ export default function CartDrawer({ featuredCoupon = null }: { featuredCoupon?:
   const { members: cartMembers, activeId, setActive, addMember, removeMember, renameMember, copyMember, copyToNewMember, clear } = useCart();
   const {
     members, emptyMembers, count, subtotalMrp, remove, setConsult, couponsAllowed, coupon, discount, total, collectionCharge, subtotalPrice,
+    loadingCart,
+    freeCollectionMin,
   } = useCartSummary();
   const multi = members.length > 1;
 
@@ -67,7 +68,7 @@ export default function CartDrawer({ featuredCoupon = null }: { featuredCoupon?:
   }
 
   const blocked = multi && emptyMembers.length > 0;
-  const nothing = count === 0 && !multi;
+  const nothing = count === 0 && !multi && !loadingCart;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -367,7 +368,7 @@ export default function CartDrawer({ featuredCoupon = null }: { featuredCoupon?:
                       <span>Collection charges{multi ? " (one visit)" : ""}</span>
                       <span>{rs(collectionCharge)}</span>
                     </div>
-                    <p className="text-xs text-gray-500">Add {rs(FREE_COLLECTION_MIN - subtotalPrice)} more to get free home collection.</p>
+                    <p className="text-xs text-gray-500">Add {rs(freeCollectionMin - subtotalPrice)} more to get free home collection.</p>
                   </>
                 )}
                 <div className="flex justify-between font-bold text-brand-dark text-lg">

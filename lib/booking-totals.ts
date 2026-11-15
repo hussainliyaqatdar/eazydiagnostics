@@ -4,12 +4,19 @@ import type { Booking } from "./types";
 // items come to less than this (before any coupon) pay a flat collection charge.
 export const FREE_COLLECTION_MIN = 1000;
 export const COLLECTION_CHARGE = 250;
+// On a doctor's own affiliate link the charge applies only to very small orders: below this.
+export const AFFILIATE_FREE_COLLECTION_MIN = 300;
+
+// The order value from which home collection is free: Rs. 1,000 on the main site, Rs. 300 on a doctor's affiliate link.
+export const freeCollectionMin = (affiliate: boolean) => (affiliate ? AFFILIATE_FREE_COLLECTION_MIN : FREE_COLLECTION_MIN);
 
 // Most members one home visit can cover (family at the same address).
 export const MAX_MEMBERS = 6;
 
-export function collectionChargeFor(itemsTotal: number): number {
-  return itemsTotal > 0 && itemsTotal < FREE_COLLECTION_MIN ? COLLECTION_CHARGE : 0;
+// `affiliate`: the order is being placed through a doctor's own affiliate link (see getRef() on the server and the cart's
+// scope in the browser).
+export function collectionChargeFor(itemsTotal: number, affiliate = false): number {
+  return itemsTotal > 0 && itemsTotal < freeCollectionMin(affiliate) ? COLLECTION_CHARGE : 0;
 }
 
 // Whether the patient pays at the clinic's front desk: the order's saved payment collector, or - for

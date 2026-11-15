@@ -1,7 +1,10 @@
 export type ProductFaq = { q: string; a: string };
 
 export type TestItem = {
+  // The internal_test_id: ours, unique and permanent (see lib/catalog-store.ts). Never a lab's id.
   id: string;
+  // The current partner lab's id for this test (its external_test_id), when it has one.
+  externalId?: string;
   slug: string;
   // Customer-friendly display name (e.g. "Complete Blood Count (CBC)").
   name: string;
@@ -13,7 +16,6 @@ export type TestItem = {
   // The lab's catalog name exactly as stored (often ALL CAPS); the key used
   // to match the source data.
   rawName: string;
-  code: string;
   price: number;
   mrp: number | null;
   type: "Routine" | "Specialised";
@@ -28,6 +30,8 @@ export type TestItem = {
   faqs?: ProductFaq[];
   // Curated SEO/AEO content for specialised tests (scripts/specialised-seo.js).
   seo?: TestSeo;
+  // false = switched off in the admin: not shown on the site and not bookable. (Only the admin ever sees inactive ones.)
+  active?: boolean;
 };
 
 export type TestSeo = {
@@ -47,10 +51,12 @@ export type PackageConstituent = {
 };
 
 export type PackageItem = {
+  // The internal_package_id: ours, unique and permanent. Never a lab's id.
   id: string;
+  // The current partner lab's id for this package (its external_package_id), when it has one.
+  externalId?: string;
   slug: string;
   name: string;
-  code: string;
   category: string;
   price: number;
   mrp: number | null;
@@ -61,6 +67,15 @@ export type PackageItem = {
   eta: string;
   // SEO FAQs - every package gets these (see scripts/product-faqs.js).
   faqs?: ProductFaq[];
+  active?: boolean;
+  // A custom panel: made for one doctor's patients and shown only on that doctor's own affiliate link.
+  // The standard packages have none of these.
+  custom?: boolean;
+  ownerDoctorId?: string;
+  // What we charge the doctor's clinic for this panel (custom panels only). `price` is what the patient pays.
+  b2bPrice?: number | null;
+  // The standard package it was copied from, when it was made from one.
+  templateSlug?: string | null;
 };
 
 // Attached to a package that was added from one of the two consultation-offer
@@ -113,6 +128,14 @@ export type BookingLineItem = {
   kind: "test" | "package";
   slug: string;
   name: string;
+  // Our internal_test_id / internal_package_id, and the partner lab's id for it AT THE TIME OF BOOKING (the order's
+  // `labId` says which lab). A custom panel has no lab id of its own unless one was set; it is sent as its tests.
+  internalId?: string;
+  externalId?: string;
+  // Orders placed before internal ids existed only have the lab's code here.
+  code?: string;
+  // What the clinic is charged for one of this line, when it is a custom panel with its own B2B price.
+  b2bPrice?: number;
   // The lab's catalog name for a test, so fulfillment sees what the lab
   // actually knows it as (older bookings won't have this).
   labName?: string;
@@ -178,6 +201,8 @@ export type Booking = {
   // Fulfilment status, changed from the admin portal. Set when read back from the
   // database; new bookings start as "booked".
   status?: import("./order-status").OrderStatus;
+  // The partner lab this order is for (labs.id), so its lines' external ids mean something. Older orders: SRL.
+  labId?: string;
 };
 
 // A doctor registered through /for-doctors. `id` is also their affiliate-link code.

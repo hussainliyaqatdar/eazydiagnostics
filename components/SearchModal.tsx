@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { allPackages, getFrequentlyPrescribedTests, getPackageCategories, search, displayAliases } from "@/lib/catalog";
+import { CUSTOM_PANELS_LABEL, displayAliases } from "@/lib/catalog";
+import { useCatalog } from "./CatalogProvider";
 import { useCartSummary } from "@/lib/cart-context";
 import { useUI } from "@/lib/ui-context";
 import AddToCartButton from "./AddToCartButton";
@@ -11,9 +12,6 @@ import NoResultsSupport from "./NoResultsSupport";
 import type { TestItem } from "@/lib/types";
 
 const RESULT_LIMIT = 30; // cap on the default (not searching) package list
-// Sorted with "Full Body Checkups" first (see lib/catalog.ts's PRIORITY_CATEGORIES) -
-// that ordering is also what makes it the sub-tab's default selection below.
-const PACKAGE_CATEGORIES = getPackageCategories();
 
 const ClockIcon = () => (
   <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -31,10 +29,15 @@ function testRow(t: TestItem): Row {
 
 export default function SearchModal() {
   const { searchModalOpen, closeSearchModal, openCartDrawer } = useUI();
-  const { count, total, discount, coupon, members } = useCartSummary();
+  const { count, itemsTotal, discount, coupon, members } = useCartSummary();
   const [tab, setTab] = useState<"tests" | "packages">("tests");
   const [query, setQuery] = useState("");
-  const [packageCategory, setPackageCategory] = useState(PACKAGE_CATEGORIES[0]);
+  const catalog = useCatalog();
+  // "Full Body Checkups" first (see PRIORITY_CATEGORIES in lib/catalog.ts), which is also the sub-tab's default. On a
+  // doctor's own link, that doctor's custom panels come first of all.
+  const categories = useMemo(() => [...(catalog.customPackages.length > 0 ? [CUSTOM_PANELS_LABEL] : []), ...catalog.packageCategories()], [catalog]);
+  const [chosenCategory, setPackageCategory] = useState("");
+  const packageCategory = categories.includes(chosenCategory) ? chosenCategory : categories[0] ?? "";
 
   useEffect(() => {
     if (!searchModalOpen) return;
@@ -57,7 +60,7 @@ export default function SearchModal() {
 
   // While searching, look across every test and package (no category filter)
   // so the counts on the two tabs are the full number of matches.
-  const matches = useMemo(() => (searching ? search(query, Infinity) : []), [searching, query]);
+  const matches = useMemo(() => (searching ? catalog.search(query, Infinity) : []), [catalog, searching, query]);
   const counts = useMemo(
     () => ({ tests: matches.filter((m) => m.kind === "test").length, packages: matches.filter((m) => m.kind === "package").length }),
     [matches]
@@ -77,13 +80,12 @@ export default function SearchModal() {
     if (kind === "test") {
       // Tests doctors prescribe most often (Agilus' "CC SPRF" list) lead the
       // default listing - shown in full rather than capped to RESULT_LIMIT.
-      return getFrequentlyPrescribedTests().map(testRow);
+      return catalog.frequentlyPrescribedTests().map(testRow);
     }
-    return allPackages
-      .filter((p) => !p.needsContent && p.category === packageCategory)
+    return (packageCategory === CUSTOM_PANELS_LABEL ? catalog.customPackages : catalog.standardPackages.filter((p) => !p.needsContent && p.category === packageCategory))
       .slice(0, RESULT_LIMIT)
       .map((p) => ({ kind: "package" as const, slug: p.slug, name: p.name, price: p.price, mrp: p.mrp, eta: p.eta, sub: p.tagline }));
-  }, [tab, searching, matches, packageCategory]);
+  }, [catalog, tab, searching, matches, packageCategory]);
 
   if (!searchModalOpen) return null;
 
@@ -143,7 +145,7 @@ export default function SearchModal() {
 
           {tab === "packages" && !searching && (
             <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Package category">
-              {PACKAGE_CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <button
                   key={c}
                   role="tab"
@@ -203,7 +205,7 @@ export default function SearchModal() {
           <div className="shrink-0 border-t px-4 py-3 flex items-center justify-between gap-3 bg-brand-light">
             <div className="text-sm">
               <span className="font-bold text-brand-dark">{count} item{count > 1 ? "s" : ""}</span>
-              <span className="text-gray-600"> &middot; Rs. {total.toLocaleString("en-IN")}</span>
+              <span className="text-gray-600"> &middot; Rs. {itemsTotal.toLocaleString("en-IN")}</span>
               {discount > 0 && coupon && <span className="block text-xs text-green-700">{coupon.code} applied</span>}
             </div>
             <button

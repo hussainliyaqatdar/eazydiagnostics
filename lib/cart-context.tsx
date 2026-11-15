@@ -1,9 +1,9 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { CartLine, CartLineOffer, CartMember } from "./types";
-import { allTests, allPackages } from "./catalog";
+import { useCatalog, useCatalogReady } from "@/components/CatalogProvider";
 import { blockedByPackage, computeDiscount, type CouponRule } from "./coupon-rules";
-import { collectionChargeFor, MAX_MEMBERS } from "./booking-totals";
+import { collectionChargeFor, freeCollectionMin, MAX_MEMBERS } from "./booking-totals";
 import { hasConsult, priceWithOffer } from "./consult-offers";
 
 // A "visit" is one home collection: one address and one time slot, with one or
@@ -58,6 +58,8 @@ type CartContextType = {
   coupon: CouponRule | null;
   applyCoupon: (code: string) => Promise<ApplyCouponResult>;
   removeCoupon: () => void;
+  // True on a doctor's own affiliate link (the cart's scope is a doctor id, not "direct"): the collection charge is lower.
+  affiliate: boolean;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -312,7 +314,7 @@ export function CartProvider({ children, scope = "direct" }: { children: React.R
       value={{
         members, activeId: active.id, active, setActive: setActiveId, addMember, removeMember, renameMember, copyMember, copyToNewMember,
         lines: active.lines, allLines, add, addWithOffer, setConsult, setConsultDoctor, decrement, remove, clear, count,
-        coupon, applyCoupon, removeCoupon,
+        coupon, applyCoupon, removeCoupon, affiliate: scope !== "direct",
       }}
     >
       {children}
@@ -351,13 +353,14 @@ export type MemberSummary = {
 // and the collection charge belong to the VISIT, since it is one trip and one
 // order: the coupon's minimum is checked against everyone's tests combined.
 export function useCartSummary() {
-  const { members, remove, clear, setConsult, setConsultDoctor, coupon, applyCoupon, removeCoupon } = useCart();
+  const { members, remove, clear, setConsult, setConsultDoctor, coupon, applyCoupon, removeCoupon, affiliate } = useCart();
+  const catalog = useCatalog();
+  const catalogReady = useCatalogReady();
 
   const memberSummaries: MemberSummary[] = members.map((m) => {
     const items = m.lines
       .map((l) => {
-        const source = l.kind === "test" ? allTests : allPackages;
-        const found = source.find((x) => x.slug === l.slug);
+        const found = catalog.getLine(l.kind, l.slug);
         if (!found) return null;
         const { price, mrp } = priceWithOffer(found, l.offer);
         return { kind: l.kind, slug: l.slug, name: found.name, qty: l.qty, price, mrp, offer: l.offer };
@@ -390,8 +393,11 @@ export function useCartSummary() {
   // placed; this is the same pure function, so the two always agree.
   const result = coupon && couponsAllowed ? computeDiscount(coupon, subtotalPrice) : null;
   const discount = result?.discount ?? 0;
-  const collectionCharge = collectionChargeFor(subtotalPrice);
-  const total = subtotalPrice - discount + collectionCharge;
+  const collectionCharge = collectionChargeFor(subtotalPrice, affiliate);
+  // The items alone, less any coupon: what the search step and the visit bar show. The collection charge is not part of an
+  // item's price, so it only appears where its breakup is shown (the cart and checkout).
+  const itemsTotal = subtotalPrice - discount;
+  const total = itemsTotal + collectionCharge;
 
   return {
     members: memberSummaries,
@@ -399,11 +405,15 @@ export function useCartSummary() {
     emptyMembers: memberSummaries.filter((m) => m.count === 0),
     items, subtotalMrp, subtotalPrice, count, remove, clear, setConsult, setConsultDoctor,
     coupon, applyCoupon, removeCoupon,
+    // True while the cart has items but the catalog (which names and prices them) has not arrived yet.
+    loadingCart: !catalogReady && members.some((m) => m.lines.length > 0),
     hasPackage, // true when the cart holds any package
     couponsAllowed, // false when the cart holds a consultation-offer package, or a package with a tests-only coupon
     discount, // rupees off from the coupon right now (0 if none, or not yet eligible)
     couponShortfall: result && !result.eligible ? result.shortfall : 0, // rupees to add to unlock it
-    collectionCharge, // flat home-collection charge on visits under FREE_COLLECTION_MIN (0 otherwise)
+    collectionCharge, // flat home-collection charge on visits under the free-collection minimum (0 otherwise)
+    freeCollectionMin: freeCollectionMin(affiliate), // Rs. 1,000 on the main site, Rs. 300 on a doctor's affiliate link
+    itemsTotal, // the items less any coupon, WITHOUT the collection charge
     total, // what the customer pays: all items, less the coupon, plus any collection charge
   };
 }

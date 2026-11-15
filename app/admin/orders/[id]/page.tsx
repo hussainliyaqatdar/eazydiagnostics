@@ -14,6 +14,7 @@ import AuditLog from "@/components/admin/AuditLog";
 import { listMembers } from "@/lib/order-admin";
 import { readableDate } from "@/lib/order-status";
 import { paymentRequestBlocker } from "@/lib/payment-request";
+import { adminItemIdsBySlug } from "@/lib/catalog-store";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Order", robots: { index: false, follow: false } };
@@ -26,6 +27,8 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
   if (!booking) notFound();
   const members = (await listMembers([booking.id])).get(booking.id) ?? [];
   const log = await auditTrail(booking.id);
+  // Each item's lab test code, so it can be referred to: saved on the order line, else looked up from the catalog.
+  const ids = await adminItemIdsBySlug(members.flatMap((m) => m.items.filter((i) => !i.internalId || !(i.externalId ?? i.code)).map((i) => i.slug))).catch(() => new Map<string, { internalId: string; externalId?: string }>());
 
   // Each member's prescribing doctor and clinic (for the report header and the B2B figures).
   const doctors = new Map<string, Doctor>();
@@ -106,7 +109,13 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
                   <ul className="list-disc pl-5 text-sm text-gray-700">
                     {m.items.map((i) => (
                       <li key={`${i.kind}-${i.slug}`}>
+                        {(i.externalId ?? i.code ?? ids.get(i.slug)?.externalId) && (
+                          <span className="mr-1.5 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-700" title={`${booking.labId ?? "Lab"}'s ${i.kind === "test" ? "test" : "package"} id`}>
+                            {i.externalId ?? i.code ?? ids.get(i.slug)?.externalId}
+                          </span>
+                        )}
                         {i.name}
+                        {(i.internalId ?? ids.get(i.slug)?.internalId) && <span className="ml-1.5 font-mono text-[11px] text-gray-400" title="Our internal id">{i.internalId ?? ids.get(i.slug)?.internalId}</span>}
                         {i.qty > 1 ? ` x ${i.qty}` : ""} <span className="text-gray-400">{rs(i.price * i.qty)}</span>
                       </li>
                     ))}
