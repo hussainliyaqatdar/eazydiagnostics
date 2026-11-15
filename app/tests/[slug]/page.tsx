@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { allTests, allPackages, getTestBySlug, displayAliases } from "@/lib/catalog";
+import { displayAliases } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog-server";
 import PriceTag from "@/components/PriceTag";
 import AddToCartButton from "@/components/AddToCartButton";
 import TestCard from "@/components/TestCard";
@@ -13,12 +14,8 @@ import { getBrand } from "@/lib/brand-server";
 import { brandText, homeHref } from "@/lib/brand";
 import { BUSINESS_NAME, PARTNER_NAME, SITE_URL } from "@/lib/site-config";
 
-export function generateStaticParams() {
-  return allTests.map((t) => ({ slug: t.slug }));
-}
-
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const test = getTestBySlug(params.slug);
+  const test = (await getCatalog()).getTest(params.slug);
   if (!test) return {};
   // Specialised tests carry curated copy (scripts/specialised-seo.js): a title
   // and description that name the test the way people search for it.
@@ -55,14 +52,15 @@ function testLabel(short: string): string {
 }
 
 export default async function TestPage({ params }: { params: { slug: string } }) {
-  const test = getTestBySlug(params.slug);
+  const catalog = await getCatalog();
+  const test = catalog.getTest(params.slug);
   if (!test) notFound();
   // In a clinic's version the lab partner's name and ours are left out of the page.
   const brand = await getBrand();
   const t = (text: string) => brandText(text, brand);
 
-  const relatedTests = allTests.filter((t) => t.category === test.category && t.slug !== test.slug).slice(0, 3);
-  const inPackages = allPackages.filter((p) => p.constituents.some((c) => c.slug === test.slug)).slice(0, 3);
+  const relatedTests = catalog.tests.filter((t) => t.category === test.category && t.slug !== test.slug).slice(0, 3);
+  const inPackages = catalog.packages.filter((p) => p.constituents.some((c) => c.slug === test.slug)).slice(0, 3);
 
   const aliases = displayAliases(test);
   // Show the lab's own name only when it says something the friendly name doesn't.
@@ -70,7 +68,7 @@ export default async function TestPage({ params }: { params: { slug: string } })
 
   const specialties = getTestSpecialties(test);
   const sameSpecialty = test.seo
-    ? getSpecialtyTests(test.seo.specialties[0])
+    ? getSpecialtyTests(catalog.tests, test.seo.specialties[0])
         .filter((t) => t.slug !== test.slug)
         .slice(0, 3)
     : [];
@@ -116,7 +114,7 @@ export default async function TestPage({ params }: { params: { slug: string } })
     name: test.name,
     description: test.seo ? test.seo.what : test.description,
     url: `${SITE_URL}/tests/${test.slug}`,
-    sku: test.code,
+    sku: test.id,
     category: test.category,
     offers: {
       "@type": "Offer",
@@ -180,7 +178,7 @@ export default async function TestPage({ params }: { params: { slug: string } })
 
         <div className="flex flex-wrap gap-4 text-sm text-gray-600">
           <span><strong>Sample:</strong> {test.sampleType}</span>
-          <span><strong>Test code:</strong> {test.code}</span>
+          <span><strong>Test code:</strong> {test.externalId ?? test.id}</span>
           {showLabName && <span><strong>Lab test name:</strong> {test.labName}</span>}
           <span><strong>Reports in:</strong> {test.eta}</span>
         </div>

@@ -4,22 +4,25 @@ import { Suspense } from "react";
 import NoResultsSupport from "@/components/NoResultsSupport";
 import PackageCard from "@/components/PackageCard";
 import SectionSearch from "@/components/SectionSearch";
-import { allPackages, getPackageCategories, search } from "@/lib/catalog";
+import { CUSTOM_PANELS_LABEL } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog-server";
 
 export const metadata: Metadata = {
   title: "All Health Packages",
   description: "Browse every health checkup package - Full Body Checkups, Women's Health, Diabetes, Thyroid, and more - for home sample collection in Bangalore.",
 };
 
-export default function PackagesPage({ searchParams }: { searchParams: { category?: string; q?: string } }) {
-  const categories = getPackageCategories();
+export default async function PackagesPage({ searchParams }: { searchParams: { category?: string; q?: string } }) {
+  const catalog = await getCatalog();
+  // On a doctor's own link their custom panels get a group of their own, ahead of the standard categories.
+  const categories = [...(catalog.customPackages.length > 0 ? [CUSTOM_PANELS_LABEL] : []), ...catalog.packageCategories()];
   const active = searchParams.category;
   const q = searchParams.q?.trim() || "";
 
   // Search by name or alias, scoped to packages only, using the same
   // alias-aware engine as the global search bar.
-  let packages = q ? search(q, 200).filter((r) => r.kind === "package").map((r) => r.item) : allPackages;
-  if (active) packages = packages.filter((p) => p.category === active);
+  let packages = q ? catalog.search(q, 200).filter((r) => r.kind === "package").map((r) => r.item) : [...catalog.customPackages, ...catalog.standardPackages];
+  if (active) packages = packages.filter((p) => (active === CUSTOM_PANELS_LABEL ? p.custom : !p.custom && p.category === active));
 
   return (
     <div className="flex flex-col gap-6">

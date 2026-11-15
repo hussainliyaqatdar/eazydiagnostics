@@ -12,7 +12,6 @@ import DoctorPicker from "@/components/DoctorPicker";
 import StepActions from "@/components/StepActions";
 import ReferralCombobox, { type ReferralValue } from "@/components/ReferralCombobox";
 import { REFERRAL_STORAGE_KEY } from "@/lib/referral-storage";
-import { FREE_COLLECTION_MIN } from "@/lib/booking-totals";
 
 export default function CheckoutPage() {
   const { members: cartMembers, allLines, clear, setConsultDoctor } = useCart();
@@ -21,7 +20,7 @@ export default function CheckoutPage() {
   const { brand, payAtClinic: referred } = useBrand();
   // Priced items come from the cart summary so offer pricing (e.g. an included
   // consultation) is shown the same way here as in the cart drawer.
-  const { items, members, emptyMembers, coupon, discount, total, collectionCharge, removeCoupon } = useCartSummary();
+  const { items, members, emptyMembers, coupon, discount, total, collectionCharge, removeCoupon, loadingCart, freeCollectionMin } = useCartSummary();
   const router = useRouter();
 
   // A visit with more than one member has three steps - confirm the prices for
@@ -344,6 +343,7 @@ export default function CheckoutPage() {
 
 const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
 
+  if (loadingCart) return <p className="text-gray-500">Loading your cart&hellip;</p>;
   if (items.length === 0) {
     return <p className="text-gray-500">Your cart is empty. <a href="/search" className="text-brand">Browse tests</a></p>;
   }
@@ -409,7 +409,7 @@ const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
         {collectionCharge > 0 && (
           <div className="flex justify-between text-sm text-gray-700">
             <span>
-              Collection charges <span className="text-xs text-gray-500">({multi ? "one visit, " : ""}free on orders of {rs(FREE_COLLECTION_MIN)}+)</span>
+              Collection charges <span className="text-xs text-gray-500">({multi ? "one visit, " : ""}free on orders of {rs(freeCollectionMin)}+)</span>
             </span>
             <span>{rs(collectionCharge)}</span>
           </div>

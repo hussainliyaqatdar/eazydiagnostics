@@ -10,6 +10,7 @@ const ICONS: Record<string, string> = {
   orders: "M9 5h6M9 3h6a1 1 0 011 1v1H8V4a1 1 0 011-1zM8 5H6a1 1 0 00-1 1v14a1 1 0 001 1h12a1 1 0 001-1V6a1 1 0 00-1-1h-2M9 12h6M9 16h4",
   clinics: "M16 19v-1a4 4 0 00-4-4H8a4 4 0 00-4 4v1M10 11a3 3 0 100-6 3 3 0 000 6zM20 19v-1a3 3 0 00-2.5-2.96M15.5 5.2a3 3 0 010 5.6",
   whatsapp: "M21 12a8 8 0 01-11.6 7.1L4 20.5l1.5-5.2A8 8 0 1121 12zM9 9.5c0 3 2.5 5.5 5.5 5.5",
+  catalog: "M4 7l8-4 8 4-8 4-8-4zM4 12l8 4 8-4M4 17l8 4 8-4",
   email: "M4 6h16a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1zM3.5 7.5L12 13l8.5-5.5",
   inbox: "M4 13l2-7h12l2 7M4 13v5a1 1 0 001 1h14a1 1 0 001-1v-5M4 13h4l1 2h6l1-2h4",
 };
@@ -19,7 +20,10 @@ const ICONS: Record<string, string> = {
 const GROUPS: { title: string; items: Item[] }[] = [
   {
     title: "Operations",
-    items: [{ href: "/admin/orders", label: "Orders", hint: "Visits, statuses, reports", match: ["/admin/orders"], icon: "orders" }],
+    items: [
+      { href: "/admin/orders", label: "Orders", hint: "Visits, statuses, reports", match: ["/admin/orders"], icon: "orders" },
+      { href: "/admin/catalog", label: "Tests & packages", hint: "Catalog, test codes, doctor panels", match: ["/admin/catalog"], icon: "catalog" },
+    ],
   },
   {
     title: "Partners",

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SPECIALTIES, getSpecialtyTests } from "@/lib/specialties";
+import { getCatalog } from "@/lib/catalog-server";
 import { BUSINESS_NAME, PARTNER_NAME, SITE_URL } from "@/lib/site-config";
 import { getBrand } from "@/lib/brand-server";
 import { brandText } from "@/lib/brand";
@@ -21,8 +22,9 @@ export async function generateMetadata(): Promise<Metadata> {
 const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
 
 export default async function SpecialisedTestsPage() {
+  const catalog = await getCatalog();
   const brand = await getBrand();
-  const groups = SPECIALTIES.map((s) => ({ s, tests: getSpecialtyTests(s.slug) })).filter((g) => g.tests.length > 0);
+  const groups = SPECIALTIES.map((s) => ({ s, tests: getSpecialtyTests(catalog.tests, s.slug) })).filter((g) => g.tests.length > 0);
 
   const jsonLd = {
     "@context": "https://schema.org",

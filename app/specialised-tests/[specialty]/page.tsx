@@ -4,14 +4,11 @@ import { notFound } from "next/navigation";
 import TestCard from "@/components/TestCard";
 import ProductFaqSection from "@/components/ProductFaqSection";
 import { SPECIALTIES, getSpecialty, getSpecialtyTests } from "@/lib/specialties";
+import { getCatalog } from "@/lib/catalog-server";
 import { BUSINESS_NAME, PARTNER_NAME, SERVICE_AREAS, SITE_URL } from "@/lib/site-config";
-import { getBrand } from "@/lib/brand-server";
+import { getBrand, getRef } from "@/lib/brand-server";
 import { brandText, homeHref } from "@/lib/brand";
-import { COLLECTION_CHARGE, FREE_COLLECTION_MIN } from "@/lib/booking-totals";
-
-export function generateStaticParams() {
-  return SPECIALTIES.filter((s) => getSpecialtyTests(s.slug).length > 0).map((s) => ({ specialty: s.slug }));
-}
+import { COLLECTION_CHARGE, freeCollectionMin } from "@/lib/booking-totals";
 
 export async function generateMetadata({ params }: { params: { specialty: string } }): Promise<Metadata> {
   const specialty = getSpecialty(params.specialty);
@@ -29,9 +26,10 @@ export async function generateMetadata({ params }: { params: { specialty: string
 const rs = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
 
 export default async function SpecialtyPage({ params }: { params: { specialty: string } }) {
+  const catalog = await getCatalog();
   const specialty = getSpecialty(params.specialty);
   if (!specialty) notFound();
-  const tests = getSpecialtyTests(specialty.slug);
+  const tests = getSpecialtyTests(catalog.tests, specialty.slug);
   if (tests.length === 0) notFound();
   const brand = await getBrand();
   const t = (text: string) => brandText(text, brand);
@@ -44,7 +42,7 @@ export default async function SpecialtyPage({ params }: { params: { specialty: s
     },
     {
       q: `How much do these ${specialty.name} tests cost?`,
-      a: t(`Prices range from ${rs(Math.min(...tests.map((t) => t.price)))} to ${rs(Math.max(...tests.map((t) => t.price)))}, shown on each test page. There is no advance payment: you pay after the sample is collected. Home collection is free on orders of ${rs(FREE_COLLECTION_MIN)} or more; a flat ${rs(COLLECTION_CHARGE)} charge applies to smaller orders.`),
+      a: t(`Prices range from ${rs(Math.min(...tests.map((t) => t.price)))} to ${rs(Math.max(...tests.map((t) => t.price)))}, shown on each test page. There is no advance payment: you pay after the sample is collected. Home collection is free on orders of ${rs(freeCollectionMin(!!getRef()))} or more; a flat ${rs(COLLECTION_CHARGE)} charge applies to smaller orders.`),
     },
     {
       q: "Where in Bangalore is home collection available?",

@@ -6,14 +6,11 @@ import { useUI } from "@/lib/ui-context";
 import { useBrand } from "./BrandProvider";
 import { homeHref } from "@/lib/brand";
 import { BOOKING_PHONE, BOOKING_PHONE_TEL } from "@/lib/site-config";
-import { getPackageCategories } from "@/lib/catalog";
 import Logo from "./Logo";
 import CouponBanner from "./CouponBanner";
 import type { CouponRule } from "@/lib/coupon-rules";
 
-const PACKAGE_CATEGORIES = getPackageCategories();
-
-export default function Header({ featuredCoupon = null }: { featuredCoupon?: CouponRule | null }) {
+export default function Header({ featuredCoupon = null, packageCategories: PACKAGE_CATEGORIES = [] }: { featuredCoupon?: CouponRule | null; packageCategories?: string[] }) {
   const { count } = useCart();
   const { brand } = useBrand();
   const { openCartDrawer } = useUI();

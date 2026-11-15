@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { allPackages, getPackageBySlug } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog-server";
 import PriceTag from "@/components/PriceTag";
 import AddToCartButton from "@/components/AddToCartButton";
 import PackageCard from "@/components/PackageCard";
@@ -10,13 +10,11 @@ import { SITE_URL, BOOKING_PHONE, BOOKING_PHONE_TEL } from "@/lib/site-config";
 import { getBrand } from "@/lib/brand-server";
 import { homeHref } from "@/lib/brand";
 
-export function generateStaticParams() {
-  return allPackages.map((p) => ({ slug: p.slug }));
-}
-
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const pkg = getPackageBySlug(params.slug);
+  const pkg = (await getCatalog()).getPackage(params.slug);
   if (!pkg) return {};
+  // A clinic's own panel is for that clinic's patients only: not for search engines.
+  if (pkg.custom) return { title: `${pkg.name} - Book Home Collection`, robots: { index: false, follow: false } };
   return {
     title: `${pkg.name} - Book Home Collection`,
     description: pkg.description,
@@ -26,10 +24,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function PackagePage({ params }: { params: { slug: string } }) {
-  const pkg = getPackageBySlug(params.slug);
+  const catalog = await getCatalog();
+  const pkg = catalog.getPackage(params.slug);
   if (!pkg) notFound();
 
-  const relatedPackages = allPackages.filter((p) => p.category === pkg.category && p.slug !== pkg.slug).slice(0, 3);
+  const relatedPackages = catalog.standardPackages.filter((p) => p.category === pkg.category && p.slug !== pkg.slug).slice(0, 3);
 
   const jsonLd = {
     "@context": "https://schema.org",

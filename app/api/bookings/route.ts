@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allTests, allPackages } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog-server";
 import { getSlotsForDate } from "@/lib/slots";
 import { saveBooking } from "@/lib/orders";
 import { listMembers } from "@/lib/order-admin";
@@ -97,9 +97,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // The catalog this visitor can book from: read from memory, not from the database. It includes the visitor's own
+  // doctor's custom panels (and nobody else's), and leaves out anything switched off since it was added to the cart.
+  const catalog = await getCatalog();
+  for (const line of memberCarts.flat()) {
+    if (!catalog.getLine(line.kind, line.slug)) {
+      return NextResponse.json({ error: "An item in your cart is no longer available. Please remove it and try again." }, { status: 400 });
+    }
+  }
+
   const buildItem = (line: CartLine): BookingLineItem => {
-    const source = line.kind === "test" ? allTests : allPackages;
-    const found = source.find((x) => x.slug === line.slug);
+    const found = catalog.getLine(line.kind, line.slug);
     if (!found) throw new Error(`Unknown ${line.kind} ${line.slug}`);
     // Keep only the fields we validated above, plus a copy of the doctor's name.
     const offer = line.offer
@@ -114,7 +122,9 @@ export async function POST(req: NextRequest) {
     // Tests are shown to customers under a friendly name, but the lab knows
     // them by their catalog name - keep that on the booking for fulfillment.
     const labName = "labName" in found ? found.labName : undefined;
-    return { kind: line.kind, slug: found.slug, name: found.name, labName, qty: line.qty, mrp, price, ...(offer ? { offer } : {}) };
+    // A custom panel carries its own B2B price; every line carries the lab's code so the admin can refer to it.
+    const b2bPrice = "custom" in found && found.custom && found.b2bPrice != null ? found.b2bPrice : undefined;
+    return { kind: line.kind, slug: found.slug, name: found.name, internalId: found.id, ...(found.externalId ? { externalId: found.externalId } : {}), labName, qty: line.qty, mrp, price, ...(b2bPrice !== undefined ? { b2bPrice } : {}), ...(offer ? { offer } : {}) };
   };
   const memberItems = memberCarts.map((c) => c.map(buildItem));
   const items: BookingLineItem[] = memberItems.flat();
@@ -184,7 +194,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Small orders pay a flat collection charge, worked out here from our own prices.
-  const collectionCharge = collectionChargeFor(subtotalPrice);
+  // On a doctor's own affiliate link, collection is charged only below the lower threshold (see lib/booking-totals.ts).
+  const collectionCharge = collectionChargeFor(subtotalPrice, !!getRef());
 
   // The visit's own "Prescribed by" (shown in lists and used for the payment wording): the
   // first member's registered doctor if there is one, else the first typed name.
@@ -212,6 +223,8 @@ export async function POST(req: NextRequest) {
     slot,
     paymentStatus: "pending",
     ...(paymentCollector ? { paymentCollector } : {}),
+    // Which lab this order is for: the line ids above are that lab's ids.
+    ...(catalog.lab ? { labId: catalog.lab.id } : {}),
   };
 
   // Never tell the customer an order went through when it was not saved.

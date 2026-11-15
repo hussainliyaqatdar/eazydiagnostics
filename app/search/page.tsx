@@ -3,7 +3,8 @@ import SearchBar from "@/components/SearchBar";
 import TestCard from "@/components/TestCard";
 import NoResultsSupport from "@/components/NoResultsSupport";
 import PackageCard from "@/components/PackageCard";
-import { search, allPackages } from "@/lib/catalog";
+import { CUSTOM_PANELS_LABEL } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog-server";
 import type { SearchResult } from "@/lib/catalog";
 
 type Props = { searchParams: { q?: string; category?: string } };
@@ -23,7 +24,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
-export default function SearchPage({ searchParams }: Props) {
+export default async function SearchPage({ searchParams }: Props) {
+  const catalog = await getCatalog();
   const category = searchParams.category;
   const q = searchParams.q || "";
 
@@ -31,8 +33,8 @@ export default function SearchPage({ searchParams }: Props) {
   // than fuzzy text search - used by nav links like "Women's Health" so the
   // listing only ever shows packages actually tagged with that category.
   const results: SearchResult[] = category
-    ? allPackages.filter((p) => p.category === category).map((item) => ({ kind: "package" as const, item, score: 1 }))
-    : search(q, 60);
+    ? (category === CUSTOM_PANELS_LABEL ? catalog.customPackages : catalog.standardPackages.filter((p) => p.category === category)).map((item) => ({ kind: "package" as const, item, score: 1 }))
+    : catalog.search(q, 60);
 
   const heading = category ? `${category} packages` : q ? `Results for "${q}"` : "Search tests and packages";
 

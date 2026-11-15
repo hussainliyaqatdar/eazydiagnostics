@@ -7,7 +7,7 @@ import PackageCard from "@/components/PackageCard";
 import HeroCarousel from "@/components/HeroCarousel";
 import MoreWaysToBook from "@/components/MoreWaysToBook";
 import FAQSection from "@/components/FAQSection";
-import { allTests, allPackages, getFrequentlyPrescribedTests } from "@/lib/catalog";
+import { getCatalog } from "@/lib/catalog-server";
 import { SERVICE_AREAS } from "@/lib/site-config";
 import { SPECIALTIES, getSpecialtyTests } from "@/lib/specialties";
 import { getBrand } from "@/lib/brand-server";
@@ -25,15 +25,16 @@ const FEATURED_PREGNANCY_TEST_SLUGS = ["double-marker-test-serum", "nipt", "oral
 
 export default async function Home() {
   const brand = await getBrand();
-  const popularPackages = allPackages.filter((p) => !p.needsContent).slice(0, 3);
-  const pregnancyPackages = allPackages.filter((p) => /trimester|pcos|torch|infertility|menopause/i.test(p.name)).slice(0, 3);
-  const pregnancyTests = FEATURED_PREGNANCY_TEST_SLUGS.map((slug) => allTests.find((t) => t.slug === slug)).filter(Boolean) as typeof allTests;
+  const catalog = await getCatalog();
+  const popularPackages = catalog.standardPackages.filter((p) => !p.needsContent).slice(0, 3);
+  const pregnancyPackages = catalog.standardPackages.filter((p) => /trimester|pcos|torch|infertility|menopause/i.test(p.name)).slice(0, 3);
+  const pregnancyTests = FEATURED_PREGNANCY_TEST_SLUGS.map((slug) => catalog.getTest(slug)).filter(Boolean) as typeof catalog.tests;
   // Top 9 tests by prescribing frequency (see lib/cc-sprf-tests.ts) - the
   // ranking already leads with the routine GP/gynaecologist panel (CBC,
   // urine routine, lipid, liver, kidney, HbA1c, thyroid, Vitamin D/B12).
-  const popularTests = getFrequentlyPrescribedTests().slice(0, 9);
-  const specialisedTests = FEATURED_SPECIALISED_SLUGS.map((slug) => allTests.find((t) => t.slug === slug)).filter(Boolean) as typeof allTests;
-  const specialtyLinks = SPECIALTIES.filter((s) => getSpecialtyTests(s.slug).length > 0);
+  const popularTests = catalog.frequentlyPrescribedTests().slice(0, 9);
+  const specialisedTests = FEATURED_SPECIALISED_SLUGS.map((slug) => catalog.getTest(slug)).filter(Boolean) as typeof catalog.tests;
+  const specialtyLinks = SPECIALTIES.filter((s) => getSpecialtyTests(catalog.tests, s.slug).length > 0);
 
   return (
     <div className="flex flex-col gap-16">

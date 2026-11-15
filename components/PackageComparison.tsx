@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { allPackages } from "@/lib/catalog";
+import type { PackageItem } from "@/lib/types";
 import { useCart } from "@/lib/cart-context";
 import { useUI } from "@/lib/ui-context";
 import {
@@ -21,8 +21,6 @@ import { OrganBadge } from "./OrganIcon";
 // "included": every plan bundles the consultation, at a higher bundled price
 // (see bundledPrice in lib/consult-offers). On both, the doctor is chosen at checkout.
 export type ComparisonVariant = "addon" | "included";
-
-const PACKAGE_BY_SLUG = new Map(allPackages.map((p) => [p.slug, p]));
 
 // The plan columns and the pinned bar share these widths, so the bar lines up
 // with the table however far it is scrolled sideways.
@@ -130,7 +128,9 @@ function IncludedConsultCard() {
   );
 }
 
-export default function PackageComparison({ variant }: { variant: ComparisonVariant }) {
+// `packages`: the packages the plans point to (the page looks them up in the catalog and passes them in).
+export default function PackageComparison({ variant, packages }: { variant: ComparisonVariant; packages: PackageItem[] }) {
+  const PACKAGE_BY_SLUG = new Map(packages.map((p) => [p.slug, p]));
   const { addWithOffer } = useCart();
   const { openCartDrawer } = useUI();
   const included = variant === "included";

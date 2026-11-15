@@ -7,7 +7,7 @@ async function read<T>(res: Response): Promise<ApiResult<T>> {
   return { ok: false, error: (data as { error?: string }).error || "Something went wrong. Please try again." };
 }
 
-export async function sendJson<T = Record<string, unknown>>(url: string, method: "POST" | "PATCH" | "DELETE", body?: unknown): Promise<ApiResult<T>> {
+export async function sendJson<T = Record<string, unknown>>(url: string, method: "POST" | "PATCH" | "PUT" | "DELETE", body?: unknown): Promise<ApiResult<T>> {
   try {
     const res = await fetch(url, { method, headers: body === undefined ? undefined : { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
     return await read<T>(res);
