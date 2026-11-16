@@ -40,6 +40,8 @@ export default function LocationPickerModal({
   const [confirming, setConfirming] = useState(false);
   const [locating, setLocating] = useState(false);
   const [message, setMessage] = useState("");
+  // Bumped by "Try again" so the map loads once more without closing the dialog.
+  const [attempt, setAttempt] = useState(0);
 
   // Lock page scroll and close on Escape while open.
   useEffect(() => {
@@ -86,7 +88,10 @@ export default function LocationPickerModal({
     if (!open || !MAPS_KEY_PRESENT) return;
     let cancelled = false;
     setStatus("loading");
+    // One quiet retry before giving up: a first attempt on a cold page can fail for a moment (the script still starting
+    // up, a slow connection) and then work a second later - which is what used to need a close and re-open.
     loadGoogleMaps()
+      .catch(() => new Promise((r) => setTimeout(r, 700)).then(() => loadGoogleMaps()))
       .then(async (g) => {
         if (cancelled) return;
         const [{ Map }, places, { Geocoder }] = await Promise.all([g.maps.importLibrary("maps"), g.maps.importLibrary("places"), g.maps.importLibrary("geocoding")]);
@@ -113,13 +118,16 @@ export default function LocationPickerModal({
         });
         setStatus("ready");
       })
-      .catch(() => !cancelled && setStatus("error"));
+      .catch((err) => {
+        console.error("Location search: the map could not be loaded:", err);
+        if (!cancelled) setStatus("error");
+      });
     return () => {
       cancelled = true;
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, attempt]);
 
   // Suggestions as the patient types (a short pause between keystrokes).
   useEffect(() => {
@@ -257,6 +265,12 @@ export default function LocationPickerModal({
           ) : (
             <p className="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
               {MAPS_KEY_PRESENT ? "The map couldn't load right now." : "Map search isn't available right now."} You can use your current location, or close this and choose &ldquo;Add manually&rdquo; to paste a Google Maps link.
+              {MAPS_KEY_PRESENT && (
+                <>
+                  {" "}
+                  <button type="button" onClick={() => { setStatus("loading"); setAttempt((a) => a + 1); }} className="font-semibold text-brand underline">Try again</button>
+                </>
+              )}
             </p>
           )}
 
