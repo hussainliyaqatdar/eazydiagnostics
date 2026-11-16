@@ -1,5 +1,6 @@
 "use client";
 import LocationPickerModal from "@/components/LocationPickerModal";
+import { loadGoogleMaps, MAPS_KEY_PRESENT } from "@/lib/google-maps";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, useCartSummary } from "@/lib/cart-context";
@@ -31,6 +32,14 @@ export default function CheckoutPage() {
   const [stage, setStage] = useState<Stage>("members");
   const showMembers = !multi || stage === "members";
   const showVisit = !multi || stage === "visit";
+  // Start downloading Google Maps as soon as the address step is on screen, so by the time "Search location" is tapped
+  // it is usually ready (and a cold first tap does not have to wait for it). The script alone is not billed; only
+  // opening the map in the dialog is.
+  useEffect(() => {
+    if (!showVisit || !MAPS_KEY_PRESENT) return;
+    const timer = setTimeout(() => void loadGoogleMaps().catch(() => undefined), 800);
+    return () => clearTimeout(timer);
+  }, [showVisit]);
 
   // A follow-up consultation (added in the cart, or bundled into the package)
   // needs a doctor - picked here, after the collection details.
