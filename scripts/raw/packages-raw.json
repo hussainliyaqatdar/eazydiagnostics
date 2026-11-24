@@ -215,5 +215,75 @@
     "Code": "PKG-STI",
     "Package Price (Rs.)": 1599,
     "Type": "Package"
+  },
+  {
+    "Package Name": "Full Body Checkup - Starter",
+    "Category": "Full Body Checkups",
+    "Code": "CMP117",
+    "Package Price (Rs.)": 399,
+    "Type": "Package"
+  },
+  {
+    "Package Name": "Full Body Checkup - Basic",
+    "Category": "Full Body Checkups",
+    "Code": "CMP118",
+    "Package Price (Rs.)": 1199,
+    "Type": "Package"
+  },
+  {
+    "Package Name": "Full Body Checkup - Standard",
+    "Category": "Full Body Checkups",
+    "Code": "CMP119",
+    "Package Price (Rs.)": 2099,
+    "Type": "Package"
+  },
+  {
+    "Package Name": "Full Body Checkup Mini Plus",
+    "Category": "Full Body Checkups",
+    "Code": "CMP133",
+    "Package Price (Rs.)": 1050,
+    "Type": "Package"
+  },
+  {
+    "Package Name": "Full Body Checkup - Diabetes & Heart",
+    "Category": "Full Body Checkups",
+    "Code": "CMP126",
+    "Package Price (Rs.)": 1499,
+    "Type": "Package"
+  },
+  {
+    "Package Name": "Full Body Checkup - Diabetes & Heart Advanced",
+    "Category": "Full Body Checkups",
+    "Code": "CMP127",
+    "Package Price (Rs.)": 3499,
+    "Type": "Package"
+  },
+  {
+    "Package Name": "Full Body Checkup - Student",
+    "Category": "Full Body Checkups",
+    "Code": "CMP128",
+    "Package Price (Rs.)": 2499,
+    "Type": "Package"
+  },
+  {
+    "Package Name": "Full Body Checkup - Pre-Marriage",
+    "Category": "Full Body Checkups",
+    "Code": "CMP130",
+    "Package Price (Rs.)": 2999,
+    "Type": "Package"
+  },
+  {
+    "Package Name": "Full Body Checkup - Premium (Men)",
+    "Category": "Full Body Checkups",
+    "Code": "CMP124",
+    "Package Price (Rs.)": 6699,
+    "Type": "Package"
+  },
+  {
+    "Package Name": "Full Body Checkup - Premium (Women)",
+    "Category": "Full Body Checkups",
+    "Code": "CMP125",
+    "Package Price (Rs.)": 6699,
+    "Type": "Package"
   }
 ]

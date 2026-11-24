@@ -768,6 +768,57 @@ export async function createPackage(input: PackageInput): Promise<PackageItem> {
   return (await adminGetPackage(internalId))!;
 }
 
+// ---- standard packages in data/packages.json that this database doesn't have yet ---------------------
+// The files only seed an EMPTY database, so a package added to them later (for example the lab's new offers) never
+// reaches a live one on its own. Admin -> Tests & packages -> Packages offers to add them. Only packages with the
+// lab's own ids (not our "PKG-" codes) are offered, and only when neither that lab id nor the name is already in use,
+// so nothing is duplicated and nothing is changed. A package you deleted on purpose is not offered again unless it is
+// one of these.
+export type PendingPackage = { code: string; name: string; price: number; tests: number };
+type FilePackage = PackageItem & { code?: string };
+
+async function filePackages(): Promise<FilePackage[]> {
+  const mod = await import("@/data/packages.json");
+  return (mod.default as unknown as FilePackage[]).filter((p) => p.code && !/^PKG-/i.test(String(p.code)));
+}
+
+async function pendingFilePackageItems(): Promise<FilePackage[]> {
+  const lab = await getCurrentLab();
+  const db = await getDb();
+  const out: FilePackage[] = [];
+  for (const p of await filePackages()) {
+    if (await externalIdTaken(lab.id, "package", String(p.code))) continue;
+    const sameName = await db.query("SELECT 1 FROM catalog_packages WHERE lower(name) = lower($1) AND owner_doctor_id IS NULL", [p.name]);
+    if (sameName.length > 0) continue;
+    out.push(p);
+  }
+  return out;
+}
+
+export async function pendingFilePackages(): Promise<PendingPackage[]> {
+  return (await pendingFilePackageItems()).map((p) => ({ code: String(p.code), name: p.name, price: p.price, tests: p.constituents.length }));
+}
+
+export async function addPendingFilePackages(): Promise<{ added: string[]; skipped: { name: string; reason: string }[] }> {
+  const db = await getDb();
+  const added: string[] = [];
+  const skipped: { name: string; reason: string }[] = [];
+  for (const p of await pendingFilePackageItems()) {
+    try {
+      const made = await createPackage({
+        externalId: String(p.code), name: p.name, category: p.category, price: p.price, mrp: p.mrp ?? undefined, tagline: p.tagline,
+        description: p.description, eta: p.eta, tests: p.constituents.map((c) => c.slug),
+      });
+      if (p.faqs) await db.query("UPDATE catalog_packages SET faqs = $1::jsonb WHERE internal_id = $2", [JSON.stringify(p.faqs), made.id]);
+      added.push(p.name);
+    } catch (err) {
+      skipped.push({ name: p.name, reason: err instanceof Error ? err.message : "Couldn't be added." });
+    }
+  }
+  if (added.length > 0) await changed();
+  return { added, skipped };
+}
+
 export async function updatePackage(internalId: string, input: PackageInput): Promise<PackageItem> {
   const current = await adminGetPackage(internalId);
   if (!current) throw new CatalogError("That package no longer exists. Refresh the page.", 404);

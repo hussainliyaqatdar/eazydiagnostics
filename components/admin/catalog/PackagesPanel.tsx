@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "../Modal";
 import { useToast } from "../Toaster";
@@ -36,6 +36,27 @@ export default function PackagesPanel({
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const noun = custom ? "panel" : "package";
+  // Standard packages in the catalogue file that this database doesn't have yet (see lib/catalog-store.ts).
+  const [pending, setPending] = useState<{ code: string; name: string; price: number; tests: number }[]>([]);
+  useEffect(() => {
+    if (custom) return;
+    fetch("/api/admin/catalog/packages/import")
+      .then((r) => (r.ok ? r.json() : { packages: [] }))
+      .then((d) => setPending(Array.isArray(d.packages) ? d.packages : []))
+      .catch(() => setPending([]));
+  }, [custom]);
+
+  async function addPending() {
+    setBusy("pending");
+    const res = await sendJson<{ added: string[]; skipped: { name: string; reason: string }[] }>("/api/admin/catalog/packages/import", "POST");
+    if (res.ok) {
+      const { added, skipped } = res.data;
+      toast({ kind: skipped.length ? "error" : "success", title: `${added.length} package${added.length === 1 ? "" : "s"} added`, message: skipped.length ? `${skipped.length} could not be added: ${skipped.map((s) => `${s.name} (${s.reason})`).join("; ")}` : added.join(", ") });
+      setPending([]);
+      router.refresh();
+    } else toast({ kind: "error", title: "Couldn't add the packages", message: res.error });
+    setBusy(null);
+  }
 
   async function toggle(p: PackageItem) {
     setBusy(p.id);
@@ -63,6 +84,20 @@ export default function PackagesPanel({
         </p>
         <button type="button" onClick={() => setEditing("new")} className={buttonClass}>+ {custom ? "New panel" : "Add package"}</button>
       </div>
+
+      {!custom && pending.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <p>
+            <span className="font-semibold">{pending.length} new package{pending.length === 1 ? "" : "s"} from the lab are in the catalogue file but not on the site yet:</span>{" "}
+            {pending.map((x) => `${x.name} (Rs. ${x.price.toLocaleString("en-IN")})`).join(", ")}.
+          </p>
+          <div>
+            <button type="button" disabled={busy === "pending"} onClick={addPending} className={buttonClass}>
+              {busy === "pending" ? "Adding..." : `Add ${pending.length} package${pending.length === 1 ? "" : "s"}`}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-lg border bg-white">
         <table className="w-full min-w-[640px] text-left text-sm">

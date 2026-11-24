@@ -2323,5 +2323,1045 @@
         "a": "Yes. Every test in the STI / Infection Screen package is processed at NABL-accredited labs run by Agilus (SRL) Diagnostics, our authorised lab partner."
       }
     ]
+  },
+  {
+    "id": "CMP117",
+    "slug": "full-body-checkup-starter",
+    "name": "Full Body Checkup - Starter",
+    "code": "CMP117",
+    "category": "Full Body Checkups",
+    "price": 399,
+    "mrp": 1180,
+    "tagline": "5-Test Essential Screen",
+    "description": "A quick, affordable first check. Haemoglobin for anaemia, fasting sugar, cholesterol, creatinine for kidney health and CRP for inflammation - a good yearly baseline for a healthy adult, at our lowest checkup price.",
+    "constituents": [
+      {
+        "name": "Hemoglobin by Cyanmethaemoglobin",
+        "slug": "hemoglobin-by-cyanmethaemoglobin",
+        "price": 130
+      },
+      {
+        "name": "C-Reactive Protein (CRP), Serum (Quantitative)",
+        "slug": "c-reactive-protein-crp-serum-quantitative",
+        "price": 500
+      },
+      {
+        "name": "GLUCOSE FASTING,FLUORIDE PLASMA",
+        "slug": "glucose-fasting-fluoride-plasma",
+        "price": 80
+      },
+      {
+        "name": "Creatinine, Serum",
+        "slug": "creatinine-serum",
+        "price": 230
+      },
+      {
+        "name": "Cholesterol, Serum",
+        "slug": "cholesterol-serum",
+        "price": 210
+      }
+    ],
+    "needsContent": false,
+    "eta": "12-24 hours",
+    "faqs": [
+      {
+        "q": "Can I book the Full Body Checkup - Starter package near me in Bangalore?",
+        "a": "Yes - the Full Body Checkup - Starter package is available for home sample collection across Bangalore, including JP Nagar, Jayanagar, BTM Layout, Banashankari, and Kanakpura Road. No need to visit a lab; book online and we'll send a phlebotomist to you."
+      },
+      {
+        "q": "What is the price of the Full Body Checkup - Starter package in Bangalore?",
+        "a": "The Full Body Checkup - Starter package costs Rs. 399 (down from Rs. 1,180 MRP) for all 5 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
+      },
+      {
+        "q": "Is home collection available for the Full Body Checkup - Starter package?",
+        "a": "Yes. All 5 tests included in the Full Body Checkup - Starter package are collected in a single home visit by a trained phlebotomist. Reports are typically ready in 12-24 hours."
+      },
+      {
+        "q": "What does the Full Body Checkup - Starter package include?",
+        "a": "A quick, affordable first check. Haemoglobin for anaemia, fasting sugar, cholesterol, creatinine for kidney health and CRP for inflammation - a good yearly baseline for a healthy adult, at our lowest checkup price."
+      },
+      {
+        "q": "Is the Full Body Checkup - Starter package tested at NABL-accredited labs?",
+        "a": "Yes. Every test in the Full Body Checkup - Starter package is processed at NABL-accredited labs run by Agilus (SRL) Diagnostics, our authorised lab partner."
+      }
+    ]
+  },
+  {
+    "id": "CMP118",
+    "slug": "full-body-checkup-basic",
+    "name": "Full Body Checkup - Basic",
+    "code": "CMP118",
+    "category": "Full Body Checkups",
+    "price": 1199,
+    "mrp": 3115,
+    "tagline": "Everyday Health Screen",
+    "description": "Broad coverage at a very friendly price. A full blood count, fasting sugar, thyroid (TSH), calcium and CRP, plus screening-level checks of your kidneys, liver and cholesterol, and a urine test - a solid annual look at your everyday health.",
+    "constituents": [
+      {
+        "name": "CBC-5, EDTA Whole Blood",
+        "slug": "cbc-5-edta-whole-blood",
+        "price": 400
+      },
+      {
+        "name": "C-Reactive Protein (CRP), Serum (Quantitative)",
+        "slug": "c-reactive-protein-crp-serum-quantitative",
+        "price": 500
+      },
+      {
+        "name": "GLUCOSE FASTING,FLUORIDE PLASMA",
+        "slug": "glucose-fasting-fluoride-plasma",
+        "price": 80
+      },
+      {
+        "name": "KIDNEY SCREEN",
+        "slug": "kidney-screen",
+        "price": 440
+      },
+      {
+        "name": "Urinalysis",
+        "slug": "urinalysis",
+        "price": 200
+      },
+      {
+        "name": "LIPID SCREEN",
+        "slug": "lipid-screen",
+        "price": 470
+      },
+      {
+        "name": "LIVER SCREEN",
+        "slug": "liver-screen",
+        "price": 495
+      },
+      {
+        "name": "TSH 3rd Gen Ultrasensitive, Serum",
+        "slug": "tsh-3rd-gen-ultrasensitive-serum",
+        "price": 380
+      },
+      {
+        "name": "Calcium, Serum",
+        "slug": "calcium-serum",
+        "price": 255
+      }
+    ],
+    "needsContent": false,
+    "eta": "12-24 hours",
+    "faqs": [
+      {
+        "q": "Can I book the Full Body Checkup - Basic package near me in Bangalore?",
+        "a": "Yes - the Full Body Checkup - Basic package is available for home sample collection across Bangalore, including JP Nagar, Jayanagar, BTM Layout, Banashankari, and Kanakpura Road. No need to visit a lab; book online and we'll send a phlebotomist to you."
+      },
+      {
+        "q": "What is the price of the Full Body Checkup - Basic package in Bangalore?",
+        "a": "The Full Body Checkup - Basic package costs Rs. 1,199 (down from Rs. 3,115 MRP) for all 9 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
+      },
+      {
+        "q": "Is home collection available for the Full Body Checkup - Basic package?",
+        "a": "Yes. All 9 tests included in the Full Body Checkup - Basic package are collected in a single home visit by a trained phlebotomist. Reports are typically ready in 12-24 hours."
+      },
+      {
+        "q": "What does the Full Body Checkup - Basic package include?",
+        "a": "Broad coverage at a very friendly price. A full blood count, fasting sugar, thyroid (TSH), calcium and CRP, plus screening-level checks of your kidneys, liver and cholesterol, and a urine test - a solid annual look at your everyday health."
+      },
+      {
+        "q": "Is the Full Body Checkup - Basic package tested at NABL-accredited labs?",
+        "a": "Yes. Every test in the Full Body Checkup - Basic package is processed at NABL-accredited labs run by Agilus (SRL) Diagnostics, our authorised lab partner."
+      }
+    ]
+  },
+  {
+    "id": "CMP119",
+    "slug": "full-body-checkup-standard",
+    "name": "Full Body Checkup - Standard",
+    "code": "CMP119",
+    "category": "Full Body Checkups",
+    "price": 2099,
+    "mrp": 6930,
+    "tagline": "Complete Annual Screen",
+    "description": "A balanced annual checkup in one visit. Blood count, sugar and 3-month sugar average (HbA1c), cholesterol, kidney and liver screens, thyroid (T3, T4, TSH), calcium, vitamin D, vitamin B12, CRP and a urine test - the markers most doctors ask for at a yearly review.",
+    "constituents": [
+      {
+        "name": "CBC-5, EDTA Whole Blood",
+        "slug": "cbc-5-edta-whole-blood",
+        "price": 400
+      },
+      {
+        "name": "C-Reactive Protein (CRP), Serum (Quantitative)",
+        "slug": "c-reactive-protein-crp-serum-quantitative",
+        "price": 500
+      },
+      {
+        "name": "GLUCOSE FASTING,FLUORIDE PLASMA",
+        "slug": "glucose-fasting-fluoride-plasma",
+        "price": 80
+      },
+      {
+        "name": "KIDNEY SCREEN",
+        "slug": "kidney-screen",
+        "price": 440
+      },
+      {
+        "name": "Urinalysis",
+        "slug": "urinalysis",
+        "price": 200
+      },
+      {
+        "name": "Lipid Profile, Serum",
+        "slug": "lipid-profile-serum",
+        "price": 650
+      },
+      {
+        "name": "LIVER SCREEN",
+        "slug": "liver-screen",
+        "price": 495
+      },
+      {
+        "name": "Thyroid Panel – TSH, Serum",
+        "slug": "thyroid-panel-tsh-serum",
+        "price": 580
+      },
+      {
+        "name": "Calcium, Serum",
+        "slug": "calcium-serum",
+        "price": 255
+      },
+      {
+        "name": "Glycosylated Hemoglobin (HbA1c)",
+        "slug": "glycosylated-hemoglobin-hba1c",
+        "price": 600
+      },
+      {
+        "name": "Vitamin D Total (25-Hydroxyvitamin D), Serum",
+        "slug": "vitamin-d-total-25-hydroxyvitamin-d-serum",
+        "price": 1750
+      },
+      {
+        "name": "Vitamin B12 (Cyanocobalamine), Serum",
+        "slug": "vitamin-b12-cyanocobalamine-serum",
+        "price": 1350
+      }
+    ],
+    "needsContent": false,
+    "eta": "12-24 hours",
+    "faqs": [
+      {
+        "q": "Can I book the Full Body Checkup - Standard package near me in Bangalore?",
+        "a": "Yes - the Full Body Checkup - Standard package is available for home sample collection across Bangalore, including JP Nagar, Jayanagar, BTM Layout, Banashankari, and Kanakpura Road. No need to visit a lab; book online and we'll send a phlebotomist to you."
+      },
+      {
+        "q": "What is the price of the Full Body Checkup - Standard package in Bangalore?",
+        "a": "The Full Body Checkup - Standard package costs Rs. 2,099 (down from Rs. 6,930 MRP) for all 12 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
+      },
+      {
+        "q": "Is home collection available for the Full Body Checkup - Standard package?",
+        "a": "Yes. All 12 tests included in the Full Body Checkup - Standard package are collected in a single home visit by a trained phlebotomist. Reports are typically ready in 12-24 hours."
+      },
+      {
+        "q": "What does the Full Body Checkup - Standard package include?",
+        "a": "A balanced annual checkup in one visit. Blood count, sugar and 3-month sugar average (HbA1c), cholesterol, kidney and liver screens, thyroid (T3, T4, TSH), calcium, vitamin D, vitamin B12, CRP and a urine test - the markers most doctors ask for at a yearly review."
+      },
+      {
+        "q": "Is the Full Body Checkup - Standard package tested at NABL-accredited labs?",
+        "a": "Yes. Every test in the Full Body Checkup - Standard package is processed at NABL-accredited labs run by Agilus (SRL) Diagnostics, our authorised lab partner."
+      }
+    ]
+  },
+  {
+    "id": "CMP133",
+    "slug": "full-body-checkup-mini-plus",
+    "name": "Full Body Checkup Mini Plus",
+    "code": "CMP133",
+    "category": "Full Body Checkups",
+    "price": 1050,
+    "mrp": 2514,
+    "tagline": "Essential Metabolic Screen + Calcium",
+    "description": "Everything in our Mini checkup - blood sugar, cholesterol, liver, kidneys, thyroid and urine - plus a calcium check for bone and muscle health, at an even easier price.",
+    "constituents": [
+      {
+        "name": "GLUCOSE FASTING,FLUORIDE PLASMA",
+        "slug": "glucose-fasting-fluoride-plasma",
+        "price": 80
+      },
+      {
+        "name": "Calcium, Serum",
+        "slug": "calcium-serum",
+        "price": 255
+      },
+      {
+        "name": "Urinalysis",
+        "slug": "urinalysis",
+        "price": 200
+      },
+      {
+        "name": "Thyroid Panel – TSH, Serum",
+        "slug": "thyroid-panel-tsh-serum",
+        "price": 580
+      },
+      {
+        "name": "Lipid Profile, Serum",
+        "slug": "lipid-profile-serum",
+        "price": 650
+      },
+      {
+        "name": "Kidney Function Test",
+        "slug": "kidney-function-test",
+        "price": 1000
+      },
+      {
+        "name": "Liver Function Profile, Serum",
+        "slug": "liver-function-profile-serum",
+        "price": 900
+      }
+    ],
+    "needsContent": false,
+    "eta": "12-24 hours",
+    "faqs": [
+      {
+        "q": "Can I book the Full Body Checkup Mini Plus package near me in Bangalore?",
+        "a": "Yes - the Full Body Checkup Mini Plus package is available for home sample collection across Bangalore, including JP Nagar, Jayanagar, BTM Layout, Banashankari, and Kanakpura Road. No need to visit a lab; book online and we'll send a phlebotomist to you."
+      },
+      {
+        "q": "What is the price of the Full Body Checkup Mini Plus package in Bangalore?",
+        "a": "The Full Body Checkup Mini Plus package costs Rs. 1,050 (down from Rs. 2,514 MRP) for all 7 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
+      },
+      {
+        "q": "Is home collection available for the Full Body Checkup Mini Plus package?",
+        "a": "Yes. All 7 tests included in the Full Body Checkup Mini Plus package are collected in a single home visit by a trained phlebotomist. Reports are typically ready in 12-24 hours."
+      },
+      {
+        "q": "What does the Full Body Checkup Mini Plus package include?",
+        "a": "Everything in our Mini checkup - blood sugar, cholesterol, liver, kidneys, thyroid and urine - plus a calcium check for bone and muscle health, at an even easier price."
+      },
+      {
+        "q": "Is the Full Body Checkup Mini Plus package tested at NABL-accredited labs?",
+        "a": "Yes. Every test in the Full Body Checkup Mini Plus package is processed at NABL-accredited labs run by Agilus (SRL) Diagnostics, our authorised lab partner."
+      }
+    ]
+  },
+  {
+    "id": "CMP126",
+    "slug": "full-body-checkup-diabetes-heart",
+    "name": "Full Body Checkup - Diabetes & Heart",
+    "code": "CMP126",
+    "category": "Full Body Checkups",
+    "price": 1499,
+    "mrp": 3460,
+    "tagline": "Diabetes, Heart & Organ Screen",
+    "description": "Built for people with diabetes, a family history of it, or heart-health worries. Fasting sugar and HbA1c, cholesterol, kidney and liver screens, thyroid (TSH), calcium, a full blood count and a urine test in one draw.",
+    "constituents": [
+      {
+        "name": "CBC-5, EDTA Whole Blood",
+        "slug": "cbc-5-edta-whole-blood",
+        "price": 400
+      },
+      {
+        "name": "GLUCOSE FASTING,FLUORIDE PLASMA",
+        "slug": "glucose-fasting-fluoride-plasma",
+        "price": 80
+      },
+      {
+        "name": "Lipid Profile, Serum",
+        "slug": "lipid-profile-serum",
+        "price": 650
+      },
+      {
+        "name": "LIVER SCREEN",
+        "slug": "liver-screen",
+        "price": 495
+      },
+      {
+        "name": "KIDNEY SCREEN",
+        "slug": "kidney-screen",
+        "price": 440
+      },
+      {
+        "name": "TSH 3rd Gen Ultrasensitive, Serum",
+        "slug": "tsh-3rd-gen-ultrasensitive-serum",
+        "price": 380
+      },
+      {
+        "name": "Calcium, Serum",
+        "slug": "calcium-serum",
+        "price": 255
+      },
+      {
+        "name": "Glycosylated Hemoglobin (HbA1c)",
+        "slug": "glycosylated-hemoglobin-hba1c",
+        "price": 600
+      },
+      {
+        "name": "Urinalysis",
+        "slug": "urinalysis",
+        "price": 200
+      }
+    ],
+    "needsContent": false,
+    "eta": "12-24 hours",
+    "faqs": [
+      {
+        "q": "Can I book the Full Body Checkup - Diabetes & Heart package near me in Bangalore?",
+        "a": "Yes - the Full Body Checkup - Diabetes & Heart package is available for home sample collection across Bangalore, including JP Nagar, Jayanagar, BTM Layout, Banashankari, and Kanakpura Road. No need to visit a lab; book online and we'll send a phlebotomist to you."
+      },
+      {
+        "q": "What is the price of the Full Body Checkup - Diabetes & Heart package in Bangalore?",
+        "a": "The Full Body Checkup - Diabetes & Heart package costs Rs. 1,499 (down from Rs. 3,460 MRP) for all 9 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
+      },
+      {
+        "q": "Is home collection available for the Full Body Checkup - Diabetes & Heart package?",
+        "a": "Yes. All 9 tests included in the Full Body Checkup - Diabetes & Heart package are collected in a single home visit by a trained phlebotomist. Reports are typically ready in 12-24 hours."
+      },
+      {
+        "q": "What does the Full Body Checkup - Diabetes & Heart package include?",
+        "a": "Built for people with diabetes, a family history of it, or heart-health worries. Fasting sugar and HbA1c, cholesterol, kidney and liver screens, thyroid (TSH), calcium, a full blood count and a urine test in one draw."
+      },
+      {
+        "q": "Is the Full Body Checkup - Diabetes & Heart package tested at NABL-accredited labs?",
+        "a": "Yes. Every test in the Full Body Checkup - Diabetes & Heart package is processed at NABL-accredited labs run by Agilus (SRL) Diagnostics, our authorised lab partner."
+      }
+    ]
+  },
+  {
+    "id": "CMP127",
+    "slug": "full-body-checkup-diabetes-heart-advanced",
+    "name": "Full Body Checkup - Diabetes & Heart Advanced",
+    "code": "CMP127",
+    "category": "Full Body Checkups",
+    "price": 3499,
+    "mrp": 10660,
+    "tagline": "Advanced Diabetes & Heart Screen",
+    "description": "A deeper look for diabetes and heart risk. Adds the particles that carry cholesterol (ApoA1, ApoB, Lp(a)), artery inflammation (hs-CRP), magnesium, vitamin B12 and a urine microalbumin check for early kidney strain, on top of sugar, HbA1c, lipids, liver, kidney and thyroid tests.",
+    "constituents": [
+      {
+        "name": "CBC-5, EDTA Whole Blood",
+        "slug": "cbc-5-edta-whole-blood",
+        "price": 400
+      },
+      {
+        "name": "GLUCOSE FASTING,FLUORIDE PLASMA",
+        "slug": "glucose-fasting-fluoride-plasma",
+        "price": 80
+      },
+      {
+        "name": "Lipid Profile, Serum",
+        "slug": "lipid-profile-serum",
+        "price": 650
+      },
+      {
+        "name": "Apolipoprotein A1 (ApoA1)",
+        "slug": "apolipoprotein-a1-apoa1",
+        "price": 800
+      },
+      {
+        "name": "Apolipoprotein B (ApoB)",
+        "slug": "apolipoprotein-b-apob",
+        "price": 800
+      },
+      {
+        "name": "LIPOPROTEIN (A), SERUM",
+        "slug": "lipoprotein-a-serum",
+        "price": 1400
+      },
+      {
+        "name": "Liver Function Profile, Serum",
+        "slug": "liver-function-profile-serum",
+        "price": 900
+      },
+      {
+        "name": "Kidney Function Test",
+        "slug": "kidney-function-test",
+        "price": 1000
+      },
+      {
+        "name": "TSH 3rd Gen Ultrasensitive, Serum",
+        "slug": "tsh-3rd-gen-ultrasensitive-serum",
+        "price": 380
+      },
+      {
+        "name": "Vitamin D Total (25-Hydroxyvitamin D), Serum",
+        "slug": "vitamin-d-total-25-hydroxyvitamin-d-serum",
+        "price": 1750
+      },
+      {
+        "name": "Calcium, Serum",
+        "slug": "calcium-serum",
+        "price": 255
+      },
+      {
+        "name": "HIGH SENSITIVITY C-REACTIVE PROTEIN, SERUM",
+        "slug": "high-sensitivity-c-reactive-protein-serum",
+        "price": 1000
+      },
+      {
+        "name": "MAGNESIUM, SERUM",
+        "slug": "magnesium-serum",
+        "price": 440
+      },
+      {
+        "name": "Glycosylated Hemoglobin (HbA1c)",
+        "slug": "glycosylated-hemoglobin-hba1c",
+        "price": 600
+      },
+      {
+        "name": "Vitamin B12 (Cyanocobalamine), Serum",
+        "slug": "vitamin-b12-cyanocobalamine-serum",
+        "price": 1350
+      },
+      {
+        "name": "MICROALBUMIN, URINE",
+        "slug": "microalbumin-urine",
+        "price": 605
+      }
+    ],
+    "needsContent": false,
+    "eta": "12-24 hours",
+    "faqs": [
+      {
+        "q": "Can I book the Full Body Checkup - Diabetes & Heart Advanced package near me in Bangalore?",
+        "a": "Yes - the Full Body Checkup - Diabetes & Heart Advanced package is available for home sample collection across Bangalore, including JP Nagar, Jayanagar, BTM Layout, Banashankari, and Kanakpura Road. No need to visit a lab; book online and we'll send a phlebotomist to you."
+      },
+      {
+        "q": "What is the price of the Full Body Checkup - Diabetes & Heart Advanced package in Bangalore?",
+        "a": "The Full Body Checkup - Diabetes & Heart Advanced package costs Rs. 3,499 (down from Rs. 10,660 MRP) for all 16 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
+      },
+      {
+        "q": "Is home collection available for the Full Body Checkup - Diabetes & Heart Advanced package?",
+        "a": "Yes. All 16 tests included in the Full Body Checkup - Diabetes & Heart Advanced package are collected in a single home visit by a trained phlebotomist. Reports are typically ready in 12-24 hours."
+      },
+      {
+        "q": "What does the Full Body Checkup - Diabetes & Heart Advanced package include?",
+        "a": "A deeper look for diabetes and heart risk. Adds the particles that carry cholesterol (ApoA1, ApoB, Lp(a)), artery inflammation (hs-CRP), magnesium, vitamin B12 and a urine microalbumin check for early kidney strain, on top of sugar, HbA1c, lipids, liver, kidney and thyroid tests."
+      },
+      {
+        "q": "Is the Full Body Checkup - Diabetes & Heart Advanced package tested at NABL-accredited labs?",
+        "a": "Yes. Every test in the Full Body Checkup - Diabetes & Heart Advanced package is processed at NABL-accredited labs run by Agilus (SRL) Diagnostics, our authorised lab partner."
+      }
+    ]
+  },
+  {
+    "id": "CMP128",
+    "slug": "full-body-checkup-student",
+    "name": "Full Body Checkup - Student",
+    "code": "CMP128",
+    "category": "Full Body Checkups",
+    "price": 2499,
+    "mrp": 7360,
+    "tagline": "Student Health & Nutrition Screen",
+    "description": "A growing-years checkup for school and college students. Blood count and haemoglobin variants (to flag thalassaemia carriers), sugar and HbA1c, thyroid, calcium, vitamin D and B12, plus kidney, liver and cholesterol screens and a urine test.",
+    "constituents": [
+      {
+        "name": "CBC-5, EDTA Whole Blood",
+        "slug": "cbc-5-edta-whole-blood",
+        "price": 400
+      },
+      {
+        "name": "GLUCOSE RANDOM, PLASMA",
+        "slug": "glucose-random-plasma",
+        "price": 80
+      },
+      {
+        "name": "KIDNEY SCREEN",
+        "slug": "kidney-screen",
+        "price": 440
+      },
+      {
+        "name": "Urinalysis",
+        "slug": "urinalysis",
+        "price": 200
+      },
+      {
+        "name": "LIPID SCREEN",
+        "slug": "lipid-screen",
+        "price": 470
+      },
+      {
+        "name": "LIVER SCREEN",
+        "slug": "liver-screen",
+        "price": 495
+      },
+      {
+        "name": "Thyroid Panel II (FT3, FT4, TSH), Serum",
+        "slug": "thyroid-panel-ii-ft3-ft4-tsh-serum",
+        "price": 1050
+      },
+      {
+        "name": "Vitamin D Total (25-Hydroxyvitamin D), Serum",
+        "slug": "vitamin-d-total-25-hydroxyvitamin-d-serum",
+        "price": 1750
+      },
+      {
+        "name": "Calcium, Serum",
+        "slug": "calcium-serum",
+        "price": 255
+      },
+      {
+        "name": "Vitamin B12 (Cyanocobalamine), Serum",
+        "slug": "vitamin-b12-cyanocobalamine-serum",
+        "price": 1350
+      },
+      {
+        "name": "Glycosylated Hemoglobin (HbA1c)",
+        "slug": "glycosylated-hemoglobin-hba1c",
+        "price": 600
+      },
+      {
+        "name": "Hemoglobin Variant Analysis, Blood",
+        "slug": "hemoglobin-variant-analysis-blood",
+        "price": 1200
+      }
+    ],
+    "needsContent": false,
+    "eta": "12-24 hours",
+    "faqs": [
+      {
+        "q": "Can I book the Full Body Checkup - Student package near me in Bangalore?",
+        "a": "Yes - the Full Body Checkup - Student package is available for home sample collection across Bangalore, including JP Nagar, Jayanagar, BTM Layout, Banashankari, and Kanakpura Road. No need to visit a lab; book online and we'll send a phlebotomist to you."
+      },
+      {
+        "q": "What is the price of the Full Body Checkup - Student package in Bangalore?",
+        "a": "The Full Body Checkup - Student package costs Rs. 2,499 (down from Rs. 7,360 MRP) for all 12 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
+      },
+      {
+        "q": "Is home collection available for the Full Body Checkup - Student package?",
+        "a": "Yes. All 12 tests included in the Full Body Checkup - Student package are collected in a single home visit by a trained phlebotomist. Reports are typically ready in 12-24 hours."
+      },
+      {
+        "q": "What does the Full Body Checkup - Student package include?",
+        "a": "A growing-years checkup for school and college students. Blood count and haemoglobin variants (to flag thalassaemia carriers), sugar and HbA1c, thyroid, calcium, vitamin D and B12, plus kidney, liver and cholesterol screens and a urine test."
+      },
+      {
+        "q": "Is the Full Body Checkup - Student package tested at NABL-accredited labs?",
+        "a": "Yes. Every test in the Full Body Checkup - Student package is processed at NABL-accredited labs run by Agilus (SRL) Diagnostics, our authorised lab partner."
+      }
+    ]
+  },
+  {
+    "id": "CMP130",
+    "slug": "full-body-checkup-pre-marriage",
+    "name": "Full Body Checkup - Pre-Marriage",
+    "code": "CMP130",
+    "category": "Full Body Checkups",
+    "price": 2999,
+    "mrp": 9760,
+    "tagline": "Pre-Marriage Health Screen",
+    "description": "A private health check for couples before marriage. Blood group and Rh type, haemoglobin variants, ferritin and iron capacity, infection screens (HIV, hepatitis B and C, syphilis), plus sugar, HbA1c, thyroid, B12, kidney, liver and cholesterol checks. Suitable for both partners.",
+    "constituents": [
+      {
+        "name": "CBC-5, EDTA Whole Blood",
+        "slug": "cbc-5-edta-whole-blood",
+        "price": 400
+      },
+      {
+        "name": "GLUCOSE FASTING,FLUORIDE PLASMA",
+        "slug": "glucose-fasting-fluoride-plasma",
+        "price": 80
+      },
+      {
+        "name": "KIDNEY SCREEN",
+        "slug": "kidney-screen",
+        "price": 440
+      },
+      {
+        "name": "LIPID SCREEN",
+        "slug": "lipid-screen",
+        "price": 470
+      },
+      {
+        "name": "LIVER SCREEN",
+        "slug": "liver-screen",
+        "price": 495
+      },
+      {
+        "name": "TSH 3rd Gen Ultrasensitive, Serum",
+        "slug": "tsh-3rd-gen-ultrasensitive-serum",
+        "price": 380
+      },
+      {
+        "name": "Glycosylated Hemoglobin (HbA1c)",
+        "slug": "glycosylated-hemoglobin-hba1c",
+        "price": 600
+      },
+      {
+        "name": "Vitamin B12 (Cyanocobalamine), Serum",
+        "slug": "vitamin-b12-cyanocobalamine-serum",
+        "price": 1350
+      },
+      {
+        "name": "TOTAL IRON BINDING CAPACITY, SERUM",
+        "slug": "total-iron-binding-capacity-serum",
+        "price": 530
+      },
+      {
+        "name": "FERRITIN, SERUM",
+        "slug": "ferritin-serum",
+        "price": 1000
+      },
+      {
+        "name": "Hemoglobin Variant Analysis, Blood",
+        "slug": "hemoglobin-variant-analysis-blood",
+        "price": 1200
+      },
+      {
+        "name": "ABO Group & Rh Type, EDTA Whole Blood",
+        "slug": "abo-group-rh-type-edta-whole-blood",
+        "price": 200
+      },
+      {
+        "name": "Hepatitis B Surface Antigen (HBsAg), Serum",
+        "slug": "hepatitis-b-surface-antigen-hbsag-serum",
+        "price": 550
+      },
+      {
+        "name": "HIV SCREENING 4TH GEN ASSAY, SERUM",
+        "slug": "hiv-screening-4th-gen-assay-serum",
+        "price": 750
+      },
+      {
+        "name": "HCV Antibodies, Serum",
+        "slug": "hcv-antibodies-serum",
+        "price": 1200
+      },
+      {
+        "name": "VDRL (MODIFIED),SERUM",
+        "slug": "vdrl-modified-serum",
+        "price": 350
+      }
+    ],
+    "needsContent": false,
+    "eta": "12-24 hours",
+    "faqs": [
+      {
+        "q": "Can I book the Full Body Checkup - Pre-Marriage package near me in Bangalore?",
+        "a": "Yes - the Full Body Checkup - Pre-Marriage package is available for home sample collection across Bangalore, including JP Nagar, Jayanagar, BTM Layout, Banashankari, and Kanakpura Road. No need to visit a lab; book online and we'll send a phlebotomist to you."
+      },
+      {
+        "q": "What is the price of the Full Body Checkup - Pre-Marriage package in Bangalore?",
+        "a": "The Full Body Checkup - Pre-Marriage package costs Rs. 2,999 (down from Rs. 9,760 MRP) for all 16 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
+      },
+      {
+        "q": "Is home collection available for the Full Body Checkup - Pre-Marriage package?",
+        "a": "Yes. All 16 tests included in the Full Body Checkup - Pre-Marriage package are collected in a single home visit by a trained phlebotomist. Reports are typically ready in 12-24 hours."
+      },
+      {
+        "q": "What does the Full Body Checkup - Pre-Marriage package include?",
+        "a": "A private health check for couples before marriage. Blood group and Rh type, haemoglobin variants, ferritin and iron capacity, infection screens (HIV, hepatitis B and C, syphilis), plus sugar, HbA1c, thyroid, B12, kidney, liver and cholesterol checks. Suitable for both partners."
+      },
+      {
+        "q": "Is the Full Body Checkup - Pre-Marriage package tested at NABL-accredited labs?",
+        "a": "Yes. Every test in the Full Body Checkup - Pre-Marriage package is processed at NABL-accredited labs run by Agilus (SRL) Diagnostics, our authorised lab partner."
+      }
+    ]
+  },
+  {
+    "id": "CMP124",
+    "slug": "full-body-checkup-premium-men",
+    "name": "Full Body Checkup - Premium (Men)",
+    "code": "CMP124",
+    "category": "Full Body Checkups",
+    "price": 6699,
+    "mrp": 17250,
+    "tagline": "Premium Screen with Heart, Allergy & Cancer Markers",
+    "description": "Our most thorough checkup for men. Goes beyond Ultra with an extended cholesterol panel (ApoA1, ApoB, Lp(a)), an adult allergy screen, CEA and PSA tumour markers, stress hormone cortisol, minerals, vitamins and a full thyroid, kidney, liver and sugar workup.",
+    "constituents": [
+      {
+        "name": "CBC-5, EDTA Whole Blood",
+        "slug": "cbc-5-edta-whole-blood",
+        "price": 400
+      },
+      {
+        "name": "GLUCOSE FASTING,FLUORIDE PLASMA",
+        "slug": "glucose-fasting-fluoride-plasma",
+        "price": 80
+      },
+      {
+        "name": "Lipid Profile, Serum",
+        "slug": "lipid-profile-serum",
+        "price": 650
+      },
+      {
+        "name": "Apolipoprotein A1 (ApoA1)",
+        "slug": "apolipoprotein-a1-apoa1",
+        "price": 800
+      },
+      {
+        "name": "Apolipoprotein B (ApoB)",
+        "slug": "apolipoprotein-b-apob",
+        "price": 800
+      },
+      {
+        "name": "LIPOPROTEIN (A), SERUM",
+        "slug": "lipoprotein-a-serum",
+        "price": 1400
+      },
+      {
+        "name": "Kidney Function Test",
+        "slug": "kidney-function-test",
+        "price": 1000
+      },
+      {
+        "name": "Liver Function Profile, Serum",
+        "slug": "liver-function-profile-serum",
+        "price": 900
+      },
+      {
+        "name": "Thyroid Panel II (FT3, FT4, TSH), Serum",
+        "slug": "thyroid-panel-ii-ft3-ft4-tsh-serum",
+        "price": 1050
+      },
+      {
+        "name": "Glycosylated Hemoglobin (HbA1c)",
+        "slug": "glycosylated-hemoglobin-hba1c",
+        "price": 600
+      },
+      {
+        "name": "Vitamin D Total (25-Hydroxyvitamin D), Serum",
+        "slug": "vitamin-d-total-25-hydroxyvitamin-d-serum",
+        "price": 1750
+      },
+      {
+        "name": "Calcium, Serum",
+        "slug": "calcium-serum",
+        "price": 255
+      },
+      {
+        "name": "MAGNESIUM, SERUM",
+        "slug": "magnesium-serum",
+        "price": 440
+      },
+      {
+        "name": "PHOSPHORUS, SERUM",
+        "slug": "phosphorus-serum",
+        "price": 255
+      },
+      {
+        "name": "TOTAL IRON BINDING CAPACITY, SERUM",
+        "slug": "total-iron-binding-capacity-serum",
+        "price": 530
+      },
+      {
+        "name": "FOLIC ACID, SERUM",
+        "slug": "folic-acid-serum",
+        "price": 1400
+      },
+      {
+        "name": "Vitamin B12 (Cyanocobalamine), Serum",
+        "slug": "vitamin-b12-cyanocobalamine-serum",
+        "price": 1350
+      },
+      {
+        "name": "ALLERGY SCREEN ADULT",
+        "slug": "allergy-screen-adult",
+        "price": 1200
+      },
+      {
+        "name": "HIGH SENSITIVITY C-REACTIVE PROTEIN, SERUM",
+        "slug": "high-sensitivity-c-reactive-protein-serum",
+        "price": 1000
+      },
+      {
+        "name": "Rheumatoid Factor, Serum",
+        "slug": "rheumatoid-factor-serum",
+        "price": 800
+      },
+      {
+        "name": "CORTISOL, SERUM",
+        "slug": "cortisol-serum",
+        "price": 800
+      },
+      {
+        "name": "Urinalysis",
+        "slug": "urinalysis",
+        "price": 200
+      },
+      {
+        "name": "Prostate Specific Antigen (PSA), Serum",
+        "slug": "prostate-specific-antigen-psa-serum",
+        "price": 1050
+      },
+      {
+        "name": "CARCINO EMBRYONIC ANTIGEN, SERUM",
+        "slug": "carcino-embryonic-antigen-serum",
+        "price": 1000
+      }
+    ],
+    "needsContent": false,
+    "eta": "2-3 days",
+    "faqs": [
+      {
+        "q": "Can I book the Full Body Checkup - Premium (Men) package near me in Bangalore?",
+        "a": "Yes - the Full Body Checkup - Premium (Men) package is available for home sample collection across Bangalore, including JP Nagar, Jayanagar, BTM Layout, Banashankari, and Kanakpura Road. No need to visit a lab; book online and we'll send a phlebotomist to you."
+      },
+      {
+        "q": "What is the price of the Full Body Checkup - Premium (Men) package in Bangalore?",
+        "a": "The Full Body Checkup - Premium (Men) package costs Rs. 6,699 (down from Rs. 17,250 MRP) for all 24 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
+      },
+      {
+        "q": "Is home collection available for the Full Body Checkup - Premium (Men) package?",
+        "a": "Yes. All 24 tests included in the Full Body Checkup - Premium (Men) package are collected in a single home visit by a trained phlebotomist. Reports are typically ready in 2-3 days."
+      },
+      {
+        "q": "What does the Full Body Checkup - Premium (Men) package include?",
+        "a": "Our most thorough checkup for men. Goes beyond Ultra with an extended cholesterol panel (ApoA1, ApoB, Lp(a)), an adult allergy screen, CEA and PSA tumour markers, stress hormone cortisol, minerals, vitamins and a full thyroid, kidney, liver and sugar workup."
+      },
+      {
+        "q": "Is the Full Body Checkup - Premium (Men) package tested at NABL-accredited labs?",
+        "a": "Yes. Every test in the Full Body Checkup - Premium (Men) package is processed at NABL-accredited labs run by Agilus (SRL) Diagnostics, our authorised lab partner."
+      }
+    ]
+  },
+  {
+    "id": "CMP125",
+    "slug": "full-body-checkup-premium-women",
+    "name": "Full Body Checkup - Premium (Women)",
+    "code": "CMP125",
+    "category": "Full Body Checkups",
+    "price": 6699,
+    "mrp": 17700,
+    "tagline": "Premium Screen with Heart, Allergy & Cancer Markers",
+    "description": "Our most thorough checkup for women. Goes beyond Ultra with an extended cholesterol panel (ApoA1, ApoB, Lp(a)), an adult allergy screen, CEA and CA 125 tumour markers, stress hormone cortisol, minerals, vitamins and a full thyroid, kidney, liver and sugar workup.",
+    "constituents": [
+      {
+        "name": "CBC-5, EDTA Whole Blood",
+        "slug": "cbc-5-edta-whole-blood",
+        "price": 400
+      },
+      {
+        "name": "GLUCOSE FASTING,FLUORIDE PLASMA",
+        "slug": "glucose-fasting-fluoride-plasma",
+        "price": 80
+      },
+      {
+        "name": "Lipid Profile, Serum",
+        "slug": "lipid-profile-serum",
+        "price": 650
+      },
+      {
+        "name": "Apolipoprotein A1 (ApoA1)",
+        "slug": "apolipoprotein-a1-apoa1",
+        "price": 800
+      },
+      {
+        "name": "Apolipoprotein B (ApoB)",
+        "slug": "apolipoprotein-b-apob",
+        "price": 800
+      },
+      {
+        "name": "LIPOPROTEIN (A), SERUM",
+        "slug": "lipoprotein-a-serum",
+        "price": 1400
+      },
+      {
+        "name": "Kidney Function Test",
+        "slug": "kidney-function-test",
+        "price": 1000
+      },
+      {
+        "name": "Liver Function Profile, Serum",
+        "slug": "liver-function-profile-serum",
+        "price": 900
+      },
+      {
+        "name": "Thyroid Panel II (FT3, FT4, TSH), Serum",
+        "slug": "thyroid-panel-ii-ft3-ft4-tsh-serum",
+        "price": 1050
+      },
+      {
+        "name": "Glycosylated Hemoglobin (HbA1c)",
+        "slug": "glycosylated-hemoglobin-hba1c",
+        "price": 600
+      },
+      {
+        "name": "Vitamin D Total (25-Hydroxyvitamin D), Serum",
+        "slug": "vitamin-d-total-25-hydroxyvitamin-d-serum",
+        "price": 1750
+      },
+      {
+        "name": "Calcium, Serum",
+        "slug": "calcium-serum",
+        "price": 255
+      },
+      {
+        "name": "MAGNESIUM, SERUM",
+        "slug": "magnesium-serum",
+        "price": 440
+      },
+      {
+        "name": "PHOSPHORUS, SERUM",
+        "slug": "phosphorus-serum",
+        "price": 255
+      },
+      {
+        "name": "TOTAL IRON BINDING CAPACITY, SERUM",
+        "slug": "total-iron-binding-capacity-serum",
+        "price": 530
+      },
+      {
+        "name": "FOLIC ACID, SERUM",
+        "slug": "folic-acid-serum",
+        "price": 1400
+      },
+      {
+        "name": "Vitamin B12 (Cyanocobalamine), Serum",
+        "slug": "vitamin-b12-cyanocobalamine-serum",
+        "price": 1350
+      },
+      {
+        "name": "ALLERGY SCREEN ADULT",
+        "slug": "allergy-screen-adult",
+        "price": 1200
+      },
+      {
+        "name": "HIGH SENSITIVITY C-REACTIVE PROTEIN, SERUM",
+        "slug": "high-sensitivity-c-reactive-protein-serum",
+        "price": 1000
+      },
+      {
+        "name": "Rheumatoid Factor, Serum",
+        "slug": "rheumatoid-factor-serum",
+        "price": 800
+      },
+      {
+        "name": "CORTISOL, SERUM",
+        "slug": "cortisol-serum",
+        "price": 800
+      },
+      {
+        "name": "Urinalysis",
+        "slug": "urinalysis",
+        "price": 200
+      },
+      {
+        "name": "CA 125 (Ovarian Cancer Monitor), Serum",
+        "slug": "ca-125-ovarian-cancer-monitor-serum",
+        "price": 1550
+      },
+      {
+        "name": "CARCINO EMBRYONIC ANTIGEN, SERUM",
+        "slug": "carcino-embryonic-antigen-serum",
+        "price": 1000
+      }
+    ],
+    "needsContent": false,
+    "eta": "2-3 days",
+    "faqs": [
+      {
+        "q": "Can I book the Full Body Checkup - Premium (Women) package near me in Bangalore?",
+        "a": "Yes - the Full Body Checkup - Premium (Women) package is available for home sample collection across Bangalore, including JP Nagar, Jayanagar, BTM Layout, Banashankari, and Kanakpura Road. No need to visit a lab; book online and we'll send a phlebotomist to you."
+      },
+      {
+        "q": "What is the price of the Full Body Checkup - Premium (Women) package in Bangalore?",
+        "a": "The Full Body Checkup - Premium (Women) package costs Rs. 6,699 (down from Rs. 17,700 MRP) for all 24 tests included, with no advance payment. Home collection is free on orders of Rs. 1,000 or more; a flat Rs. 250 collection charge applies to smaller orders."
+      },
+      {
+        "q": "Is home collection available for the Full Body Checkup - Premium (Women) package?",
+        "a": "Yes. All 24 tests included in the Full Body Checkup - Premium (Women) package are collected in a single home visit by a trained phlebotomist. Reports are typically ready in 2-3 days."
+      },
+      {
+        "q": "What does the Full Body Checkup - Premium (Women) package include?",
+        "a": "Our most thorough checkup for women. Goes beyond Ultra with an extended cholesterol panel (ApoA1, ApoB, Lp(a)), an adult allergy screen, CEA and CA 125 tumour markers, stress hormone cortisol, minerals, vitamins and a full thyroid, kidney, liver and sugar workup."
+      },
+      {
+        "q": "Is the Full Body Checkup - Premium (Women) package tested at NABL-accredited labs?",
+        "a": "Yes. Every test in the Full Body Checkup - Premium (Women) package is processed at NABL-accredited labs run by Agilus (SRL) Diagnostics, our authorised lab partner."
+      }
+    ]
   }
 ]
